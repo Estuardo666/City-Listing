@@ -47,7 +47,6 @@ const nextConfig = {
     ],
   },
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['lucide-react', 'date-fns'],
   },
   async headers() {
