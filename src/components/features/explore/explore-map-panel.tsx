@@ -21,6 +21,7 @@ type ExploreMapPanelProps = {
   userLocation?: UserLocation | null
   proximityRadius?: number | null
   onMapRef?: (ref: { flyTo: (opts: { center: [number, number]; zoom: number; duration: number }) => void } | null) => void
+  showSearchOnMoveToggle?: boolean
   className?: string
 }
 
@@ -236,6 +237,7 @@ export function ExploreMapPanel({
   userLocation,
   proximityRadius,
   onMapRef,
+  showSearchOnMoveToggle = true,
   className,
 }: ExploreMapPanelProps) {
   const themedMapStyle = useMapThemeStyle(mapStyle)
@@ -465,30 +467,32 @@ export function ExploreMapPanel({
   return (
     <div ref={containerRef} className={cn('relative h-full w-full', className)}>
       {/* Search-on-move toggle */}
-      <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2 max-w-[calc(100%-4rem)] px-2 sm:max-w-none">
-        <motion.button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            const next = !searchOnMove
-            setSearchOnMove(next)
-            if (next) emitBounds()
-            else onBoundsChange(null)
-          }}
-          whileTap={{ scale: 0.96 }}
-          className={cn(
-            'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm transition-colors',
-            searchOnMove
-              ? 'border-primary/30 bg-primary text-white'
-              : 'border-border/60 bg-card/90 text-foreground hover:bg-card'
-          )}
-        >
-          {searchOnMove
-            ? <CheckSquare className="h-3.5 w-3.5" />
-            : <Square      className="h-3.5 w-3.5" />}
-          Buscar al mover el mapa
-        </motion.button>
-      </div>
+      {showSearchOnMoveToggle && (
+        <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2 max-w-[calc(100%-4rem)] px-2 sm:max-w-none">
+          <motion.button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              const next = !searchOnMove
+              setSearchOnMove(next)
+              if (next) emitBounds()
+              else onBoundsChange(null)
+            }}
+            whileTap={{ scale: 0.96 }}
+            className={cn(
+              'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm transition-colors',
+              searchOnMove
+                ? 'border-primary/30 bg-primary text-white'
+                : 'border-border/60 bg-card/90 text-foreground hover:bg-card'
+            )}
+          >
+            {searchOnMove
+              ? <CheckSquare className="h-3.5 w-3.5" />
+              : <Square className="h-3.5 w-3.5" />}
+            Buscar al mover el mapa
+          </motion.button>
+        </div>
+      )}
 
       <Map
         ref={mapRef}

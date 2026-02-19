@@ -99,6 +99,7 @@ export async function createEventAction(input: unknown): Promise<ActionResponse<
         image: parsed.data.image,
         startDate: parsed.data.startDate,
         endDate: parsed.data.endDate,
+        price: parsed.data.price,
         location: parsed.data.location,
         address: parsed.data.address,
         lat: parsed.data.lat,

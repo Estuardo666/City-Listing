@@ -1,7 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Edit, Globe, ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Store, UserCircle2 } from 'lucide-react'
+import {
+  CalendarDays, Edit, ExternalLink, Globe,
+  ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, UserCircle2
+} from 'lucide-react'
 import { VenuesMap } from '@/components/features/venues/venues-map'
+import { VenueShareButton } from '@/components/features/venues/venue-share-button'
 import { formatDateTime } from '@/lib/utils'
 import type { VenueWithRelations } from '@/types/venue'
 
@@ -19,9 +23,10 @@ export function VenueDetail({ venue }: VenueDetailProps) {
     'mapbox://styles/mapbox/streets-v12'
 
   return (
-    <article className="space-y-4">
-      {/* Hero image */}
-      <div className="relative h-64 w-full overflow-hidden rounded-2xl border border-border/60 bg-accent sm:h-80">
+    <article className="space-y-0">
+
+      {/* ── Hero full-bleed ── */}
+      <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px]">
         {venue.image ? (
           <Image
             src={venue.image}
@@ -29,169 +34,250 @@ export function VenueDetail({ venue }: VenueDetailProps) {
             fill
             className="object-cover"
             priority
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+            sizes="(max-width: 768px) 100vw, 90vw"
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-accent to-secondary">
-            <ImageIcon className="h-16 w-16 text-muted-foreground/25" />
-            <span className="mt-3 text-sm text-muted-foreground/40">Sin imagen</span>
+          <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary/20 to-accent">
+            <ImageIcon className="h-20 w-20 text-muted-foreground/20" />
           </div>
         )}
-        {venue.featured ? (
-          <span className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-coral px-3 py-1.5 text-sm font-semibold text-white shadow-sm">
-            <Sparkles className="h-3.5 w-3.5" /> Destacado
-          </span>
-        ) : null}
-      </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-      {/* Main info card */}
-      <div className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
+        {/* Badges */}
+        <div className="absolute left-5 top-5 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
             {venue.category.icon ?? '🏬'} {venue.category.name}
           </span>
-          <span className="badge-emerald">
-            <ShieldCheck className="h-3 w-3" /> Verificado
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300 backdrop-blur-md">
+            <ShieldCheck className="h-3.5 w-3.5" /> Verificado
           </span>
+          {venue.featured && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
+              <Sparkles className="h-3.5 w-3.5" /> Destacado
+            </span>
+          )}
         </div>
 
-        <div className="mt-4 flex items-start justify-between gap-4">
-          <h1 className="text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
+        {/* Title over hero bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
+          <h1 className="text-2xl font-bold leading-tight text-white drop-shadow-sm sm:text-4xl">
             {venue.name}
           </h1>
-          <Link
-            href={`/locales/${venue.slug}/editar`}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border/60 bg-background px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-primary"
-          >
-            <Edit className="h-3 w-3" />
-            Editar
-          </Link>
+          <p className="mt-2 line-clamp-2 text-sm text-white/75 sm:text-base">
+            {venue.description}
+          </p>
         </div>
-        <p className="mt-2 text-base leading-relaxed text-muted-foreground">{venue.description}</p>
+      </div>
 
-        <div className="mt-6 grid gap-3 border-t border-border/50 pt-6 sm:grid-cols-2">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-coral-subtle text-coral">
-              <MapPin className="h-4 w-4" />
-            </span>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/60">Dirección</p>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm font-medium text-foreground underline decoration-dotted underline-offset-4 hover:text-primary"
-              >
-                {venue.address ?? venue.location}
-              </a>
-            </div>
-          </div>
+      {/* ── 2-column body ── */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
 
-          {venue.phone ? (
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
-                <Phone className="h-4 w-4" />
-              </span>
+        {/* LEFT: content */}
+        <div className="space-y-5">
+
+          {/* Quick meta pills */}
+          <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
+              <MapPin className="h-4 w-4 shrink-0 text-rose-500" />
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/60">Teléfono</p>
-                <p className="text-sm font-medium text-foreground">{venue.phone}</p>
-              </div>
-            </div>
-          ) : null}
-
-          {venue.website ? (
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
-                <Globe className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/60">Sitio web</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Dirección</p>
                 <a
-                  href={venue.website}
+                  href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm font-medium text-primary underline decoration-dotted underline-offset-4 hover:text-primary/80"
+                  className="text-sm font-semibold text-foreground hover:text-primary"
                 >
-                  {venue.website}
+                  {venue.address ?? venue.location}
                 </a>
               </div>
             </div>
-          ) : null}
-
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
-              <UserCircle2 className="h-4 w-4" />
-            </span>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/60">Publicado por</p>
-              <p className="text-sm font-medium text-foreground">{venue.user.name ?? venue.user.email ?? 'Usuario'}</p>
-            </div>
+            {venue.phone && (
+              <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
+                <Phone className="h-4 w-4 shrink-0 text-primary" />
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Teléfono</p>
+                  <p className="text-sm font-semibold text-foreground">{venue.phone}</p>
+                </div>
+              </div>
+            )}
+            {venue.website && (
+              <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
+                <Globe className="h-4 w-4 shrink-0 text-primary" />
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Web</p>
+                  <a
+                    href={venue.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm font-semibold text-primary hover:text-primary/80"
+                  >
+                    {venue.website.replace(/^https?:\/\//, '')}
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      {venue.content ? (
-        <div className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8">
-          <h2 className="text-base font-semibold text-foreground">Sobre este local</h2>
-          <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{venue.content}</p>
-        </div>
-      ) : null}
+          {/* Content */}
+          {venue.content && (
+            <div className="rounded-2xl border border-border/50 bg-card p-6">
+              <h2 className="text-lg font-bold text-foreground">Sobre este local</h2>
+              <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                {venue.content}
+              </p>
+            </div>
+          )}
 
-      {/* Upcoming events */}
-      {venue.events.length > 0 ? (
-        <div className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8">
-          <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            <Store className="h-4 w-4 text-coral" />
-            Próximos eventos aquí
-          </h2>
-          <ul className="mt-4 space-y-2">
-            {venue.events.map((event) => (
-              <li
-                key={event.id}
-                className="group flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-secondary/30 p-3.5 transition-colors hover:border-primary/20 hover:bg-accent"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{event.title}</p>
-                  <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <CalendarDays className="h-3 w-3" />
-                    {formatDateTime(event.startDate)}
+          {/* Upcoming events as cards */}
+          {venue.events.length > 0 && (
+            <div className="rounded-2xl border border-border/50 bg-card p-5">
+              <h2 className="text-lg font-bold text-foreground">🎉 Próximos eventos aquí</h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {venue.events.map((event) => (
+                  <Link
+                    key={event.id}
+                    href={`/eventos/${event.slug}`}
+                    className="group flex gap-3 rounded-xl border border-border/50 bg-background p-3 transition-all hover:border-primary/30 hover:bg-accent/40"
+                  >
+                    <div className="flex min-w-0 flex-col justify-center gap-1">
+                      <p className="text-sm font-bold text-foreground line-clamp-1">{event.title}</p>
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <CalendarDays className="h-3 w-3 shrink-0" />
+                        {formatDateTime(event.startDate)}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Map */}
+          {venue.lat !== null && venue.lng !== null && (
+            <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
+              <div className="border-b border-border/50 px-5 py-4">
+                <h2 className="text-lg font-bold text-foreground">📍 Ubicación en el mapa</h2>
+              </div>
+              <VenuesMap
+                venues={[{
+                  id: venue.id,
+                  name: venue.name,
+                  slug: venue.slug,
+                  location: venue.location,
+                  address: venue.address,
+                  lat: venue.lat,
+                  lng: venue.lng,
+                  category: { name: venue.category.name },
+                }]}
+                mapboxToken={mapboxToken}
+                mapStyle={mapStyle}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT: sticky sidebar */}
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Link
+              href={`/locales/${venue.slug}/editar`}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+            >
+              <Edit className="h-4 w-4" /> Editar
+            </Link>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+            >
+              <ExternalLink className="h-4 w-4" /> Cómo llegar
+            </a>
+            <VenueShareButton name={venue.name} />
+          </div>
+
+          {/* Info card */}
+          <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Información</h3>
+            <div className="space-y-3">
+
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40 text-rose-500">
+                  <MapPin className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-xs text-muted-foreground">Dirección</p>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm font-semibold text-foreground hover:text-primary"
+                  >
+                    {venue.address ?? venue.location}
+                  </a>
+                </div>
+              </div>
+
+              {venue.phone && (
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Phone className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Teléfono</p>
+                    <p className="text-sm font-semibold text-foreground">{venue.phone}</p>
+                  </div>
+                </div>
+              )}
+
+              {venue.website && (
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Globe className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Sitio web</p>
+                    <a
+                      href={venue.website}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-semibold text-primary hover:text-primary/80"
+                    >
+                      {venue.website.replace(/^https?:\/\//, '')}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+                  <UserCircle2 className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-xs text-muted-foreground">Publicado por</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {venue.user.name ?? venue.user.email ?? 'Usuario'}
                   </p>
                 </div>
-                <Link
-                  href={`/eventos/${event.slug}`}
-                  className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:text-primary/80"
-                >
-                  Ver <ArrowRight className="h-3 w-3" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+              </div>
+            </div>
+          </div>
 
-      {/* Map */}
-      {venue.lat !== null && venue.lng !== null ? (
-        <div className="rounded-2xl border border-border/60 bg-card p-4 sm:p-6">
-          <h2 className="mb-4 text-base font-semibold text-foreground">Ubicación en mapa</h2>
-          <VenuesMap
-            venues={[
-              {
-                id: venue.id,
-                name: venue.name,
-                slug: venue.slug,
-                location: venue.location,
-                address: venue.address,
-                lat: venue.lat,
-                lng: venue.lng,
-                category: { name: venue.category.name },
-              },
-            ]}
-            mapboxToken={mapboxToken}
-            mapStyle={mapStyle}
-          />
-        </div>
-      ) : null}
+          {/* Category pill */}
+          <Link
+            href={`/explorar?q=${encodeURIComponent(venue.category.name)}`}
+            className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:bg-accent"
+          >
+            <span className="text-3xl">{venue.category.icon ?? '🏬'}</span>
+            <div>
+              <p className="text-xs text-muted-foreground">Categoría</p>
+              <p className="text-sm font-bold text-foreground">{venue.category.name}</p>
+            </div>
+          </Link>
+        </aside>
+      </div>
     </article>
   )
 }

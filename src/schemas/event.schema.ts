@@ -32,6 +32,10 @@ export const eventSchema = z.object({
   image: optionalNullableTextSchema,
   startDate: z.coerce.date(),
   endDate: z.coerce.date().optional().nullable(),
+  price: z.preprocess((value) => {
+    if (value === '' || value === null || value === undefined) return null
+    return Number(value)
+  }, z.number().min(0, 'El precio no puede ser negativo').nullable()),
   location: z.string().trim().min(3, 'Mínimo 3 caracteres').max(150, 'Máximo 150 caracteres'),
   address: optionalNullableTextSchema,
   lat: optionalNullableNumberSchema.refine(

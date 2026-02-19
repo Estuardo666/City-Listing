@@ -8,7 +8,7 @@ import { QueryProvider } from '@/components/providers/query-provider'
 import { SonnerToaster } from '@/components/ui/sonner'
 import { MapboxWorkerSetup } from '@/components/features/map/mapbox-worker-setup'
 import { NotificationCenter } from '@/components/features/notifications/notification-center'
-import { SiteHeader } from '@/components/layout'
+import { SiteHeader, SiteFooter } from '@/components/layout'
 import { CommandPalette } from '@/components/features/search/command-palette'
 import { PageTransition } from '@/components/layout/page-transition'
 import { ServiceWorkerRegister } from '@/components/providers/service-worker-register'
@@ -66,6 +66,7 @@ export default function RootLayout({
             <NotificationCenter />
             <CommandPalette />
             <PageTransition>{children}</PageTransition>
+            <SiteFooter />
           </AuthProvider>
         </QueryProvider>
         <SonnerToaster />

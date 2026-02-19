@@ -115,6 +115,7 @@ model Event {
   image       String?
   startDate   DateTime
   endDate     DateTime?
+  price       Float?
   location    String
   lat         Float?
   lng         Float?

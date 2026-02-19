@@ -60,6 +60,7 @@ export function EventEditForm({ event, categories, venues }: EventEditFormProps)
       venueId: event.venue?.id || null,
       startDate: event.startDate,
       endDate: event.endDate,
+      price: event.price ?? null,
       location: event.location,
       address: event.address,
       lat: event.lat,
@@ -100,6 +101,33 @@ export function EventEditForm({ event, categories, venues }: EventEditFormProps)
                 <FormControl>
                   <Input placeholder="Ej: Festival de Música 2024" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Precio (opcional)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej: 15"
+                    value={field.value ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      field.onChange(value === '' ? null : Number(value))
+                    }}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Deja vacío si es gratis. Usa solo números.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

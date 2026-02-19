@@ -58,6 +58,7 @@ export function EventForm({ categories, venues, initialData }: EventFormProps) {
       categoryId: initialData?.categoryId || "",
       startDate: initialData?.startDate ? new Date(initialData.startDate) : new Date(),
       endDate: initialData?.endDate || null,
+      price: initialData?.price ?? null,
       location: initialData?.location || "",
       address: initialData?.address || null,
       lat: initialData?.lat || null,
@@ -116,6 +117,33 @@ export function EventForm({ categories, venues, initialData }: EventFormProps) {
                 </FormControl>
                 <FormDescription>
                   Un título claro y descriptivo para tu evento.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Precio (opcional)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej: 15"
+                    value={field.value ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      field.onChange(value === '' ? null : Number(value))
+                    }}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Deja vacío si es gratis. Usa solo números.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
