@@ -1,0 +1,16 @@
+﻿npx :  ÔÜá Port 3000 is in use by process 29120, using available port 3002 instead.
+At line:1 char:1
++ npx next dev 2>&1 | Out-File -FilePath "dev-log.txt" -Encoding utf8
++ ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( ÔÜá Port 3000 ...t 3002 instead.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Ôû▓ Next.js 15.5.12
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.1.25:3002
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     Ô£ô optimizeCss
+     ┬À optimizePackageImports
+
+ Ô£ô Starting...

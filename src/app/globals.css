@@ -1,0 +1,298 @@
+@import 'mapbox-gl/dist/mapbox-gl.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Base */
+    --background: 30 20% 97%;
+    --foreground: 220 25% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 12%;
+
+    /* Primary — Azul índigo profundo */
+    --primary: 221 83% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary: 30 18% 93%;
+    --secondary-foreground: 220 20% 20%;
+
+    /* Muted */
+    --muted: 30 15% 93%;
+    --muted-foreground: 220 10% 46%;
+
+    /* Accent — Azul claro suave */
+    --accent: 221 80% 95%;
+    --accent-foreground: 221 83% 32%;
+
+    /* Énfasis 1 — Coral cálido (Airbnb-inspired) */
+    --emphasis-1: 14 90% 55%;
+    --emphasis-1-foreground: 0 0% 100%;
+    --emphasis-1-subtle: 14 90% 95%;
+    --emphasis-1-subtle-foreground: 14 80% 35%;
+
+    /* Énfasis 2 — Verde esmeralda (naturaleza/verificado) */
+    --emphasis-2: 158 64% 38%;
+    --emphasis-2-foreground: 0 0% 100%;
+    --emphasis-2-subtle: 158 60% 93%;
+    --emphasis-2-subtle-foreground: 158 64% 24%;
+
+    /* Destructive */
+    --destructive: 0 78% 54%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & inputs */
+    --border: 30 14% 88%;
+    --input: 30 14% 90%;
+    --ring: 221 83% 45%;
+    --radius: 1rem;
+    --font-sans: 'Google Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .dark {
+    --background: 222 20% 9%;
+    --foreground: 30 15% 95%;
+    --card: 222 18% 12%;
+    --card-foreground: 30 15% 95%;
+    --popover: 222 18% 12%;
+    --popover-foreground: 30 15% 95%;
+
+    --primary: 221 83% 62%;
+    --primary-foreground: 222 20% 9%;
+
+    --secondary: 222 16% 18%;
+    --secondary-foreground: 30 15% 95%;
+
+    --muted: 222 14% 18%;
+    --muted-foreground: 220 10% 58%;
+
+    --accent: 221 60% 20%;
+    --accent-foreground: 221 80% 80%;
+
+    --emphasis-1: 14 90% 60%;
+    --emphasis-1-foreground: 0 0% 100%;
+    --emphasis-1-subtle: 14 60% 18%;
+    --emphasis-1-subtle-foreground: 14 80% 75%;
+
+    --emphasis-2: 158 64% 48%;
+    --emphasis-2-foreground: 222 20% 9%;
+    --emphasis-2-subtle: 158 40% 16%;
+    --emphasis-2-subtle-foreground: 158 60% 72%;
+
+    --destructive: 0 72% 44%;
+    --destructive-foreground: 30 15% 95%;
+
+    --border: 222 14% 22%;
+    --input: 222 14% 24%;
+    --ring: 221 83% 62%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+    /* Prevent Radix UI scroll-lock from shifting layout */
+    padding-right: 0 !important;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 5% 0%, rgba(59, 96, 212, 0.07), transparent),
+      radial-gradient(ellipse 50% 35% at 95% 5%, rgba(234, 88, 12, 0.05), transparent),
+      radial-gradient(ellipse 40% 30% at 50% 100%, rgba(16, 150, 100, 0.04), transparent);
+    min-height: 100vh;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-tight text-foreground;
+  }
+
+  p {
+    @apply text-muted-foreground;
+  }
+}
+
+@layer utilities {
+  /* Superficies sin sombra — separación por color y borde */
+  .surface-glass {
+    @apply bg-white/80 backdrop-blur-2xl border border-border/50;
+  }
+
+  .surface-elevated {
+    @apply bg-card border border-border/60;
+  }
+
+  .surface-tinted {
+    @apply bg-secondary/60 border border-border/40;
+  }
+
+  .section-shell {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10;
+  }
+
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground;
+  }
+
+  /* Énfasis coral */
+  .badge-coral {
+    background-color: hsl(var(--emphasis-1-subtle));
+    color: hsl(var(--emphasis-1-subtle-foreground));
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  /* Énfasis verde */
+  .badge-emerald {
+    background-color: hsl(var(--emphasis-2-subtle));
+    color: hsl(var(--emphasis-2-subtle-foreground));
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  /* Animaciones iOS/Airbnb */
+  .press-scale {
+    @apply transition-transform duration-150 ease-out active:scale-[0.97];
+  }
+
+  .hover-lift {
+    @apply transition-transform duration-200 ease-out hover:-translate-y-0.5;
+  }
+
+  .card-interactive {
+    @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-border active:scale-[0.99] cursor-pointer;
+  }
+
+  .fade-in-up {
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .stagger-1 { animation-delay: 60ms; }
+  .stagger-2 { animation-delay: 120ms; }
+  .stagger-3 { animation-delay: 180ms; }
+  .stagger-4 { animation-delay: 240ms; }
+}
+
+/* ── Mapbox explore popup reset ── */
+.explore-popup .mapboxgl-popup-content {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.explore-popup .mapboxgl-popup-tip {
+  display: none !important;
+}
+.explore-popup {
+  filter: none !important;
+  /* Always above markers (markers sit at z-index 1-20) */
+  z-index: 100 !important;
+}
+/* Ensure the mapbox marker wrapper for the active popup is also elevated */
+.mapboxgl-marker.explore-popup-marker {
+  z-index: 100 !important;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Override Radix UI scroll-lock to prevent layout shift */
+html body {
+  scrollbar-gutter: stable !important;
+  overflow-y: scroll !important;
+  padding-right: 0 !important;
+}
+
+/* When Radix locks scroll, keep our overrides */
+html body[data-scroll-locked] {
+  overflow-y: scroll !important;
+  padding-right: 0 !important;
+}
+
+/* Themed scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(220 10% 66%) hsl(30 14% 92%);
+}
+
+.dark html,
+html.dark {
+  scrollbar-color: hsl(220 10% 52%) hsl(222 16% 14%);
+}
+
+html::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html::-webkit-scrollbar-track {
+  background: hsl(30 14% 92%);
+}
+
+html::-webkit-scrollbar-thumb {
+  background: hsl(220 10% 66%);
+  border-radius: 9999px;
+  border: 2px solid hsl(30 14% 92%);
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: hsl(220 10% 56%);
+}
+
+.dark html::-webkit-scrollbar-track,
+html.dark::-webkit-scrollbar-track {
+  background: hsl(222 16% 14%);
+}
+
+.dark html::-webkit-scrollbar-thumb,
+html.dark::-webkit-scrollbar-thumb {
+  background: hsl(220 10% 52%);
+  border-color: hsl(222 16% 14%);
+}
+
+.dark html::-webkit-scrollbar-thumb:hover,
+html.dark::-webkit-scrollbar-thumb:hover {
+  background: hsl(220 10% 60%);
+}
