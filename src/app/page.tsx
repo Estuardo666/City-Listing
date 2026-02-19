@@ -24,7 +24,12 @@ import { BlogCard } from '@/components/features/blog'
 
 export default async function HomePage() {
   // Fetch featured blog posts
-  const featuredPosts = await getPosts({ status: 'APPROVED', featured: 'true' })
+  let featuredPosts: Awaited<ReturnType<typeof getPosts>> = []
+  try {
+    featuredPosts = await getPosts({ status: 'APPROVED', featured: 'true' })
+  } catch {
+    featuredPosts = []
+  }
   const highlights = [
     {
       icon: Calendar,
