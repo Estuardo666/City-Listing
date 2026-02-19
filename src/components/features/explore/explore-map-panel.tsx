@@ -249,6 +249,7 @@ export function ExploreMapPanel({
   const [exitingKey, setExitingKey]       = useState<string | null>(null)
   const [exitingOffsets, setExitingOffsets] = useState<Array<{ dlat: number; dlng: number }>>([]) 
   const [zoom, setZoom]                   = useState(DEFAULT_CENTER.zoom)
+  const containerRef                      = useRef<HTMLDivElement | null>(null)
   const mapRef                            = useRef<MapRef | null>(null)
   const exitTimerRef                      = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -449,8 +450,20 @@ export function ExploreMapPanel({
 
   useEffect(() => () => { if (exitTimerRef.current) clearTimeout(exitTimerRef.current) }, [])
 
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.resize()
+    })
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <div className={cn('relative h-full w-full', className)}>
+    <div ref={containerRef} className={cn('relative h-full w-full', className)}>
       {/* Search-on-move toggle */}
       <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2 max-w-[calc(100%-4rem)] px-2 sm:max-w-none">
         <motion.button
