@@ -36,3 +36,7 @@ build/
 
 # Coverage
 coverage/
+
+
+prisma/dev.db*
+*.tsbuildinfo
