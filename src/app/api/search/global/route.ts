@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
           status: 'APPROVED',
           OR: [
             { title: { contains, mode: 'insensitive' } },
-            { description: { contains, mode: 'insensitive' } },
             { location: { contains, mode: 'insensitive' } },
             { category: { name: { contains, mode: 'insensitive' } } },
           ],
@@ -40,7 +39,6 @@ export async function GET(request: NextRequest) {
           status: 'APPROVED',
           OR: [
             { name: { contains, mode: 'insensitive' } },
-            { description: { contains, mode: 'insensitive' } },
             { location: { contains, mode: 'insensitive' } },
             { category: { name: { contains, mode: 'insensitive' } } },
           ],
@@ -61,7 +59,6 @@ export async function GET(request: NextRequest) {
           status: 'APPROVED',
           OR: [
             { title: { contains, mode: 'insensitive' } },
-            { excerpt: { contains, mode: 'insensitive' } },
             { category: { name: { contains, mode: 'insensitive' } } },
           ],
         },
