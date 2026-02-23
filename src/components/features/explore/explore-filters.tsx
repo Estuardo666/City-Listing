@@ -6,6 +6,7 @@ import { ChevronDown, Locate, Navigation, Search, SlidersHorizontal, Sparkles, X
 import { cn } from '@/lib/utils'
 import type { ExploreFilters, UserLocation } from '@/types/explore'
 import { PROXIMITY_STEPS } from '@/types/explore'
+import { CategorySearcher } from './category-searcher'
 
 type Category = {
   id: string
@@ -327,45 +328,27 @@ export function ExploreFiltersPanel({
 
         {/* Categorías */}
         {categories.length > 0 && (
-          <AccordionSection
-            title="Categoría"
-            badge={categoryBadge}
-            defaultOpen={!isDrawer}
-          >
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => onChange({ category: '' })}
-                className={cn(
-                  'col-span-2 rounded-xl border px-2.5 py-1.5 text-xs font-medium transition-all',
-                  filters.category === ''
-                    ? 'border-primary/30 bg-primary text-white'
-                    : 'border-border/60 bg-background text-muted-foreground hover:border-primary/30 hover:text-primary'
-                )}
-              >
-                Todas las categorías
-              </button>
-              {categories.map((cat) => (
-                <motion.button
-                  key={cat.id}
-                  type="button"
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() =>
-                    onChange({ category: filters.category === cat.slug ? '' : cat.slug })
-                  }
-                  className={cn(
-                    'rounded-full border px-2 py-1 text-xs font-medium transition-all text-left',
-                    filters.category === cat.slug
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-border/60 bg-secondary/40 text-foreground hover:border-primary/40 hover:bg-primary/8 hover:text-primary'
-                  )}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">Categoría</span>
+              {categoryBadge > 0 && (
+                <motion.span
+                  key={categoryBadge}
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.7, opacity: 0 }}
+                  className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white"
                 >
-                  <span className="mr-1">{cat.icon}</span>
-                  {cat.name}
-                </motion.button>
-              ))}
+                  {categoryBadge}
+                </motion.span>
+              )}
             </div>
-          </AccordionSection>
+            <CategorySearcher
+              categories={categories}
+              selectedCategory={filters.category}
+              onCategoryChange={(category) => onChange({ category })}
+            />
+          </div>
         )}
       </div>
 

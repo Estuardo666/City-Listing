@@ -249,11 +249,12 @@ export function ExploreMapPanel({
   const [searchOnMove, setSearchOnMove]   = useState(true)
   const [spiderfiedKey, setSpiderfiedKey] = useState<string | null>(null)
   const [exitingKey, setExitingKey]       = useState<string | null>(null)
-  const [exitingOffsets, setExitingOffsets] = useState<Array<{ dlat: number; dlng: number }>>([]) 
+  const [exitingOffsets, setExitingOffsets] = useState<Array<{ dlat: number; dlng: number }>>() 
   const [zoom, setZoom]                   = useState(DEFAULT_CENTER.zoom)
   const containerRef                      = useRef<HTMLDivElement | null>(null)
   const mapRef                            = useRef<MapRef | null>(null)
   const exitTimerRef                      = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchStartRef                     = useRef<{ x: number; y: number; distance: number } | null>(null)
 
   // Expose flyTo to parent via onMapRef callback
   useEffect(() => {
@@ -411,6 +412,39 @@ export function ExploreMapPanel({
     setZoom(e.viewState.zoom)
   }, [])
 
+  // Touch handlers to disable pinch zoom
+  const handleTouchStart = useCallback((e: any) => {
+    if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 2) {
+      touchStartRef.current = {
+        x: e.originalEvent.touches[0].clientX,
+        y: e.originalEvent.touches[0].clientY,
+        distance: Math.hypot(
+          e.originalEvent.touches[1].clientX - e.originalEvent.touches[0].clientX,
+          e.originalEvent.touches[1].clientY - e.originalEvent.touches[0].clientY
+        )
+      }
+    }
+  }, [])
+
+  const handleTouchMove = useCallback((e: any) => {
+    if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 2 && touchStartRef.current) {
+      e.originalEvent.preventDefault()
+      const currentDistance = Math.hypot(
+        e.originalEvent.touches[1].clientX - e.originalEvent.touches[0].clientX,
+        e.originalEvent.touches[1].clientY - e.originalEvent.touches[0].clientY
+      )
+      const scale = currentDistance / touchStartRef.current.distance
+      // Prevent zoom if pinch gesture is detected
+      if (Math.abs(scale - 1) > 0.1) {
+        e.originalEvent.stopPropagation()
+      }
+    }
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    touchStartRef.current = null
+  }, [])
+
   // Clicking blank map background → close everything
   const handleMapClick = useCallback(() => {
     setSpiderfiedKey(null)
@@ -424,7 +458,15 @@ export function ExploreMapPanel({
       setPopupId(id)
       setPopupPos({ lat, lng })
       onMarkerClick(id)
-      mapRef.current?.flyTo({ center: [lng, lat], zoom: mapRef.current?.getZoom() ?? 14, duration: 400 })
+      // On mobile, fly to a higher position to account for search bar
+      const isMobile = window.innerWidth < 640
+      const mobileOffset = isMobile ? 0.1 : 0 // 10% of viewport height on mobile
+      mapRef.current?.flyTo({ 
+        center: [lng, lat], 
+        zoom: mapRef.current?.getZoom() ?? 14, 
+        duration: 400,
+        offset: [0, isMobile ? -window.innerHeight * mobileOffset : 0]
+      })
     },
     [onMarkerClick]
   )
@@ -500,10 +542,14 @@ export function ExploreMapPanel({
         mapStyle={themedMapStyle}
         initialViewState={DEFAULT_CENTER}
         reuseMaps
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
         onMoveEnd={handleMoveEnd}
         onMove={handleMove}
         onClick={handleMapClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        doubleClickZoom={false}
       >
         <NavigationControl position="top-right" />
 
@@ -517,7 +563,7 @@ export function ExploreMapPanel({
             const activeOffsets = isExpanded ? offsets : isExiting ? exitingOffsets : []
             return group.markers.map((marker, si) => {
               const isActive  = marker.id === (popupId ?? activeId)
-              const offset    = (isExpanded || isExiting) ? activeOffsets[si] : null
+              const offset    = (isExpanded || isExiting) ? activeOffsets?.[si] : null
               const renderLat = offset ? group.lat + offset.dlat : marker.lat
               const renderLng = offset ? group.lng + offset.dlng : marker.lng
               const delay     = isExpanded ? si * 0.04 : gi * 0.015

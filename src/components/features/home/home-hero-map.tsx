@@ -203,7 +203,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
   }
 
   return (
-    <section className="relative h-[85vh] w-full overflow-hidden border-y border-border/60 bg-background">
+    <section className="relative h-[100vh] sm:h-[85vh] w-full overflow-hidden border-y border-border/60 bg-background">
       <ExploreMapPanel
         markers={markers}
         items={visibleItems}
@@ -226,15 +226,15 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
         initial={{ opacity: 0, x: -30 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="absolute left-4 right-4 bottom-4 z-20 sm:left-6 sm:bottom-6 md:left-8 md:bottom-8 md:right-auto md:w-[460px] max-w-full"
+        className="absolute left-4 right-4 bottom-2 z-20 sm:left-6 sm:bottom-6 md:left-8 md:bottom-8 md:right-auto md:w-[460px] max-w-full"
       >
         <motion.div
           layout
-          className="pointer-events-auto flex flex-col gap-3.5 sm:gap-4 rounded-[2rem] border border-border/50 bg-card p-4 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-card sm:p-5"
+          className="pointer-events-auto flex flex-col gap-2 sm:gap-3.5 sm:gap-4 rounded-[2rem] border border-border/50 bg-card p-3 sm:p-4 sm:p-5 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-card"
           suppressHydrationWarning
         >
           {/* Header */}
-          <motion.div layout className="flex flex-col gap-0.5 sm:gap-1">
+          <motion.div layout className="hidden sm:flex flex-col gap-0.5 sm:gap-1">
             <div className="flex items-center gap-2 text-foreground">
               <Sparkles className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
@@ -259,7 +259,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
               placeholder="Busca lugares, eventos o categorías en el mapa"
               aria-label="Buscar lugares, eventos o categorías"
               suppressHydrationWarning
-              className="h-12 w-full rounded-2xl border border-border/50 bg-input pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground shadow-sm backdrop-blur-md transition-all focus:border-primary/50 focus:bg-input focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-white/10 dark:bg-input dark:focus:bg-input"
+              className="h-10 sm:h-12 w-full rounded-2xl border border-border/50 bg-input pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground shadow-sm backdrop-blur-md transition-all focus:border-primary/50 focus:bg-input focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-white/10 dark:bg-input dark:focus:bg-input"
             />
             <AnimatePresence>
               {q.length > 0 && (
@@ -308,7 +308,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
             )}
           </AnimatePresence>
 
-          {/* Tags (carousel style) */}
+          {/* Tags (carousel style) - visible on all devices */}
           <motion.div layout className="relative">
             <div 
               ref={scrollContainerRef}
@@ -335,8 +335,70 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
             <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-card to-transparent z-10" suppressHydrationWarning />
           </motion.div>
 
-          {/* Location button and filters */}
-          <motion.div layout className="flex items-center gap-1 pt-0.5 w-full overflow-hidden flex-nowrap">
+          {/* Location button and tags - combined on mobile */}
+          <motion.div layout className="flex flex-col gap-2 sm:hidden">
+            {/* Location button and proximity radius in same row */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <AnimatePresence mode="popLayout">
+                {userLocation && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="flex items-center gap-1"
+                  >
+                    {PROXIMITY_STEPS.map((step) => (
+                      <button
+                        key={step}
+                        type="button"
+                        onClick={() => setProximityRadius(step)}
+                        className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-bold shadow-sm backdrop-blur-md transition-all hover:scale-105 whitespace-nowrap ${
+                          proximityRadius === step
+                            ? 'border-transparent bg-foreground text-background shadow-md'
+                            : 'border-border/50 bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground dark:border-white/10 dark:bg-secondary dark:hover:bg-accent'
+                        }`}
+                      >
+                        {step >= 1000 ? `${step / 1000} km` : `${step} m`}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {/* Location button at the end */}
+              <button
+                type="button"
+                onClick={handleRequestLocation}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground shadow-sm transition-all hover:scale-105 hover:bg-primary/90 whitespace-nowrap"
+              >
+                {locationLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
+                Cerca de mí
+              </button>
+              
+              {/* Close button when location is active */}
+              <AnimatePresence mode="popLayout">
+                {userLocation && (
+                  <motion.button
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    type="button"
+                    onClick={() => {
+                      setUserLocation(null)
+                      setProximityRadius(null)
+                    }}
+                    className="flex shrink-0 h-5 w-5 items-center justify-center rounded-full border border-border/50 bg-secondary text-secondary-foreground shadow-sm backdrop-blur-md transition-all hover:scale-105 hover:border-destructive hover:bg-destructive hover:text-destructive-foreground dark:border-white/10 dark:bg-secondary dark:hover:bg-destructive"
+                    aria-label="Quitar proximidad"
+                  >
+                    <X className="h-3 w-3" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+
+          {/* Location button and filters - desktop only */}
+          <motion.div layout className="hidden sm:flex items-center gap-1 pt-0.5 w-full overflow-hidden flex-nowrap">
             <button
               type="button"
               onClick={handleRequestLocation}
@@ -385,7 +447,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
           </motion.div>
 
           {/* Footer stats */}
-          <motion.div layout className="flex flex-wrap items-center gap-x-1.5 gap-y-1 pt-1 text-[11px] sm:text-xs font-medium text-muted-foreground border-t border-border/50 dark:border-white/10">
+          <motion.div layout className="hidden sm:flex flex-wrap items-center gap-x-1.5 gap-y-1 pt-1 text-[11px] sm:text-xs font-medium text-muted-foreground border-t border-border/50 dark:border-white/10">
             <span className="pt-1.5">{visibleItems.length} resultados</span>
             <span className="hidden sm:inline pt-1.5">•</span>
             <span className="pt-1.5">{venueCount} locales</span>

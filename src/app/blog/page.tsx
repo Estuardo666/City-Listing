@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { MotionDiv, fadeInUp, staggerContainer } from '@/components/ui/motion'
 
 export const metadata = {
-  title: 'Blog — CityListing Loja',
+  title: 'Blog — Vive Loja',
   description: 'Artículos, guías y entrevistas sobre Loja, Ecuador.',
 }
 
@@ -45,7 +45,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
       <section className="border-b border-border/40 bg-gradient-to-b from-accent/30 to-background px-4 py-14 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <MotionDiv {...fadeInUp} className="space-y-4">
-            <p className="eyebrow">CityListing Blog</p>
+            <p className="eyebrow">Vive Loja Blog</p>
             <h1 className="text-4xl font-bold leading-tight text-foreground sm:text-5xl">
               Historias de Loja
             </h1>

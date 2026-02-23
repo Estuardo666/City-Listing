@@ -1,5 +1,5 @@
 /**
- * CityListing custom Mapbox style.
+ * Vive Loja custom Mapbox style.
  * Minimal map: only streets, avenues, rivers, parks and plazas.
  * Colors aligned with the design system (indigo primary, warm background).
  */
@@ -31,9 +31,9 @@ const COLORS = {
   border:      '#e0dbd4',
 }
 
-export const CITYLISTING_MAP_STYLE = {
+export const VIVE_LOJA_MAP_STYLE = {
   version: 8 as const,
-  name: 'CityListing',
+  name: 'Vive Loja',
   glyphs: 'mapbox://fonts/mapbox/{fontstack}/{range}',
   sprite: 'mapbox://sprites/mapbox/streets-v12',
   sources: {

@@ -6,7 +6,7 @@ export function SiteFooter() {
       <div className="rounded-3xl border border-border/70 bg-card/80 p-6 backdrop-blur sm:p-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-3">
-            <p className="text-lg font-semibold text-foreground">CityListing Loja</p>
+            <p className="text-lg font-semibold text-foreground">Vive Loja</p>
             <p className="text-sm leading-relaxed text-muted-foreground">
               Plataforma local para descubrir planes, lugares y oportunidades reales en tu ciudad.
             </p>
@@ -41,7 +41,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-8 border-t border-border/70 pt-5 text-xs text-muted-foreground sm:flex sm:items-center sm:justify-between">
-          <p>© 2026 CityListing Loja. Diseñado para ayudar a decidir más rápido qué hacer en la ciudad.</p>
+          <p>© 2026 Vive Loja. Diseñado para ayudar a decidir más rápido qué hacer en la ciudad.</p>
           <p className="mt-2 sm:mt-0">Hecho en Loja para Loja.</p>
         </div>
       </div>

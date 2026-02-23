@@ -55,6 +55,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'pub-2c1df4902487c08164d8c0c8de048b47.r2.dev',
       },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'logo.clearbit.com',
+      },
     ],
   },
   experimental: {

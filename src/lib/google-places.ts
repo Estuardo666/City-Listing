@@ -380,7 +380,7 @@ class GooglePlacesService {
       lat: googlePlace.location?.latitude,
       lng: googlePlace.location?.longitude,
       address: googlePlace.formattedAddress,
-      status: 'PENDING' as const,
+      status: 'APPROVED' as const,  // Cambiado de 'PENDING' a 'APPROVED'
       featured: false,
       categoryId,
       userId,

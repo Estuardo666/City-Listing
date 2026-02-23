@@ -65,7 +65,7 @@ export default function SignUpPage() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Crear Cuenta</CardTitle>
             <CardDescription>
-              Únete a CityListing Loja
+              Únete a Vive Loja
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

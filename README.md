@@ -1,4 +1,4 @@
-# CityListing Loja
+# Vive Loja
 
 Plataforma de eventos, locales y noticias para Loja, Ecuador.
 

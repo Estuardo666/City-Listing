@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: BlogSlugPageProps) {
   const post = await getPostBySlug(slug)
   if (!post) return {}
   return {
-    title: `${post.title} — CityListing Blog`,
+    title: `${post.title} — Vive Loja Blog`,
     description: post.excerpt ?? post.content.slice(0, 160),
   }
 }

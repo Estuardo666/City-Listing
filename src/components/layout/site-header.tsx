@@ -59,7 +59,7 @@ export function SiteHeader() {
               <Compass className="h-3.5 w-3.5" />
             </span>
             <span className="hidden text-sm font-semibold text-foreground sm:block">
-              CityListing
+              Vive Loja
             </span>
           </Link>
 

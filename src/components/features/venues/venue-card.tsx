@@ -1,13 +1,17 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Globe, ImageIcon, MapPin, Phone, ShieldCheck, Sparkles } from 'lucide-react'
+import { CategoryIconFallback } from '@/components/ui/category-icon-fallback'
 import type { VenueListItem } from '@/types/venue'
+import { useState } from 'react'
 
 type VenueCardProps = {
   venue: VenueListItem
 }
 
 export function VenueCard({ venue }: VenueCardProps) {
+  const [imageError, setImageError] = useState(false)
+
   return (
     <Link
       href={`/locales/${venue.slug}`}
@@ -15,18 +19,22 @@ export function VenueCard({ venue }: VenueCardProps) {
     >
       {/* Image */}
       <div className="relative h-44 w-full shrink-0 overflow-hidden bg-accent">
-        {venue.image ? (
+        {venue.image && !imageError ? (
           <Image
             src={venue.image}
             alt={venue.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-accent to-secondary">
-            <ImageIcon className="h-10 w-10 text-muted-foreground/25" />
-            <span className="text-xs text-muted-foreground/40">Sin imagen</span>
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-accent to-secondary">
+            <CategoryIconFallback 
+              category={venue.category} 
+              size="lg"
+              className="opacity-60"
+            />
           </div>
         )}
         {venue.featured ? (

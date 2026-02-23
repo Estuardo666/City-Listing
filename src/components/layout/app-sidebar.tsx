@@ -148,7 +148,7 @@ export function AppSidebar({ defaultCollapsed = false }: AppSidebarProps) {
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 className="whitespace-nowrap text-sm font-semibold text-foreground"
               >
-                CityListing
+                Vive Loja
               </motion.span>
             )}
           </AnimatePresence>

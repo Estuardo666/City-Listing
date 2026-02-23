@@ -6,14 +6,18 @@ import {
 } from 'lucide-react'
 import { VenuesMap } from '@/components/features/venues/venues-map'
 import { VenueShareButton } from '@/components/features/venues/venue-share-button'
+import { CategoryIconFallback } from '@/components/ui/category-icon-fallback'
 import { formatDateTime } from '@/lib/utils'
 import type { VenueWithRelations } from '@/types/venue'
+import { useState } from 'react'
 
 type VenueDetailProps = {
   venue: VenueWithRelations
 }
 
 export function VenueDetail({ venue }: VenueDetailProps) {
+  const [imageError, setImageError] = useState(false)
+  
   const mapQuery = encodeURIComponent(venue.address ?? venue.location)
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -27,7 +31,7 @@ export function VenueDetail({ venue }: VenueDetailProps) {
 
       {/* ── Hero full-bleed ── */}
       <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px]">
-        {venue.image ? (
+        {venue.image && !imageError ? (
           <Image
             src={venue.image}
             alt={venue.name}
@@ -35,10 +39,15 @@ export function VenueDetail({ venue }: VenueDetailProps) {
             className="object-cover"
             priority
             sizes="(max-width: 768px) 100vw, 90vw"
+            onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary/20 to-accent">
-            <ImageIcon className="h-20 w-20 text-muted-foreground/20" />
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-accent">
+            <CategoryIconFallback 
+              category={venue.category} 
+              size="lg"
+              className="opacity-40"
+            />
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />

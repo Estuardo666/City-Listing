@@ -38,9 +38,9 @@ async function main() {
   console.log('Seeding database...')
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@citylisting.loja' },
+    where: { email: 'admin@viveloja.com' },
     update: {},
-    create: { email: 'admin@citylisting.loja', name: 'Admin CityListing', role: 'ADMIN' },
+    create: { email: 'admin@viveloja.com', name: 'Admin Vive Loja', role: 'ADMIN' },
   })
 
   const estuardlito = await prisma.user.upsert({
@@ -253,19 +253,19 @@ Consejo: La vida nocturna lojana empieza tarde. Antes de las 22h los bares estan
       excerpt: 'Conversamos con Don Carlos Valdivieso sobre como ha preservado la artesania lojana durante 20 anos.',
       content: `Don Carlos Valdivieso lleva 20 anos trabajando con artesanos locales para llevar la cultura lojana al mundo. En esta entrevista exclusiva nos cuenta sus desafios, logros y vision de futuro para la artesania de la region.
 
-CityListing: Don Carlos, como empezo todo?
+Vive Loja: Don Carlos, como empezo todo?
 
 Carlos Valdivieso: Empezo por necesidad y amor. Mi padre era artesano, mi abuelo era artesano. Cuando vi que los jovenes ya no querian aprender el oficio, decidi crear un espacio donde el trabajo manual tuviera valor y reconocimiento.
 
-CL: Cual es el mayor desafio que enfrenta la artesania lojana hoy?
+VL: Cual es el mayor desafio que enfrenta la artesania lojana hoy?
 
 CV: La competencia con productos industriales importados. Un sombrero de paja toquilla hecho a mano puede tardar tres dias en fabricarse. Competir en precio con uno fabricado en fabrica es imposible. Por eso trabajamos en el valor de la historia, la autenticidad y la conexion con el artesano.
 
-CL: Como ha cambiado el negocio con las redes sociales?
+VL: Como ha cambiado el negocio con las redes sociales?
 
 CV: Completamente. Antes dependiamos del turismo local. Ahora vendemos a coleccionistas en Europa, Estados Unidos y Japon. Instagram nos abrio puertas que nunca imaginamos. Tenemos clientes que vienen especialmente a Loja para conocer a los artesanos y ver como trabajan.
 
-CL: Que le diria a un joven que quiere aprender artesania?
+VL: Que le diria a un joven que quiere aprender artesania?
 
 CV: Que es una profesion con futuro. El mundo esta cansado de lo masivo y busca lo autentico. Un buen artesano lojano puede vivir bien de su oficio si sabe como posicionarse. Nosotros ofrecemos talleres gratuitos todos los sabados.`,
       image: BLOG_IMG.craft,

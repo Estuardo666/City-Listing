@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CategoryIconFallback } from '@/components/ui/category-icon-fallback'
 import { cn } from '@/lib/utils'
 import type { UserVenueListItem } from '@/types/venue'
 
@@ -169,14 +170,27 @@ export function UserVenuesList() {
           {venues.map((venue) => {
             const cfg = statusConfig[venue.status] ?? statusConfig.PENDING
             const StatusIcon = cfg.icon
+            const [imageError, setImageError] = useState(false)
+            
             return (
               <div key={venue.id} className="flex items-start gap-4 rounded-2xl border border-border/60 bg-card p-4 transition-colors hover:border-border">
                 <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-accent">
-                  {venue.image ? (
-                    <Image src={venue.image} alt={venue.name} fill className="object-cover" sizes="80px" />
+                  {venue.image && !imageError ? (
+                    <Image 
+                      src={venue.image} 
+                      alt={venue.name} 
+                      fill 
+                      className="object-cover" 
+                      sizes="80px" 
+                      onError={() => setImageError(true)}
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
-                      <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
+                      <CategoryIconFallback 
+                        category={venue.category} 
+                        size="sm"
+                        className="opacity-50"
+                      />
                     </div>
                   )}
                 </div>

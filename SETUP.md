@@ -1,4 +1,4 @@
-# Setup CityListing Loja
+# Setup Vive Loja
 
 ## 1. Instalación
 
@@ -22,7 +22,7 @@ cp .env.example .env.local
 DATABASE_URL="file:./dev.db"
 
 # Producción (PostgreSQL, con prisma/schema.postgresql.prisma)
-# DATABASE_URL="postgresql://username:password@localhost:5432/citylisting_loja?schema=public"
+# DATABASE_URL="postgresql://username:password@localhost:5432/vive_loja?schema=public"
 ```
 
 ## 2. Base de datos

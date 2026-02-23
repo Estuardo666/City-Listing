@@ -20,7 +20,7 @@ export default async function DashboardCreateVenuePage() {
           <div className="mb-8 space-y-4">
             <p className="eyebrow">Registrar local</p>
             <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-              Publica tu local en CityListing Loja
+              Publica tu local en Vive Loja
             </h1>
             <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
               Registra tu negocio y llega a más personas. Todos los locales son revisados antes de publicarse.

@@ -54,7 +54,7 @@ export default function SignInPage() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
             <CardDescription>
-              Bienvenido a CityListing Loja
+              Bienvenido a Vive Loja
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

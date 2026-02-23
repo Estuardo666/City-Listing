@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { EngagementStatsWidget } from '@/components/features/dashboard/engagement-stats'
 
 export const metadata = {
-  title: 'Dashboard — CityListing',
+  title: 'Dashboard — Vive Loja',
 }
 
 export default async function DashboardPage() {

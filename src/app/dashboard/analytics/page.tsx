@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 
 export const metadata = {
   title: 'Analytics — Dashboard',
-  description: 'Estadísticas y rendimiento de tu contenido en CityListing.',
+  description: 'Estadísticas y rendimiento de tu contenido en Vive Loja.',
 }
 
 export default async function AnalyticsPage() {

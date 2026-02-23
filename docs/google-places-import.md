@@ -1,6 +1,6 @@
 # Guía: Integración con Google Places API
 
-Esta guía explica cómo configurar y utilizar la integración con Google Places API para importar locales a tu aplicación CityListing.
+Esta guía explica cómo configurar y utilizar la integración con Google Places API para importar locales a tu aplicación Vive Loja.
 
 ## 📋 Requisitos previos
 

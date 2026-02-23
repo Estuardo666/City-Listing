@@ -25,7 +25,7 @@ const googleSans = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'CityListing Loja - Eventos, Locales y Noticias',
+  title: 'Vive Loja - Eventos, Locales y Noticias',
   description: 'Descubre todo lo que pasa en Loja, Ecuador. Eventos, restaurantes, bares, noticias y más.',
 }
 

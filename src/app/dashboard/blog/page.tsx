@@ -33,7 +33,7 @@ export default async function DashboardBlogPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Blog</p>
             <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">Mis artículos</h1>
             <p className="text-sm text-muted-foreground">
-              Gestiona los artículos que has enviado al blog de CityListing.
+              Gestiona los artículos que has enviado al blog de Vive Loja.
             </p>
           </div>
           <Button asChild className="h-10 shrink-0">
