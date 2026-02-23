@@ -1,11 +1,26 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { Loader2, LocateFixed, Search, Sparkles, X } from 'lucide-react'
-import { ExploreMapPanel } from '@/components/features/explore/explore-map-panel'
+import { Loader2, LocateFixed, Search, Sparkles, X, Map as MapIcon } from 'lucide-react'
 import { PROXIMITY_STEPS, type ExploreEvent, type ExploreItem, type ExploreMapMarker, type ExploreVenue } from '@/types/explore'
+
+const ExploreMapPanel = dynamic(
+  () => import('@/components/features/explore/explore-map-panel').then((mod) => mod.ExploreMapPanel),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-muted/20">
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-card shadow-sm">
+          <MapIcon className="h-8 w-8 text-primary animate-pulse" />
+          <div className="absolute inset-0 rounded-2xl ring-2 ring-primary/20 animate-ping" />
+        </div>
+      </div>
+    )
+  }
+)
 
 type HomeHeroMapProps = {
   venues: ExploreVenue[]
