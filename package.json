@@ -31,6 +31,8 @@
     "@radix-ui/react-toast": "^1.2.2",
     "@tanstack/react-query": "^5.90.21",
     "@types/bcryptjs": "^2.4.6",
+    "@upstash/redis": "^1.36.2",
+    "@upstash/search": "^0.1.7",
     "autoprefixer": "^10.4.24",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
