@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react'
 import Map, { Marker, NavigationControl, Popup, Source, Layer } from 'react-map-gl'
 import type { MapRef, ViewStateChangeEvent } from 'react-map-gl'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -79,7 +79,7 @@ type PinButtonProps = {
   onClickPin: (id: string, lat: number, lng: number) => void
 }
 
-function PinButton({ marker, isActive, delay, renderLat, renderLng, onClickPin }: PinButtonProps) {
+const PinButton = memo(function PinButton({ marker, isActive, delay, renderLat, renderLng, onClickPin }: PinButtonProps) {
   return (
     <motion.button
       type="button"
@@ -147,7 +147,7 @@ function PinButton({ marker, isActive, delay, renderLat, renderLng, onClickPin }
       </AnimatePresence>
     </motion.button>
   )
-}
+})
 
 // ── Cluster badge ──────────────────────────────────────────────────────────────
 
@@ -157,7 +157,7 @@ type ClusterButtonProps = {
   onClickCluster: (group: MarkerGroup) => void
 }
 
-function ClusterButton({ group, delay, onClickCluster }: ClusterButtonProps) {
+const ClusterButton = memo(function ClusterButton({ group, delay, onClickCluster }: ClusterButtonProps) {
   const count = group.markers.length
   const venueCount = group.markers.filter((m) => m.type === 'venue').length
   const dominant = venueCount >= count / 2 ? 'venue' : 'event'
@@ -205,7 +205,7 @@ function ClusterButton({ group, delay, onClickCluster }: ClusterButtonProps) {
       />
     </motion.button>
   )
-}
+})
 
 // ── Main panel ─────────────────────────────────────────────────────────────────
 

@@ -46,10 +46,13 @@ function matchesSearch(item: ExploreItem, query: string): boolean {
 export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroMapProps) {
   const router = useRouter()
   const [q, setQ] = useState('')
+  const [debouncedQ, setDebouncedQ] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [proximityRadius, setProximityRadius] = useState<number | null>(null)
+  const [visibleLimit, setVisibleLimit] = useState(20) // Limit to 20 initial markers
+
   const quickSearches = [
     'Café', 'Restaurantes', 'Bares', 'Conciertos', 'Arte',
     'Naturaleza', 'Deportes', 'Rooftop', 'Brunch', 'Pet friendly'
@@ -60,6 +63,15 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
   const [startX, setStartX] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
 
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQ(q)
+      setVisibleLimit(20) // Reset limit on new search
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [q])
+
   const allItems = useMemo<ExploreItem[]>(() => {
     const venueItems: ExploreItem[] = venues.map((venue) => ({ ...venue, _type: 'venue' as const }))
     const eventItems: ExploreItem[] = events.map((event) => ({ ...event, _type: 'event' as const }))
@@ -67,11 +79,21 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
   }, [venues, events])
 
   const visibleItems = useMemo(() => {
-    if (!q.trim()) return allItems
-    return allItems.filter((item) => matchesSearch(item, q))
-  }, [allItems, q])
+    if (!debouncedQ.trim()) return allItems
+    return allItems.filter((item) => matchesSearch(item, debouncedQ))
+  }, [allItems, debouncedQ])
 
-  const markers = useMemo(() => buildMarkers(visibleItems), [visibleItems])
+  const markers = useMemo(() => buildMarkers(visibleItems.slice(0, visibleLimit)), [visibleItems, visibleLimit])
+  
+  // Background load more markers
+  useEffect(() => {
+    if (visibleLimit < visibleItems.length) {
+      const timer = setTimeout(() => {
+        setVisibleLimit(prev => Math.min(prev + 30, visibleItems.length))
+      }, 500) // Load more after initial render
+      return () => clearTimeout(timer)
+    }
+  }, [visibleLimit, visibleItems.length])
   const suggestions = useMemo(() => {
     const term = q.trim().toLowerCase()
     if (term.length < 3) return []

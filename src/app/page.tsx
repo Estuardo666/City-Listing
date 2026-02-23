@@ -3,13 +3,13 @@ import { ArrowRight, Compass, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MotionDiv, fadeInUp, viewportOnce } from '@/components/ui/motion'
 import { BlogCard } from '@/components/features/blog'
-import { HomeHeroMap } from '@/components/features/home/home-hero-map'
 import { HomeCategoriesGrid } from '@/components/features/home/home-categories-grid'
 import { HomeFeaturedEvents } from '@/components/features/home/home-featured-events'
 import { HomeLatestVenues } from '@/components/features/home/home-latest-venues'
 import { HomeFeaturedVenues } from '@/components/features/home/home-featured-venues'
 import { HomePromoGrid } from '@/components/features/home/home-promo-grid'
 import { HomeRelatedEvents } from '@/components/features/home/home-related-events'
+import { HomeHeroMapDynamic } from '@/components/features/home/home-hero-map-dynamic'
 import { getEvents } from '@/lib/queries/events'
 import { getPosts } from '@/lib/queries/posts'
 import { getVenues } from '@/lib/queries/venues'
@@ -95,7 +95,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20">
       <main className="space-y-16 sm:space-y-20">
-        <HomeHeroMap
+        <HomeHeroMapDynamic
           venues={heroVenues}
           events={heroEvents}
           mapboxToken={mapboxToken}
