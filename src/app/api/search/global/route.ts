@@ -136,14 +136,19 @@ export async function GET(request: NextRequest) {
     // Usar cache para búsquedas populares (más de 2 caracteres)
     const cacheKey = cacheKeys.search(q)
     
-    // Usar TTL del cache configurado
+    // Usar TTL del cache configurado. Esto usará Upstash Redis si está configurado,
+    // pero consultará directamente a PostgreSQL en lugar de Upstash Vector para mayor velocidad.
     const results = await withCache(
       cacheKey,
-      () => intelligentSearch(q),
+      () => searchInDatabase(q),
       CACHE_TTL.SEARCH
     )
 
-    return NextResponse.json(results)
+    return NextResponse.json(results, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    })
   } catch (error) {
     console.error('Search API error:', error)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })

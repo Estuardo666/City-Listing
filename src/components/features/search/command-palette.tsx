@@ -61,6 +61,7 @@ export function CommandPalette() {
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cacheRef = useRef<Record<string, SearchResults>>({})
 
   const allItems = [
     ...results.events.map((e) => ({ type: 'event' as const, item: e, href: `/eventos/${e.slug}`, label: e.title })),
@@ -100,17 +101,38 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!query.trim() || query.trim().length < 2) {
+    
+    const searchTerms = query.trim()
+    if (!searchTerms || searchTerms.length < 2) {
       setResults(EMPTY)
       setLoading(false)
       return
     }
+
+    // Check client-side cache first
+    const cacheKey = searchTerms.toLowerCase()
+    if (cacheRef.current[cacheKey]) {
+      setResults(cacheRef.current[cacheKey])
+      setLoading(false)
+      setActiveIndex(0)
+      return
+    }
+
     setLoading(true)
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search/global?q=${encodeURIComponent(query.trim())}`)
+        const res = await fetch(`/api/search/global?q=${encodeURIComponent(searchTerms)}`, {
+          // Add cache-control to ensure browser caching is utilized where possible
+          headers: {
+            'Cache-Control': 'max-age=60' // 1 minute browser caching
+          }
+        })
         if (!res.ok) throw new Error()
         const data: SearchResults = await res.json()
+        
+        // Store in client-side cache
+        cacheRef.current[cacheKey] = data
+        
         setResults(data)
         setActiveIndex(0)
       } catch {
@@ -118,7 +140,7 @@ export function CommandPalette() {
       } finally {
         setLoading(false)
       }
-    }, 280)
+    }, 150) // Reduced debounce time for faster perceived response
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }

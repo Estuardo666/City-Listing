@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import bcrypt from 'bcryptjs'
 
 const signupSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es requerido'),
   email: z.string().email('Correo inválido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
+  role: z.enum(['USER', 'ADMIN']).default('USER'),
 })
 
 export async function POST(request: NextRequest) {
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, email, password } = parsed.data
+    const { name, email, password, role } = parsed.data
 
     const existing = await prisma.user.findUnique({
       where: { email },
@@ -33,10 +35,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 12)
+
     const user = await prisma.user.create({
       data: {
         name,
         email,
+        password: hashedPassword,
+        role,
       },
     })
 

@@ -102,13 +102,13 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const existingMap = new Map(existingVenues.map(v => [v.googlePlaceId as string, v.id]));
+    const existingMap = new Map(existingVenues.map(v => [(v as any).googlePlaceId as string, v.id]));
 
     // Marcar lugares ya importados
     const placesWithStatus = places.map(place => ({
       ...place,
       alreadyImported: existingMap.has(place.placeId),
-      existingVenue: existingVenues.find(v => v.googlePlaceId === place.placeId),
+      existingVenue: existingVenues.find(v => (v as any).googlePlaceId === place.placeId),
     }));
 
     return NextResponse.json({

@@ -43,6 +43,12 @@ async function main() {
     create: { email: 'admin@citylisting.loja', name: 'Admin CityListing', role: 'ADMIN' },
   })
 
+  const estuardlito = await prisma.user.upsert({
+    where: { email: 'estuarlito@gmail.com' },
+    update: { role: 'ADMIN' },
+    create: { email: 'estuarlito@gmail.com', name: 'Estuardlito', role: 'ADMIN' },
+  })
+
   const eventCats = [
     { name: 'Conciertos',  slug: 'conciertos',  icon: '🎵', color: '#ef4444' },
     { name: 'Deportes',    slug: 'deportes',    icon: '⚽', color: '#22c55e' },

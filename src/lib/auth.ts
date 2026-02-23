@@ -4,6 +4,7 @@ import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import bcrypt from 'bcryptjs'
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -18,12 +19,16 @@ const providers: NextAuthOptions['providers'] = [
       password: { label: 'Password', type: 'password' },
     },
     async authorize(credentials) {
+      console.log('Authorize attempt:', credentials?.email)
+      
       if (!credentials?.email || !credentials?.password) {
+        console.log('Missing credentials')
         return null
       }
 
       const validatedFields = credentialsSchema.safeParse(credentials)
       if (!validatedFields.success) {
+        console.log('Invalid fields:', validatedFields.error)
         return null
       }
 
@@ -33,9 +38,33 @@ const providers: NextAuthOptions['providers'] = [
         },
       })
 
+      console.log('Found user:', user?.email, 'Has password:', !!user?.password)
+
       if (!user) {
+        console.log('User not found')
         return null
       }
+
+      // Verificar si el usuario tiene contraseña
+      if (!user.password) {
+        console.log('User has no password set')
+        return null
+      }
+
+      // Verificar la contraseña
+      const passwordMatch = await bcrypt.compare(
+        validatedFields.data.password,
+        user.password
+      )
+
+      console.log('Password match:', passwordMatch)
+
+      if (!passwordMatch) {
+        console.log('Password does not match')
+        return null
+      }
+
+      console.log('Authentication successful for:', user.email)
 
       return {
         id: user.id,
@@ -58,7 +87,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // Comentamos el adapter para credentials
+  // adapter: PrismaAdapter(prisma),
   providers,
   session: {
     strategy: 'jwt',

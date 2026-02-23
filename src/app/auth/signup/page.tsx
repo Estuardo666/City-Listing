@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { MotionDiv } from '@/components/ui/motion'
 import { fadeInUp } from '@/components/ui/motion'
 
@@ -15,6 +16,7 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [role, setRole] = useState<'USER' | 'ADMIN'>('USER')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -34,7 +36,7 @@ export default function SignUpPage() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       })
 
       const data = await res.json()
@@ -85,6 +87,17 @@ export default function SignUpPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
+              </div>
+              <div>
+                <Select value={role} onValueChange={(value: 'USER' | 'ADMIN') => setRole(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USER">Usuario</SelectItem>
+                    <SelectItem value="ADMIN">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Input
