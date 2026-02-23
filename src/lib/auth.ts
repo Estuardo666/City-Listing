@@ -99,6 +99,4 @@ export const authOptions: NextAuthOptions = {
   },
 }
 
-export const authOptions = auth
-
-export const auth = getServerSession(authOptions)
+export const auth = () => getServerSession(authOptions)
