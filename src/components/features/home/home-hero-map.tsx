@@ -66,7 +66,8 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
   const [locationLoading, setLocationLoading] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [proximityRadius, setProximityRadius] = useState<number | null>(null)
-  const [visibleLimit, setVisibleLimit] = useState(20) // Limit to 20 initial markers
+  const [currentZoom, setCurrentZoom] = useState(13) // Track current map zoom level
+  const [visibleLimit, setVisibleLimit] = useState(12) // Reduced from 20 to 12 for initial load
 
   const quickSearches = [
     'Café', 'Restaurantes', 'Bares', 'Conciertos', 'Arte',
@@ -78,11 +79,11 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
   const [startX, setStartX] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
 
-  // Debounce search query
+  // Debounce search query and reset visible limit
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQ(q)
-      setVisibleLimit(20) // Reset limit on new search
+      setVisibleLimit(12) // Reset to initial limit on new search
     }, 300)
     return () => clearTimeout(timer)
   }, [q])
@@ -98,17 +99,26 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
     return allItems.filter((item) => matchesSearch(item, debouncedQ))
   }, [allItems, debouncedQ])
 
-  const markers = useMemo(() => buildMarkers(visibleItems.slice(0, visibleLimit)), [visibleItems, visibleLimit])
-  
-  // Background load more markers
+  // Zoom-based progressive loading: load more markers as user zooms in
   useEffect(() => {
-    if (visibleLimit < visibleItems.length) {
-      const timer = setTimeout(() => {
-        setVisibleLimit(prev => Math.min(prev + 30, visibleItems.length))
-      }, 500) // Load more after initial render
-      return () => clearTimeout(timer)
+    if (debouncedQ.trim()) {
+      // Always show limited results during search
+      setVisibleLimit(20)
+    } else {
+      // Zoom-based loading when not searching
+      if (currentZoom < 12) {
+        setVisibleLimit(8) // Very zoomed out: show fewer
+      } else if (currentZoom < 13) {
+        setVisibleLimit(12) // Initial zoom: show 12
+      } else if (currentZoom < 14) {
+        setVisibleLimit(25) // Zoomed in a bit: show more
+      } else {
+        setVisibleLimit(Math.min(visibleItems.length, 50)) // Zoomed in far: show all up to 50
+      }
     }
-  }, [visibleLimit, visibleItems.length])
+  }, [currentZoom, debouncedQ, visibleItems.length])
+
+  const markers = useMemo(() => buildMarkers(visibleItems.slice(0, visibleLimit)), [visibleItems, visibleLimit])
   const suggestions = useMemo(() => {
     const term = q.trim().toLowerCase()
     if (term.length < 3) return []
@@ -210,6 +220,8 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
         activeId={activeId}
         onMarkerClick={setActiveId}
         onBoundsChange={() => undefined}
+        onZoomChange={setCurrentZoom}
+        markerRenderMode="canvas"
         mapboxToken={mapboxToken}
         mapStyle={mapStyle}
         userLocation={userLocation}

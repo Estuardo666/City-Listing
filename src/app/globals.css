@@ -215,11 +215,7 @@
 /* Mobile popup positioning */
 @media (max-width: 640px) {
   .explore-popup .mapboxgl-popup-content {
-    transform: translateY(-40vh) !important;
-  }
-  .explore-popup .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
-    display: block !important;
-    transform: translateY(40vh) !important;
+    transform: none !important;
   }
 }
 

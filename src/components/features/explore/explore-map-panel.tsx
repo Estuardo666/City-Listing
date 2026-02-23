@@ -16,6 +16,8 @@ type ExploreMapPanelProps = {
   activeId: string | null
   onMarkerClick: (id: string) => void
   onBoundsChange: (bounds: MapBounds | null) => void
+  onZoomChange?: (zoom: number) => void
+  markerRenderMode?: 'dom' | 'canvas'
   mapboxToken: string
   mapStyle?: string
   userLocation?: UserLocation | null
@@ -26,6 +28,84 @@ type ExploreMapPanelProps = {
 }
 
 const DEFAULT_CENTER = { latitude: -3.99313, longitude: -79.20422, zoom: 13 }
+const CANVAS_CLUSTER_LAYER_ID = 'canvas-clusters'
+const CANVAS_CLUSTER_COUNT_LAYER_ID = 'canvas-cluster-count'
+const CANVAS_UNCLUSTERED_LAYER_ID = 'canvas-unclustered-points'
+const CANVAS_UNCLUSTERED_ICON_LAYER_ID = 'canvas-unclustered-icons'
+const EMOJI_IMAGE_IDS = [
+  'venue-restaurant',
+  'venue-hotel',
+  'venue-cafe',
+  'venue-bar',
+  'venue-health',
+  'venue-shop',
+  'venue-default',
+  'event-music',
+  'event-sports',
+  'event-art',
+  'event-default',
+] as const
+const emojiMissingListenerAttached = new WeakSet<object>()
+
+function normalizeCategory(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+}
+
+function getCategoryKey(category: string, type: 'venue' | 'event') {
+  const c = normalizeCategory(category)
+  if (type === 'event') {
+    if (c.includes('musica') || c.includes('concierto')) return 'event-music'
+    if (c.includes('deporte') || c.includes('futbol') || c.includes('gym')) return 'event-sports'
+    if (c.includes('arte') || c.includes('cultura') || c.includes('teatro')) return 'event-art'
+    return 'event-default'
+  }
+
+  if (c.includes('rest') || c.includes('comida')) return 'venue-restaurant'
+  if (c.includes('hotel') || c.includes('hostal')) return 'venue-hotel'
+  if (c.includes('cafe') || c.includes('coffee')) return 'venue-cafe'
+  if (c.includes('bar') || c.includes('pub') || c.includes('night')) return 'venue-bar'
+  if (c.includes('farmacia') || c.includes('clinica') || c.includes('salud')) return 'venue-health'
+  if (c.includes('shop') || c.includes('tienda') || c.includes('market')) return 'venue-shop'
+  return 'venue-default'
+}
+
+// Generate emoji image for Mapbox synchronously (required for styleimagemissing flow)
+function createEmojiImage(emoji: string, size: number = 64): ImageData {
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  if (!ctx) return new ImageData(size, size)
+
+  ctx.clearRect(0, 0, size, size)
+  ctx.font = `${size * 0.82}px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(emoji, size / 2, size / 2)
+
+  return ctx.getImageData(0, 0, size, size)
+}
+
+function getCategoryEmoji(categoryKey: string): string {
+  const emojiMap: Record<string, string> = {
+    'venue-restaurant': '🍽️',
+    'venue-hotel': '🛏️',
+    'venue-cafe': '☕',
+    'venue-bar': '🍻',
+    'venue-health': '🏥',
+    'venue-shop': '🛍️',
+    'venue-default': '📍',
+    'event-music': '🎵',
+    'event-sports': '⚽',
+    'event-art': '🎨',
+    'event-default': '🎫',
+  }
+  return emojiMap[categoryKey] ?? '📍'
+}
 
 // ── Cluster helpers ────────────────────────────────────────────────────────────
 
@@ -232,6 +312,8 @@ export function ExploreMapPanel({
   activeId,
   onMarkerClick,
   onBoundsChange,
+  onZoomChange,
+  markerRenderMode = 'dom',
   mapboxToken,
   mapStyle,
   userLocation,
@@ -246,15 +328,73 @@ export function ExploreMapPanel({
 
   const [popupId, setPopupId]             = useState<string | null>(null)
   const [popupPos, setPopupPos]           = useState<{ lat: number; lng: number } | null>(null)
+  const [hoveredMarkerId, setHoveredMarkerId] = useState<string | null>(null)
   const [searchOnMove, setSearchOnMove]   = useState(true)
   const [spiderfiedKey, setSpiderfiedKey] = useState<string | null>(null)
   const [exitingKey, setExitingKey]       = useState<string | null>(null)
   const [exitingOffsets, setExitingOffsets] = useState<Array<{ dlat: number; dlng: number }>>() 
   const [zoom, setZoom]                   = useState(DEFAULT_CENTER.zoom)
+  const [canvasMarkers, setCanvasMarkers] = useState<ExploreMapMarker[]>(markers)
+  const [canvasLayerOpacity, setCanvasLayerOpacity] = useState(1)
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
   const containerRef                      = useRef<HTMLDivElement | null>(null)
   const mapRef                            = useRef<MapRef | null>(null)
   const exitTimerRef                      = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const markerSwapTimerRef                = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchStartRef                     = useRef<{ x: number; y: number; distance: number } | null>(null)
+  // Tracks the Mapbox numeric feature id of the currently hovered marker (for setFeatureState)
+  const prevHoveredFeatureRef             = useRef<number | string | undefined | null>(null)
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)')
+    const update = () => setIsMobileViewport(media.matches)
+    update()
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', update)
+      return () => media.removeEventListener('change', update)
+    }
+
+    media.addListener(update)
+    return () => media.removeListener(update)
+  }, [])
+
+  const markerSignature = useMemo(
+    () => [...markers.map((m) => m.id)].sort().join('|'),
+    [markers]
+  )
+  const canvasSignatureRef = useRef(markerSignature)
+
+  useEffect(() => {
+    if (markerRenderMode !== 'canvas') {
+      setCanvasMarkers(markers)
+      setCanvasLayerOpacity(1)
+      canvasSignatureRef.current = markerSignature
+      return
+    }
+
+    if (canvasSignatureRef.current === markerSignature) {
+      setCanvasMarkers(markers)
+      return
+    }
+
+    if (markerSwapTimerRef.current) clearTimeout(markerSwapTimerRef.current)
+
+    setCanvasLayerOpacity(0)
+    markerSwapTimerRef.current = setTimeout(() => {
+      setCanvasMarkers(markers)
+      canvasSignatureRef.current = markerSignature
+      requestAnimationFrame(() => setCanvasLayerOpacity(1))
+      markerSwapTimerRef.current = null
+    }, 130)
+
+    return () => {
+      if (markerSwapTimerRef.current) {
+        clearTimeout(markerSwapTimerRef.current)
+        markerSwapTimerRef.current = null
+      }
+    }
+  }, [markerRenderMode, markerSignature, markers])
 
   // Expose flyTo to parent via onMapRef callback
   useEffect(() => {
@@ -383,11 +523,66 @@ export function ExploreMapPanel({
   const activeMarker = markers.find((m) => m.id === popupId)
   const activeItem   = items.find((i) => i.id === popupId)
 
+  const markerGeoJSON = useMemo(() => ({
+    type: 'FeatureCollection' as const,
+    features: canvasMarkers.map((marker) => ({
+      type: 'Feature' as const,
+      properties: {
+        id: marker.id,
+        slug: marker.slug,
+        type: marker.type,
+        name: marker.name,
+        category: marker.category,
+        categoryIcon: marker.categoryIcon ?? null,
+        categoryKey: getCategoryKey(marker.category, marker.type),
+      },
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [marker.lng, marker.lat] as [number, number],
+      },
+    })),
+  }), [canvasMarkers])
+
   const groups = useMemo(() => groupByPosition(markers), [markers])
 
   const spiderfiedGroup = spiderfiedKey
     ? (groups.find((g) => g.key === spiderfiedKey) ?? null)
     : null
+
+  const ensureEmojiImage = useCallback((map: any, imageId: string) => {
+    if (!(imageId.startsWith('venue-') || imageId.startsWith('event-'))) return
+    if (map.hasImage(imageId)) return
+
+    const emoji = getCategoryEmoji(imageId)
+    const imageData = createEmojiImage(emoji, 64)
+    if (!map.hasImage(imageId)) {
+      map.addImage(imageId, imageData)
+    }
+  }, [])
+
+  const ensureAllEmojiImages = useCallback((map: any) => {
+    EMOJI_IMAGE_IDS.forEach((imageId) => ensureEmojiImage(map, imageId))
+  }, [ensureEmojiImage])
+
+  const handleMapLoad = useCallback((event: any) => {
+    const map = event?.target
+    if (!map) return
+
+    if (!emojiMissingListenerAttached.has(map)) {
+      map.on('styleimagemissing', (e: { id: string }) => {
+        ensureEmojiImage(map, e.id)
+      })
+      emojiMissingListenerAttached.add(map)
+    }
+
+    ensureAllEmojiImages(map)
+  }, [ensureAllEmojiImages, ensureEmojiImage])
+
+  const handleMapStyleData = useCallback((event: any) => {
+    const map = event?.target
+    if (!map || !map.isStyleLoaded()) return
+    ensureAllEmojiImages(map)
+  }, [ensureAllEmojiImages])
 
   const offsets = useMemo(
     () => spiderfiedGroup ? circleOffsets(spiderfiedGroup.markers.length, zoom) : [],
@@ -405,11 +600,63 @@ export function ExploreMapPanel({
 
   const handleMoveEnd = useCallback((e: ViewStateChangeEvent) => {
     setZoom(e.viewState.zoom)
+    onZoomChange?.(e.viewState.zoom)
     emitBounds()
-  }, [emitBounds])
+  }, [emitBounds, onZoomChange])
 
-  const handleMove = useCallback((e: ViewStateChangeEvent) => {
-    setZoom(e.viewState.zoom)
+  const handleMapMouseMove = useCallback((e: any) => {
+    if (markerRenderMode !== 'canvas') return
+    const map = mapRef.current?.getMap()
+    if (!map) return
+
+    const interactiveLayers = [CANVAS_CLUSTER_LAYER_ID, CANVAS_UNCLUSTERED_LAYER_ID].filter((layerId) =>
+      Boolean(map.getLayer(layerId))
+    )
+    if (interactiveLayers.length === 0) return
+
+    const features = map.queryRenderedFeatures(e.point, { layers: interactiveLayers })
+    const hoveredPoint = features.find((f) => f.layer?.id === CANVAS_UNCLUSTERED_LAYER_ID)
+
+    // Clear previous hover via feature-state (enables Mapbox native transitions)
+    if (prevHoveredFeatureRef.current != null) {
+      map.setFeatureState(
+        { source: 'canvas-markers', id: prevHoveredFeatureRef.current },
+        { hover: false }
+      )
+    }
+
+    if (hoveredPoint) {
+      prevHoveredFeatureRef.current = hoveredPoint.id
+      map.setFeatureState(
+        { source: 'canvas-markers', id: hoveredPoint.id! },
+        { hover: true }
+      )
+      // React state still used only for popup/cursor — not for paint expressions
+      setHoveredMarkerId((prev) => {
+        const next = (hoveredPoint.properties?.id as string | undefined) ?? null
+        return prev === next ? prev : next
+      })
+    } else {
+      prevHoveredFeatureRef.current = null
+      setHoveredMarkerId(null)
+    }
+
+    map.getCanvas().style.cursor = hoveredPoint ? 'pointer' : ''
+  }, [markerRenderMode])
+
+  const handleMapMouseLeave = useCallback(() => {
+    const map = mapRef.current?.getMap()
+    if (map) {
+      if (prevHoveredFeatureRef.current != null) {
+        map.setFeatureState(
+          { source: 'canvas-markers', id: prevHoveredFeatureRef.current },
+          { hover: false }
+        )
+        prevHoveredFeatureRef.current = null
+      }
+      map.getCanvas().style.cursor = ''
+    }
+    setHoveredMarkerId(null)
   }, [])
 
   // Touch handlers to disable pinch zoom
@@ -445,30 +692,87 @@ export function ExploreMapPanel({
     touchStartRef.current = null
   }, [])
 
-  // Clicking blank map background → close everything
-  const handleMapClick = useCallback(() => {
-    setSpiderfiedKey(null)
-    setPopupId(null)
-    setPopupPos(null)
-  }, [])
-
-  const handlePinClick = useCallback(
+  const openItemPopup = useCallback(
     (id: string, lat: number, lng: number) => {
       setSpiderfiedKey(null)
       setPopupId(id)
       setPopupPos({ lat, lng })
       onMarkerClick(id)
-      // On mobile, fly to a higher position to account for search bar
-      const isMobile = window.innerWidth < 640
-      const mobileOffset = isMobile ? 0.1 : 0 // 10% of viewport height on mobile
-      mapRef.current?.flyTo({ 
-        center: [lng, lat], 
-        zoom: mapRef.current?.getZoom() ?? 14, 
+      mapRef.current?.flyTo({
+        center: [lng, lat],
+        zoom: mapRef.current?.getZoom() ?? 14,
         duration: 400,
-        offset: [0, isMobile ? -window.innerHeight * mobileOffset : 0]
+        offset: [0, 0],
       })
     },
-    [onMarkerClick]
+    [isMobileViewport, onMarkerClick]
+  )
+
+  // Clicking map background (or canvas layer points/clusters) → handle interaction
+  const handleMapClick = useCallback((e: any) => {
+    if (markerRenderMode === 'canvas') {
+      const map = mapRef.current?.getMap()
+      if (map) {
+        const queryLayers = [CANVAS_CLUSTER_LAYER_ID, CANVAS_UNCLUSTERED_LAYER_ID].filter((layerId) =>
+          Boolean(map.getLayer(layerId))
+        )
+
+        if (queryLayers.length === 0) {
+          setSpiderfiedKey(null)
+          setPopupId(null)
+          setPopupPos(null)
+          return
+        }
+
+        const features = map.queryRenderedFeatures(e.point, {
+          layers: queryLayers,
+        })
+
+        if (features.length > 0) {
+          const clicked = features[0]
+
+          if (clicked.layer?.id === CANVAS_CLUSTER_LAYER_ID) {
+            const clusterId = clicked.properties?.cluster_id
+            const [lng, lat] = clicked.geometry.type === 'Point'
+              ? clicked.geometry.coordinates as [number, number]
+              : [DEFAULT_CENTER.longitude, DEFAULT_CENTER.latitude]
+
+            if (clusterId !== undefined) {
+              const source = map.getSource('canvas-markers') as any
+              source?.getClusterExpansionZoom?.(clusterId, (err: unknown, clusterZoom: number) => {
+                if (!err) {
+                  map.easeTo({ center: [lng, lat], zoom: clusterZoom + 0.6, duration: 350 })
+                }
+              })
+            }
+            return
+          }
+
+          if (clicked.layer?.id === CANVAS_UNCLUSTERED_LAYER_ID) {
+            const id = clicked.properties?.id as string | undefined
+            const [lng, lat] = clicked.geometry.type === 'Point'
+              ? clicked.geometry.coordinates as [number, number]
+              : [DEFAULT_CENTER.longitude, DEFAULT_CENTER.latitude]
+            if (id) {
+              openItemPopup(id, lat, lng)
+              return
+            }
+          }
+        }
+      }
+    }
+
+    setSpiderfiedKey(null)
+    setPopupId(null)
+    setPopupPos(null)
+    setHoveredMarkerId(null)
+  }, [markerRenderMode, openItemPopup])
+
+  const handlePinClick = useCallback(
+    (id: string, lat: number, lng: number) => {
+      openItemPopup(id, lat, lng)
+    },
+    [openItemPopup]
   )
 
   const handleClusterClick = useCallback((group: MarkerGroup, currentOffsets: Array<{ dlat: number; dlng: number }>) => {
@@ -543,9 +847,12 @@ export function ExploreMapPanel({
         initialViewState={DEFAULT_CENTER}
         reuseMaps
         style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
+        onLoad={handleMapLoad}
+        onStyleData={handleMapStyleData}
         onMoveEnd={handleMoveEnd}
-        onMove={handleMove}
         onClick={handleMapClick}
+        onMouseMove={handleMapMouseMove}
+        onMouseLeave={handleMapMouseLeave}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -554,64 +861,215 @@ export function ExploreMapPanel({
         <NavigationControl position="top-right" />
 
         {/* ── Markers ─────────────────────────────────────────────────────── */}
-        {groups.flatMap((group, gi) => {
-          const isExpanded = spiderfiedKey === group.key
-          const isExiting  = exitingKey === group.key
+        {markerRenderMode === 'canvas' ? (
+          <Source
+            id="canvas-markers"
+            type="geojson"
+            data={markerGeoJSON as any}
+            cluster
+            clusterMaxZoom={15}
+            clusterRadius={50}
+            generateId
+          >
+            <Layer
+              id={CANVAS_CLUSTER_LAYER_ID}
+              type="circle"
+              filter={['has', 'point_count']}
+              paint={{
+                'circle-color': [
+                  'step',
+                  ['get', 'point_count'],
+                  '#2563eb',
+                  8,
+                  '#1d4ed8',
+                  20,
+                  '#1e40af',
+                ],
+                'circle-radius': [
+                  'step',
+                  ['get', 'point_count'],
+                  18,
+                  8,
+                  22,
+                  20,
+                  28,
+                ],
+                'circle-stroke-width': 2.5,
+                'circle-stroke-color': '#ffffff',
+                'circle-stroke-opacity': canvasLayerOpacity,
+                'circle-opacity': ['*', 0.96, canvasLayerOpacity],
+                'circle-stroke-opacity-transition': { duration: 180, delay: 0 },
+                'circle-opacity-transition': { duration: 180, delay: 0 },
+              }}
+            />
+            <Layer
+              id={CANVAS_CLUSTER_COUNT_LAYER_ID}
+              type="symbol"
+              filter={['has', 'point_count']}
+              layout={{
+                'text-field': ['get', 'point_count_abbreviated'],
+                'text-size': 12,
+                'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+              }}
+              paint={{
+                'text-color': '#ffffff',
+                'text-halo-color': 'rgba(0,0,0,0.28)',
+                'text-halo-width': 1,
+                'text-opacity': canvasLayerOpacity,
+                'text-opacity-transition': { duration: 180, delay: 0 },
+              }}
+            />
+            <Layer
+              id={CANVAS_UNCLUSTERED_LAYER_ID}
+              type="circle"
+              filter={['!', ['has', 'point_count']]}
+              paint={{
+                'circle-radius': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  11,
+                  [
+                    'case',
+                    ['==', ['get', 'id'], popupId ?? ''], 20,
+                    ['boolean', ['feature-state', 'hover'], false], 18,
+                    16,
+                  ],
+                  14,
+                  [
+                    'case',
+                    ['==', ['get', 'id'], popupId ?? ''], 26,
+                    ['boolean', ['feature-state', 'hover'], false], 23,
+                    20,
+                  ],
+                ],
+                'circle-color': [
+                  'match',
+                  ['get', 'type'],
+                  'venue', '#16a34a',
+                  'event', '#f97316',
+                  '#64748b',
+                ],
+                'circle-stroke-width': [
+                  'case',
+                  ['==', ['get', 'id'], popupId ?? ''], 4,
+                  ['boolean', ['feature-state', 'hover'], false], 3.5,
+                  3,
+                ],
+                'circle-stroke-color': '#ffffff',
+                'circle-stroke-opacity': [
+                  '*',
+                  [
+                    'case',
+                    ['==', ['get', 'id'], popupId ?? ''], 1,
+                    ['boolean', ['feature-state', 'hover'], false], 1,
+                    0.9,
+                  ],
+                  canvasLayerOpacity,
+                ],
+                'circle-opacity': [
+                  '*',
+                  [
+                    'case',
+                    ['==', ['get', 'id'], popupId ?? ''], 1,
+                    ['boolean', ['feature-state', 'hover'], false], 1,
+                    0.88,
+                  ],
+                  canvasLayerOpacity,
+                ],
+                'circle-radius-transition': { duration: 220, delay: 0 },
+                'circle-stroke-width-transition': { duration: 200, delay: 0 },
+                'circle-stroke-opacity-transition': { duration: 200, delay: 0 },
+                'circle-opacity-transition': { duration: 200, delay: 0 },
+              }}
+            />
+            <Layer
+              id={CANVAS_UNCLUSTERED_ICON_LAYER_ID}
+              type="symbol"
+              filter={['!', ['has', 'point_count']]}
+              layout={{
+                'icon-image': ['get', 'categoryKey'],
+                'icon-size': [
+                  'interpolate', ['linear'], ['zoom'],
+                  11, isMobileViewport ? 0.24 : 0.32,
+                  14, isMobileViewport ? 0.36 : 0.46,
+                ],
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
+              }}
+              paint={{
+                'icon-opacity': [
+                  '*',
+                  [
+                    'case',
+                    ['==', ['get', 'id'], popupId ?? ''], 1,
+                    ['boolean', ['feature-state', 'hover'], false], 1,
+                    0.90,
+                  ],
+                  canvasLayerOpacity,
+                ],
+                'icon-opacity-transition': { duration: 220, delay: 0 },
+              }}
+            />
+          </Source>
+        ) : (
+          groups.flatMap((group, gi) => {
+            const isExpanded = spiderfiedKey === group.key
+            const isExiting  = exitingKey === group.key
 
-          // ── Expanded OR exiting cluster → individual pins ──
-          if (group.markers.length === 1 || isExpanded || isExiting) {
-            const activeOffsets = isExpanded ? offsets : isExiting ? exitingOffsets : []
-            return group.markers.map((marker, si) => {
-              const isActive  = marker.id === (popupId ?? activeId)
-              const offset    = (isExpanded || isExiting) ? activeOffsets?.[si] : null
-              const renderLat = offset ? group.lat + offset.dlat : marker.lat
-              const renderLng = offset ? group.lng + offset.dlng : marker.lng
-              const delay     = isExpanded ? si * 0.04 : gi * 0.015
+            if (group.markers.length === 1 || isExpanded || isExiting) {
+              const activeOffsets = isExpanded ? offsets : isExiting ? exitingOffsets : []
+              return group.markers.map((marker, si) => {
+                const isActive  = marker.id === (popupId ?? activeId)
+                const offset    = (isExpanded || isExiting) ? activeOffsets?.[si] : null
+                const renderLat = offset ? group.lat + offset.dlat : marker.lat
+                const renderLng = offset ? group.lng + offset.dlng : marker.lng
+                const delay     = isExpanded ? si * 0.04 : gi * 0.015
 
-              return (
-                <Marker
-                  key={`pin-${marker.id}`}
-                  longitude={renderLng}
-                  latitude={renderLat}
-                  anchor="bottom"
-                  style={{ zIndex: isActive ? 20 : (isExpanded || isExiting) ? 12 : 1 }}
-                >
-                  <AnimatePresence mode="wait">
-                    <PinButton
-                      key={`pb-${marker.id}-${isExpanded ? 'x' : isExiting ? 'exit' : 'n'}`}
-                      marker={marker}
-                      isActive={isActive}
-                      delay={delay}
-                      renderLat={renderLat}
-                      renderLng={renderLng}
-                      onClickPin={handlePinClick}
-                    />
-                  </AnimatePresence>
-                </Marker>
-              )
-            })
-          }
+                return (
+                  <Marker
+                    key={`pin-${marker.id}`}
+                    longitude={renderLng}
+                    latitude={renderLat}
+                    anchor="bottom"
+                    style={{ zIndex: isActive ? 20 : (isExpanded || isExiting) ? 12 : 1 }}
+                  >
+                    <AnimatePresence mode="wait">
+                      <PinButton
+                        key={`pb-${marker.id}-${isExpanded ? 'x' : isExiting ? 'exit' : 'n'}`}
+                        marker={marker}
+                        isActive={isActive}
+                        delay={delay}
+                        renderLat={renderLat}
+                        renderLng={renderLng}
+                        onClickPin={handlePinClick}
+                      />
+                    </AnimatePresence>
+                  </Marker>
+                )
+              })
+            }
 
-          // ── Collapsed cluster badge ──
-          return [
-            <Marker
-              key={`cluster-${group.key}`}
-              longitude={group.lng}
-              latitude={group.lat}
-              anchor="bottom"
-              style={{ zIndex: 10 }}
-            >
-              <AnimatePresence mode="wait">
-                <ClusterButton
-                  key={`cb-${group.key}`}
-                  group={group}
-                  delay={gi * 0.015}
-                  onClickCluster={(g) => handleClusterClick(g, offsets)}
-                />
-              </AnimatePresence>
-            </Marker>,
-          ]
-        })}
+            return [
+              <Marker
+                key={`cluster-${group.key}`}
+                longitude={group.lng}
+                latitude={group.lat}
+                anchor="bottom"
+                style={{ zIndex: 10 }}
+              >
+                <AnimatePresence mode="wait">
+                  <ClusterButton
+                    key={`cb-${group.key}`}
+                    group={group}
+                    delay={gi * 0.015}
+                    onClickCluster={(g) => handleClusterClick(g, offsets)}
+                  />
+                </AnimatePresence>
+              </Marker>,
+            ]
+          })
+        )}
 
         {/* ── User location marker ─────────────────────────────────────── */}
         {renderProximity && overlayLocation && (
@@ -663,7 +1121,7 @@ export function ExploreMapPanel({
               closeButton={false}
               closeOnClick={false}
               maxWidth="280px"
-              offset={20}
+              offset={isMobileViewport ? 8 : 20}
               className="explore-popup"
             >
               <motion.div

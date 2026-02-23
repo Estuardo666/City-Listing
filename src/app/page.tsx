@@ -1,150 +1,73 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Compass, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MotionDiv, fadeInUp, viewportOnce } from '@/components/ui/motion'
-import { BlogCard } from '@/components/features/blog'
-import { HomeCategoriesGrid } from '@/components/features/home/home-categories-grid'
-import { HomeFeaturedEvents } from '@/components/features/home/home-featured-events'
-import { HomeLatestVenues } from '@/components/features/home/home-latest-venues'
-import { HomeFeaturedVenues } from '@/components/features/home/home-featured-venues'
-import { HomePromoGrid } from '@/components/features/home/home-promo-grid'
-import { HomeRelatedEvents } from '@/components/features/home/home-related-events'
-import { HomeHeroMap } from '@/components/features/home/home-hero-map'
-import { getEvents } from '@/lib/queries/events'
-import { getPosts } from '@/lib/queries/posts'
-import { getVenues } from '@/lib/queries/venues'
+import { HomeCategoriesGridSection } from '@/components/features/home/home-categories-grid-section'
+import { HomeFeaturedEventsSection } from '@/components/features/home/home-featured-events-section'
+import { HomeLatestVenuesSection } from '@/components/features/home/home-latest-venues-section'
+import { HomeFeaturedVenuesSection } from '@/components/features/home/home-featured-venues-section'
+import { HomePromoGridSection } from '@/components/features/home/home-promo-grid-section'
+import { HomeRelatedEventsSection } from '@/components/features/home/home-related-events-section'
+import { HomeHeroMapSection } from '@/components/features/home/home-hero-map-section'
+import { HomeBlogSection } from '@/components/features/home/home-blog-section'
+import { HomeHeroMapSkeleton } from '@/components/features/home/home-hero-map-skeleton'
+import { HomeCategoriesGridSkeleton } from '@/components/features/home/home-categories-grid-skeleton'
+import { HomeFeaturedEventsSkeleton } from '@/components/features/home/home-featured-events-skeleton'
+import { HomeLatestVenuesSkeleton } from '@/components/features/home/home-latest-venues-skeleton'
+import { HomeFeaturedVenuesSkeleton } from '@/components/features/home/home-featured-venues-skeleton'
+import { HomePromoGridSkeleton } from '@/components/features/home/home-promo-grid-skeleton'
+import { HomeRelatedEventsSkeleton } from '@/components/features/home/home-related-events-skeleton'
+import { HomeBlogSkeleton } from '@/components/features/home/home-blog-skeleton'
 
-export default async function HomePage() {
-  const HERO_MAP_LIMIT = 80
+// Revalidate every 1 hour for ISR (Incremental Static Regeneration)
+export const revalidate = 3600
 
-  let featuredPosts: Awaited<ReturnType<typeof getPosts>> = []
-  try {
-    featuredPosts = await getPosts({ status: 'APPROVED', featured: 'true' })
-  } catch {
-    featuredPosts = []
-  }
-
-  let venueList: Awaited<ReturnType<typeof getVenues>> = []
-  let eventList: Awaited<ReturnType<typeof getEvents>> = []
-  try {
-    ;[venueList, eventList] = await Promise.all([
-      getVenues({ status: 'APPROVED' }, HERO_MAP_LIMIT),
-      getEvents({ status: 'APPROVED' }, HERO_MAP_LIMIT),
-    ])
-  } catch {
-    venueList = []
-    eventList = []
-  }
-
-  // Build categories with counts
-  const categoryCountMap = new Map<string, { name: string; icon: string | null; slug: string; count: number }>()
-  for (const v of venueList) {
-    const key = v.category.name
-    const existing = categoryCountMap.get(key)
-    if (existing) existing.count++
-    else categoryCountMap.set(key, { name: v.category.name, icon: v.category.icon, slug: v.category.slug, count: 1 })
-  }
-  for (const e of eventList) {
-    const key = e.category.name
-    const existing = categoryCountMap.get(key)
-    if (existing) existing.count++
-    else categoryCountMap.set(key, { name: e.category.name, icon: e.category.icon, slug: e.category.slug, count: 1 })
-  }
-  // Tomamos hasta 10 categorías para formar un grid perfecto de 5x2 o 2x5
-  const categories = Array.from(categoryCountMap.values()).slice(0, 10)
-
-  const mapboxToken =
-    process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
-  const mapStyle =
-    process.env.MAPBOX_STYLE ??
-    process.env.NEXT_PUBLIC_MAPBOX_STYLE ??
-    'mapbox://styles/mapbox/streets-v12'
-
-  const heroVenues = venueList.map((venue) => ({
-    id: venue.id,
-    name: venue.name,
-    slug: venue.slug,
-    description: venue.description,
-    image: venue.image,
-    location: venue.location,
-    address: venue.address,
-    lat: venue.lat ?? null,
-    lng: venue.lng ?? null,
-    featured: venue.featured,
-    phone: venue.phone,
-    website: venue.website,
-    category: venue.category,
-  }))
-
-  const heroEvents = eventList.map((event) => ({
-    id: event.id,
-    title: event.title,
-    slug: event.slug,
-    description: event.description,
-    image: event.image,
-    startDate: event.startDate.toISOString(),
-    endDate: event.endDate?.toISOString() ?? null,
-    location: event.location,
-    address: event.address,
-    lat: event.lat ?? null,
-    lng: event.lng ?? null,
-    featured: event.featured,
-    category: event.category,
-  }))
+export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20">
       <main className="space-y-16 sm:space-y-20">
-        <HomeHeroMap
-          venues={heroVenues}
-          events={heroEvents}
-          mapboxToken={mapboxToken}
-          mapStyle={mapStyle}
-        />
+        {/* Hero Map with Suspense - Loads in parallel, shows skeleton while loading */}
+        <Suspense fallback={<HomeHeroMapSkeleton />}>
+          <HomeHeroMapSection />
+        </Suspense>
 
         <div className="section-shell space-y-20 sm:space-y-24">
+          {/* Categories Grid with Suspense */}
+          <Suspense fallback={<HomeCategoriesGridSkeleton />}>
+            <HomeCategoriesGridSection />
+          </Suspense>
 
-          {/* Categories visual grid */}
-          <HomeCategoriesGrid categories={categories} />
+          {/* Featured Events with Suspense */}
+          <Suspense fallback={<HomeFeaturedEventsSkeleton />}>
+            <HomeFeaturedEventsSection />
+          </Suspense>
 
-          {/* Featured events masonry */}
-          <HomeFeaturedEvents events={heroEvents} />
+          {/* Latest Venues with Suspense */}
+          <Suspense fallback={<HomeLatestVenuesSkeleton />}>
+            <HomeLatestVenuesSection />
+          </Suspense>
 
-          {/* Latest venues horizontal scroll */}
-          <HomeLatestVenues venues={heroVenues} />
+          {/* Featured Venues with Suspense */}
+          <Suspense fallback={<HomeFeaturedVenuesSkeleton />}>
+            <HomeFeaturedVenuesSection />
+          </Suspense>
 
-          {/* Featured venues grid */}
-          <HomeFeaturedVenues venues={heroVenues} />
+          {/* Promo Grid with Suspense */}
+          <Suspense fallback={<HomePromoGridSkeleton />}>
+            <HomePromoGridSection />
+          </Suspense>
 
-          {/* Promo / trending masonry grid */}
-          <HomePromoGrid venues={heroVenues} events={heroEvents} />
+          {/* Related Events with Suspense */}
+          <Suspense fallback={<HomeRelatedEventsSkeleton />}>
+            <HomeRelatedEventsSection />
+          </Suspense>
 
-          {/* Related events */}
-          <HomeRelatedEvents events={heroEvents} />
-
-          {/* Blog */}
-          {featuredPosts.length > 0 && (
-            <section className="space-y-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">📖 Inspírate</p>
-                  <h2 className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">Guías para salir mejor</h2>
-                </div>
-                <Button asChild variant="outline" className="h-11 rounded-xl">
-                  <Link href="/blog">
-                    Ver blog <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                {featuredPosts.slice(0, 3).map((post) => (
-                  <MotionDiv key={post.id} {...fadeInUp} viewport={viewportOnce}>
-                    <BlogCard post={post} />
-                  </MotionDiv>
-                ))}
-              </div>
-            </section>
-          )}
+          {/* Blog Section with Suspense */}
+          <Suspense fallback={<HomeBlogSkeleton />}>
+            <HomeBlogSection />
+          </Suspense>
 
           {/* CTA final */}
           <section className="rounded-3xl border border-primary/20 bg-gradient-to-r from-primary/10 via-accent to-primary/5 px-6 py-10 sm:px-10 sm:py-14">
