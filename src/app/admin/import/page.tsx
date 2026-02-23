@@ -20,7 +20,7 @@ export default async function ImportPage() {
   // Obtener categorías para el formulario
   const categories = await prisma.category.findMany({
     where: {
-      type: 'venue',
+      type: 'VENUE', // Asegurando que sea mayúscula según el enum del schema
     },
     select: {
       id: true,

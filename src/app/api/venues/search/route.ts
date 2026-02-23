@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       q: searchParams.get('q') || '',
       category: searchParams.get('category') || '',
       featured: searchParams.get('featured') || 'all',
-      status: 'APPROVED',
+      status: searchParams.get('status') || 'APPROVED', // Permitir cambiar el status
     })
 
     const venues = await getVenues(parsedFilters)

@@ -140,7 +140,7 @@ export function CommandPalette() {
       } finally {
         setLoading(false)
       }
-    }, 150) // Reduced debounce time for faster perceived response
+    }, 300) // Increased debounce time to 300ms for better performance and fewer API calls
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }

@@ -131,9 +131,9 @@ export function GooglePlacesImport({ categories }: { categories: Category[] }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: data.query,
+          place: place,
           categoryId: data.categoryId,
-          options: {
+          importOptions: {
             importDetails: data.importDetails,
             importPhotos: data.importPhotos,
           },
@@ -149,13 +149,15 @@ export function GooglePlacesImport({ categories }: { categories: Category[] }) {
       toast.success('Lugar importado exitosamente');
 
       // Actualizar el estado del lugar en los resultados
-      setSearchResults(prev =>
-        prev.map(p =>
-          p.placeId === place.placeId
-            ? { ...p, alreadyImported: true, existingVenue: { id: result.data.venue.id, name: result.data.venue.name } }
-            : p
-        )
-      );
+      if (result.data && result.data.venue) {
+        setSearchResults(prev =>
+          prev.map(p =>
+            p.placeId === place.placeId
+              ? { ...p, alreadyImported: true, existingVenue: { id: result.data.venue.id, name: result.data.venue.name } }
+              : p
+          )
+        );
+      }
     } catch (error) {
       console.error('Error importing place:', error);
       toast.error(error instanceof Error ? error.message : 'Error al importar lugar');
@@ -323,7 +325,7 @@ export function GooglePlacesImport({ categories }: { categories: Category[] }) {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{place.name}</h3>
+                        <h3 className="font-semibold text-lg">{place.displayName?.text || 'Sin nombre'}</h3>
                         {place.alreadyImported && (
                           <Badge variant="secondary" className="text-xs">
                             Ya importado
@@ -331,48 +333,28 @@ export function GooglePlacesImport({ categories }: { categories: Category[] }) {
                         )}
                       </div>
 
-                      {place.formattedAddress && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                          <MapPin className="h-4 w-4" />
-                          {place.formattedAddress}
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                         {place.rating && (
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span>{place.rating}</span>
-                            {place.userRatingCount && (
-                              <span className="text-gray-400">({place.userRatingCount})</span>
-                            )}
-                          </div>
+                          <span className="flex items-center gap-1 text-yellow-600">
+                            <Star className="w-3 h-3 fill-current" />
+                            {place.rating} ({place.userRatingCount})
+                          </span>
                         )}
-
-                        {place.phoneNumber && (
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-4 w-4" />
-                            <span>{place.phoneNumber}</span>
-                          </div>
-                        )}
-
                         {place.websiteUri && (
-                          <div className="flex items-center gap-1">
-                            <Globe className="h-4 w-4" />
-                            <a
-                              href={place.websiteUri}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              Sitio web
-                            </a>
-                          </div>
+                          <a 
+                            href={place.websiteUri} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-blue-600 hover:underline"
+                          >
+                            <Globe className="w-3 h-3" />
+                            Sitio web
+                          </a>
                         )}
                       </div>
 
                       {place.primaryTypeDisplayName && (
-                        <Badge variant="outline" className="mb-2">
+                        <Badge variant="outline" className="mb-2 mt-2">
                           {place.primaryTypeDisplayName.text}
                         </Badge>
                       )}

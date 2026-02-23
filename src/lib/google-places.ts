@@ -1,47 +1,68 @@
 import { z } from 'zod';
 
-// Esquemas para validar respuestas de Google Places API
-const GooglePlacesResponseSchema = z.object({
-  places: z.array(z.object({
-    placeId: z.string(),
+// Esquemas de validación para las respuestas de la API
+const GooglePlaceSchema = z.object({
+  id: z.string(),
+  displayName: z.object({
+    text: z.string()
+  }),
+  formattedAddress: z.string().optional(),
+  nationalPhoneNumber: z.string().optional(),
+  websiteUri: z.string().optional(),
+  rating: z.number().optional(),
+  userRatingCount: z.number().optional(),
+  location: z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+  }).optional(),
+  photos: z.array(z.object({
     name: z.string(),
-    formattedAddress: z.string().optional(),
-    phoneNumber: z.string().optional(),
-    websiteUri: z.string().optional(),
-    rating: z.number().optional(),
-    userRatingCount: z.number().optional(),
-    location: z.object({
-      latitude: z.number(),
-      longitude: z.number(),
-    }).optional(),
-    photos: z.array(z.object({
-      name: z.string(),
-      widthPx: z.number(),
-      heightPx: z.number(),
-    })).optional(),
-    types: z.array(z.string()).optional(),
-    primaryType: z.string().optional(),
-    primaryTypeDisplayName: z.object({
-      text: z.string(),
-      languageCode: z.string(),
-    }).optional(),
-  })),
+    widthPx: z.number(),
+    heightPx: z.number(),
+  })).optional(),
+  types: z.array(z.string()).optional(),
+  primaryType: z.string().optional(),
+  primaryTypeDisplayName: z.object({
+    text: z.string(),
+    languageCode: z.string()
+  }).optional()
+});
+
+const GooglePlacesResponseSchema = z.object({
+  places: z.array(GooglePlaceSchema).default([]),
 });
 
 const GooglePlaceDetailsSchema = z.object({
   place: z.object({
     id: z.string(),
-    placeId: z.string().optional(), // Make it optional as it will be mapped from id
-    name: z.string(),
-    formattedAddress: z.string(),
-    phoneNumber: z.string().optional(),
+    displayName: z.object({
+      text: z.string()
+    }),
+    formattedAddress: z.string().optional(),
+    nationalPhoneNumber: z.string().optional(),
     websiteUri: z.string().optional(),
     rating: z.number().optional(),
     userRatingCount: z.number().optional(),
     location: z.object({
       latitude: z.number(),
       longitude: z.number(),
-    }),
+    }).optional(),
+    regularOpeningHours: z.object({
+      weekdayDescriptions: z.array(z.string()),
+    }).optional(),
+    editorialSummary: z.object({
+      text: z.string(),
+    }).optional(),
+    reviews: z.array(z.object({
+      text: z.object({
+        text: z.string(),
+      }),
+      authorAttribution: z.object({
+        displayName: z.string(),
+      }),
+      rating: z.number(),
+      relativePublishTimeDescription: z.string(),
+    })).optional(),
     photos: z.array(z.object({
       name: z.string(),
       widthPx: z.number(),
@@ -51,20 +72,18 @@ const GooglePlaceDetailsSchema = z.object({
     primaryType: z.string().optional(),
     primaryTypeDisplayName: z.object({
       text: z.string(),
-      languageCode: z.string(),
-    }).optional(),
-    editorialSummary: z.object({
-      text: z.string(),
-      languageCode: z.string(),
-    }).optional(),
+      languageCode: z.string()
+    }).optional()
   }),
 });
 
 export interface GooglePlace {
-  placeId: string;
-  name: string;
+  id: string; 
+  displayName: {
+    text: string;
+  };
   formattedAddress?: string;
-  phoneNumber?: string;
+  nationalPhoneNumber?: string;
   websiteUri?: string;
   rating?: number;
   userRatingCount?: number;
@@ -72,25 +91,38 @@ export interface GooglePlace {
     latitude: number;
     longitude: number;
   };
-  photos?: Array<{
+  photos?: {
     name: string;
     widthPx: number;
     heightPx: number;
-  }>;
+  }[];
   types?: string[];
   primaryType?: string;
   primaryTypeDisplayName?: {
     text: string;
     languageCode: string;
   };
+  placeId?: string; 
+  phoneNumber?: string;
 }
 
 export interface GooglePlaceDetails extends GooglePlace {
-  id: string;
+  regularOpeningHours?: {
+    weekdayDescriptions: string[];
+  };
   editorialSummary?: {
     text: string;
-    languageCode: string;
   };
+  reviews?: {
+    text: {
+      text: string;
+    };
+    authorAttribution: {
+      displayName: string;
+    };
+    rating: number;
+    relativePublishTimeDescription: string;
+  }[];
 }
 
 class GooglePlacesService {
@@ -128,12 +160,16 @@ class GooglePlacesService {
   }
 
   private getFieldMask(body?: any): string {
-    // Campos que queremos obtener (optimización de costos)
-    const fields = [
-      'places.placeId',
-      'places.name',
+    // Configuración base de la API
+    const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+    const PLACES_API_URL = 'https://places.googleapis.com/v1';
+
+    // Fields para la nueva Places API (v1)
+    const PLACE_SEARCH_FIELDS = [
+      'places.id',
+      'places.displayName.text', // Cambiado de name a displayName.text
       'places.formattedAddress',
-      'places.phoneNumber',
+      'places.nationalPhoneNumber',
       'places.websiteUri',
       'places.rating',
       'places.userRatingCount',
@@ -145,31 +181,40 @@ class GooglePlacesService {
       'places.types',
       'places.primaryType',
       'places.primaryTypeDisplayName.text',
-      'places.primaryTypeDisplayName.languageCode',
+      'places.primaryTypeDisplayName.languageCode'
     ].join(',');
+
+    const PLACE_DETAILS_FIELDS = [
+      'id',
+      'displayName.text', // Cambiado de name a displayName.text
+      'formattedAddress',
+      'nationalPhoneNumber',
+      'websiteUri',
+      'rating',
+      'userRatingCount',
+      'location.latitude',
+      'location.longitude',
+      'regularOpeningHours.weekdayDescriptions',
+      'editorialSummary.text',
+      'reviews.text.text',
+      'reviews.authorAttribution.displayName',
+      'reviews.rating',
+      'reviews.relativePublishTimeDescription',
+      'photos.name',
+      'photos.widthPx',
+      'photos.heightPx',
+      'types',
+      'primaryType',
+      'primaryTypeDisplayName.text',
+      'primaryTypeDisplayName.languageCode'
+    ].join(',');
+
+    // Campos que queremos obtener (optimización de costos)
+    const fields = PLACE_SEARCH_FIELDS;
 
     // Para detalles del lugar
     if (body && body.includeDetails) {
-      return [
-        'place.id',
-        'place.name',
-        'place.formattedAddress',
-        'place.phoneNumber',
-        'place.websiteUri',
-        'place.rating',
-        'place.userRatingCount',
-        'place.location.latitude',
-        'place.location.longitude',
-        'place.photos.name',
-        'place.photos.widthPx',
-        'place.photos.heightPx',
-        'place.types',
-        'place.primaryType',
-        'place.primaryTypeDisplayName.text',
-        'place.primaryTypeDisplayName.languageCode',
-        'place.editorialSummary.text',
-        'place.editorialSummary.languageCode',
-      ].join(',');
+      return PLACE_DETAILS_FIELDS;
     }
 
     return fields;
@@ -191,7 +236,7 @@ class GooglePlacesService {
   ): Promise<GooglePlace[]> {
     const searchParams = new URLSearchParams({
       textQuery: query,
-      language: options.language || 'es',
+      languageCode: 'es',
       maxResultCount: (options.maxResultCount || 20).toString(),
     });
 
@@ -240,7 +285,24 @@ class GooglePlacesService {
   }
 
   async getPlaceDetails(placeId: string, language: string = 'es'): Promise<GooglePlaceDetails> {
-    const url = `${this.baseUrl}/places/${placeId}?language=${language}`;
+    const fields = [
+      'id',
+      'displayName',
+      'formattedAddress',
+      'nationalPhoneNumber',
+      'internationalPhoneNumber',
+      'websiteUri',
+      'rating',
+      'userRatingCount',
+      'location',
+      'photos',
+      'types',
+      'primaryType',
+      'primaryTypeDisplayName',
+      'editorialSummary'
+    ].join(',');
+    
+    const url = `${this.baseUrl}/places/${placeId}?languageCode=${language}&fields=${fields}`;
 
     try {
       const response = await this.makeRequest<any>(url, {
@@ -251,14 +313,15 @@ class GooglePlacesService {
       const validated = GooglePlaceDetailsSchema.parse({
         place: {
           ...response,
-          placeId: response.id || placeId
+          id: response.id || placeId
         }
       });
       
-      // Mapear id a placeId para que cumpla con GooglePlaceDetails
+      // Mapear para que cumpla con GooglePlaceDetails
       return {
         ...validated.place,
-        placeId: validated.place.placeId || placeId
+        placeId: validated.place.id || placeId,
+        phoneNumber: validated.place.nationalPhoneNumber
       };
     } catch (error) {
       console.error('Error getting place details:', error);
@@ -302,14 +365,15 @@ class GooglePlacesService {
 
   // Mapear lugar de Google a nuestro modelo Venue
   mapToVenue(googlePlace: GooglePlace | GooglePlaceDetails, categoryId: string, userId: string) {
-    const placeId = 'id' in googlePlace ? googlePlace.id : googlePlace.placeId;
+    const placeId = googlePlace.id || googlePlace.placeId;
+    const name = googlePlace.displayName?.text || '';
     
     return {
-      name: googlePlace.name,
-      slug: this.generateSlug(googlePlace.name),
-      description: ('editorialSummary' in googlePlace && googlePlace.editorialSummary?.text) || `Importado desde Google Places: ${googlePlace.name}`,
+      name: name,
+      slug: this.generateSlug(name),
+      description: ('editorialSummary' in googlePlace && googlePlace.editorialSummary?.text) || `Importado desde Google Places: ${name}`,
       content: this.generateContent(googlePlace),
-      phone: googlePlace.phoneNumber,
+      phone: googlePlace.nationalPhoneNumber || googlePlace.phoneNumber,
       email: null,
       website: googlePlace.websiteUri,
       location: googlePlace.formattedAddress || '',

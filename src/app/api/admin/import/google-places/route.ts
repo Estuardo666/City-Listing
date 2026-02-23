@@ -26,16 +26,19 @@ const ImportRequestSchema = z.object({
 });
 
 const BulkImportSchema = z.object({
-  imports: z.array(z.object({
-    placeId: z.string(),
-    categoryId: z.string(),
-    customName: z.string().optional(),
-    customDescription: z.string().optional(),
-  })),
+  categoryId: z.string().optional(), // opcional porque ahora viene dentro de cada importItem
+  imports: z.array(
+    z.object({
+      placeId: z.string(),
+      categoryId: z.string(),
+      customName: z.string().optional(),
+      customDescription: z.string().optional(),
+    })
+  ),
   options: z.object({
-    importDetails: z.boolean().default(false),
-    importPhotos: z.boolean().default(false),
     overwriteExisting: z.boolean().default(false),
+    importDetails: z.boolean().default(true),
+    importPhotos: z.boolean().default(true),
   }).optional(),
 });
 
@@ -87,35 +90,44 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar lugares en Google Places
+    console.log('Searching Google Places for:', query, options);
     const places = await googlePlacesService.searchPlaces(query, options);
+    console.log('Found places:', places.length);
 
-    // Verificar cuáles ya existen
+    // 1. Filtrar los que ya existen
+    const placeIds = places.map((p: any) => p.id).filter(Boolean);
     const existingVenues = await prisma.venue.findMany({
       where: {
         googlePlaceId: {
-          in: places.map(p => p.placeId),
+          in: placeIds,
         }
-      },
+      } as any,
       select: {
-        id: true,
         googlePlaceId: true,
-      },
+        id: true,
+        name: true,
+      } as any,
     });
+    console.log('Existing venues found:', existingVenues.length);
 
-    const existingMap = new Map(existingVenues.map(v => [(v as any).googlePlaceId as string, v.id]));
+    const existingPlaceIds = new Set(existingVenues.map((v: any) => v.googlePlaceId));
+
+    // 2. Importar los nuevos
+    const placesToImport = places.filter((p: any) => !existingPlaceIds.has(p.id));
 
     // Marcar lugares ya importados
     const placesWithStatus = places.map(place => ({
       ...place,
-      alreadyImported: existingMap.has(place.placeId),
-      existingVenue: existingVenues.find(v => (v as any).googlePlaceId === place.placeId),
+      placeId: place.id, // Mapeamos para compatibilidad con el front
+      alreadyImported: existingPlaceIds.has(place.id),
+      existingVenue: existingVenues.find(v => (v as any).googlePlaceId === place.id),
     }));
 
     return NextResponse.json({
       success: true,
       data: placesWithStatus,
       total: places.length,
-      alreadyImported: existingMap.size,
+      alreadyImported: existingPlaceIds.size,
     });
   } catch (error) {
     console.error('Error searching Google Places:', error);
@@ -137,27 +149,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { query, categoryId, options } = ImportRequestSchema.parse(body);
+    const { place, categoryId, importOptions } = await request.json();
 
-    // Buscar lugares
-    const places = await googlePlacesService.searchPlaces(query, {
-      ...options,
-      maxResultCount: options?.maxResults || 1,
-    });
-
-    if (places.length === 0) {
+    if (!place || !place.id || !categoryId) {
       return NextResponse.json(
-        { error: 'No se encontraron lugares' },
-        { status: 404 }
+        { error: 'Datos incompletos para la importación' },
+        { status: 400 }
       );
     }
 
-    const place = places[0];
-
-    // Verificar si ya existe
+    // 1. Verificar si ya existe por googlePlaceId
+    console.log('Checking if venue exists:', place.id);
     const existingVenue = await prisma.venue.findFirst({
-      where: { googlePlaceId: place.placeId } as any,
+      where: { googlePlaceId: place.id } as any,
     });
 
     if (existingVenue) {
@@ -169,80 +173,92 @@ export async function POST(request: NextRequest) {
 
     // Obtener detalles adicionales si se solicita
     let placeDetails = place;
-    if (options?.importDetails) {
+    if (importOptions?.importDetails) {
       try {
-        placeDetails = await googlePlacesService.getPlaceDetails(place.placeId);
+        placeDetails = await googlePlacesService.getPlaceDetails(place.id);
       } catch (error) {
         console.warn('No se pudieron obtener detalles adicionales:', error);
       }
     }
 
     // Mapear a nuestro modelo
-    const venueData = googlePlacesService.mapToVenue(
-      placeDetails,
-      categoryId,
-      session.user.id
-    );
-
-    // Crear el venue
-    const venue = await prisma.venue.create({
-      data: venueData,
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    });
-
-    // Importar fotos si se solicita
-    let photos: string[] = [];
-    if (options?.importPhotos && placeDetails.photos) {
-      try {
-        photos = await Promise.all(
-          placeDetails.photos.slice(0, 5).map(async (photo) => {
-            const photoUri = await googlePlacesService.getPlacePhoto(
-              photo.name,
-              800,
-              600
-            );
-            return photoUri;
-          })
-        );
-
-        // Aquí podrías guardar las fotos en tu storage (R2, S3, etc.)
-        // y actualizar el venue con la URL principal
-        if (photos.length > 0) {
-          await prisma.venue.update({
-            where: { id: venue.id },
-            data: { image: photos[0] },
-          });
-        }
-      } catch (error) {
-        console.warn('No se pudieron importar las fotos:', error);
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        venue,
-        photos,
-      },
-    });
-  } catch (error) {
-    console.error('Error importing place:', error);
+    console.log('session.user.email:', session.user.email);
+    console.log('session.user:', session.user);
     
-    if (error instanceof z.ZodError) {
+    // Verificar si el usuario existe en la base de datos por email
+    let user = await prisma.user.findUnique({
+      where: { email: session.user.email || undefined },
+      select: { id: true, email: true, name: true }
+    });
+    
+    console.log('User exists in DB:', user);
+    
+    if (!user) {
+      console.log('User not found, available users:');
+      const allUsers = await prisma.user.findMany({
+        select: { id: true, email: true, name: true }
+      });
+      console.log(allUsers);
+      
       return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
+        { error: 'Usuario no encontrado en la base de datos. Por favor, contacta al administrador.' },
         { status: 400 }
       );
     }
+    
+    const venueData = googlePlacesService.mapToVenue(
+      placeDetails,
+      categoryId,
+      user.id  // Usar el ID del usuario encontrado por email
+    );
+    
+    console.log('Venue data to create:', venueData);
 
+    // Guardar en base de datos
+    const venue = await prisma.venue.create({
+      data: venueData as any,
+    });
+
+    // Procesar fotos si se solicita
+    if (importOptions?.importPhotos && placeDetails.photos) {
+      try {
+        const photoUrls = await Promise.all(
+          placeDetails.photos.slice(0, importOptions.maxPhotos || 3).map(async (photo: any) => {
+              try {
+                const photoUri = await googlePlacesService.getPlacePhoto(
+                  photo.name,
+                  800,
+                  600
+                );
+                return photoUri;
+              } catch (photoError) {
+                console.warn('Failed to fetch photo:', photo.name, photoError);
+                return null;
+              }
+            })
+        );
+        
+        // Filtrar fotos nulas y actualizar el venue
+        const validPhotoUrls = photoUrls.filter(url => url !== null);
+        if (validPhotoUrls.length > 0) {
+          await prisma.venue.update({
+            where: { id: venue.id },
+            data: { image: validPhotoUrls[0] } // Guardar la primera imagen como imagen principal
+          });
+        }
+      } catch (error) {
+        console.warn('Error processing photos:', error);
+        // No fallar la importación si hay error en las fotos
+      }
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      venue,
+    });
+
+  } catch (error) {
+    console.error('Error importing place:', error);
     return NextResponse.json(
       { error: 'Error al importar el lugar' },
       { status: 500 }
@@ -255,29 +271,36 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { imports, options } = BulkImportSchema.parse(body);
+    const validated = BulkImportSchema.safeParse(body);
 
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: validated.error.errors },
+        { status: 400 }
+      );
+    }
+
+    const { categoryId, imports, options } = validated.data;
+    
+    // Resultados de la importación
     const results = [];
     const errors = [];
 
     for (const importItem of imports) {
       try {
-        // Verificar si ya existe
+        // Verificar si existe
         const existingVenue = await prisma.venue.findFirst({
           where: { googlePlaceId: importItem.placeId } as any,
-          select: { id: true, googlePlaceId: true } as any,
+          select: { id: true },
         });
 
         if (existingVenue && !options?.overwriteExisting) {
           errors.push({
-            placeId: importItem.placeId,
+            id: importItem.placeId,
             error: 'El lugar ya existe',
             venueId: existingVenue.id,
           });
@@ -288,6 +311,11 @@ export async function PUT(request: NextRequest) {
         const placeDetails = await googlePlacesService.getPlaceDetails(importItem.placeId);
 
         let venue;
+        const targetCategoryId = importItem.categoryId || categoryId;
+
+        if (!targetCategoryId) {
+          throw new Error('Categoría no especificada');
+        }
 
         if (existingVenue) {
           // Obtener el ID correctamente del objeto o array que retorna findFirst
@@ -301,15 +329,16 @@ export async function PUT(request: NextRequest) {
           const updatedVenue = await prisma.venue.update({
             where: { id: venueIdToUpdate },
             data: {
-              name: importItem.customName || placeDetails.name,
+              name: importItem.customName || placeDetails.displayName?.text || '',
               description: importItem.customDescription || placeDetails.editorialSummary?.text || `Local importado de Google Places.`,
-              location: placeDetails.formattedAddress,
+              location: placeDetails.formattedAddress || '',
               lat: placeDetails.location?.latitude,
               lng: placeDetails.location?.longitude,
               address: placeDetails.formattedAddress,
-              phone: placeDetails.phoneNumber,
+              phone: placeDetails.nationalPhoneNumber || placeDetails.phoneNumber,
               website: placeDetails.websiteUri,
               status: 'APPROVED',
+              categoryId: targetCategoryId,
             },
           });
           
@@ -319,19 +348,20 @@ export async function PUT(request: NextRequest) {
           venue = updatedVenue;
         } else {
           // Crear nuevo local
+          const name = importItem.customName || placeDetails.displayName?.text || '';
           const newVenue = await prisma.venue.create({
             data: {
-              name: importItem.customName || placeDetails.name,
-              slug: `${(importItem.customName || placeDetails.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`,
+              name: name,
+              slug: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`,
               description: importItem.customDescription || placeDetails.editorialSummary?.text || `Local importado de Google Places.`,
               location: placeDetails.formattedAddress || 'Ubicación no especificada',
               lat: placeDetails.location?.latitude,
               lng: placeDetails.location?.longitude,
               address: placeDetails.formattedAddress,
-              phone: placeDetails.phoneNumber,
+              phone: placeDetails.nationalPhoneNumber || placeDetails.phoneNumber,
               website: placeDetails.websiteUri,
               status: 'APPROVED',
-              categoryId: importItem.categoryId,
+              categoryId: targetCategoryId,
               userId: session.user.id,
             },
           });
@@ -343,21 +373,21 @@ export async function PUT(request: NextRequest) {
         }
 
         results.push({
-          placeId: importItem.placeId,
+          id: importItem.placeId,
           venueId: venue.id,
           action: existingVenue ? 'updated' : 'created',
         });
       } catch (error) {
         console.error(`Error importing ${importItem.placeId}:`, error);
         errors.push({
-          placeId: importItem.placeId,
+          id: importItem.placeId,
           error: error instanceof Error ? error.message : 'Error desconocido',
         });
       }
     }
 
     return NextResponse.json({
-      message: 'Importación completada con errores',
+      message: 'Importación completada',
       stats: {
         total: imports.length,
         success: results.length,
