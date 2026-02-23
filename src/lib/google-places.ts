@@ -31,6 +31,7 @@ const GooglePlacesResponseSchema = z.object({
 const GooglePlaceDetailsSchema = z.object({
   place: z.object({
     id: z.string(),
+    placeId: z.string().optional(), // Make it optional as it will be mapped from id
     name: z.string(),
     formattedAddress: z.string(),
     phoneNumber: z.string().optional(),
@@ -242,13 +243,23 @@ class GooglePlacesService {
     const url = `${this.baseUrl}/places/${placeId}?language=${language}`;
 
     try {
-      const response = await this.makeRequest(url, {
+      const response = await this.makeRequest<any>(url, {
         method: 'GET',
-        body: JSON.stringify({ includeDetails: true }),
+        // GET requests cannot have a body
       });
 
-      const validated = GooglePlaceDetailsSchema.parse(response);
-      return validated.place;
+      const validated = GooglePlaceDetailsSchema.parse({
+        place: {
+          ...response,
+          placeId: response.id || placeId
+        }
+      });
+      
+      // Mapear id a placeId para que cumpla con GooglePlaceDetails
+      return {
+        ...validated.place,
+        placeId: validated.place.placeId || placeId
+      };
     } catch (error) {
       console.error('Error getting place details:', error);
       throw error;
@@ -291,8 +302,7 @@ class GooglePlacesService {
 
   // Mapear lugar de Google a nuestro modelo Venue
   mapToVenue(googlePlace: GooglePlace | GooglePlaceDetails, categoryId: string, userId: string) {
-    const place = 'editorialSummary' in googlePlace ? googlePlace : googlePlace;
-    const placeId = 'placeId' in googlePlace ? googlePlace.placeId : googlePlace.id;
+    const placeId = 'id' in googlePlace ? googlePlace.id : googlePlace.placeId;
     
     return {
       name: googlePlace.name,

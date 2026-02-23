@@ -94,21 +94,20 @@ export async function GET(request: NextRequest) {
       where: {
         googlePlaceId: {
           in: places.map(p => p.placeId),
-        },
+        }
       },
       select: {
         id: true,
         googlePlaceId: true,
-        name: true,
       },
     });
 
-    const existingPlaceIds = new Set(existingVenues.map(v => v.googlePlaceId));
+    const existingMap = new Map(existingVenues.map(v => [v.googlePlaceId as string, v.id]));
 
     // Marcar lugares ya importados
     const placesWithStatus = places.map(place => ({
       ...place,
-      alreadyImported: existingPlaceIds.has(place.placeId),
+      alreadyImported: existingMap.has(place.placeId),
       existingVenue: existingVenues.find(v => v.googlePlaceId === place.placeId),
     }));
 
@@ -116,7 +115,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: placesWithStatus,
       total: places.length,
-      alreadyImported: existingPlaceIds.size,
+      alreadyImported: existingMap.size,
     });
   } catch (error) {
     console.error('Error searching Google Places:', error);
@@ -157,8 +156,8 @@ export async function POST(request: NextRequest) {
     const place = places[0];
 
     // Verificar si ya existe
-    const existingVenue = await prisma.venue.findUnique({
-      where: { googlePlaceId: place.placeId },
+    const existingVenue = await prisma.venue.findFirst({
+      where: { googlePlaceId: place.placeId } as any,
     });
 
     if (existingVenue) {
@@ -271,8 +270,9 @@ export async function PUT(request: NextRequest) {
     for (const importItem of imports) {
       try {
         // Verificar si ya existe
-        const existingVenue = await prisma.venue.findUnique({
-          where: { googlePlaceId: importItem.placeId },
+        const existingVenue = await prisma.venue.findFirst({
+          where: { googlePlaceId: importItem.placeId } as any,
+          select: { id: true, googlePlaceId: true } as any,
         });
 
         if (existingVenue && !options?.overwriteExisting) {
@@ -284,40 +284,63 @@ export async function PUT(request: NextRequest) {
           continue;
         }
 
-        // Obtener detalles del lugar
+        // Obtener detalles completos
         const placeDetails = await googlePlacesService.getPlaceDetails(importItem.placeId);
 
-        // Mapear a nuestro modelo
-        const venueData = googlePlacesService.mapToVenue(
-          placeDetails,
-          importItem.categoryId,
-          session.user.id
-        );
+        let venue;
 
-        // Aplicar personalizaciones
-        if (importItem.customName) {
-          venueData.name = importItem.customName;
-          venueData.slug = venueData.name
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .trim();
+        if (existingVenue) {
+          // Obtener el ID correctamente del objeto o array que retorna findFirst
+          const venueIdToUpdate = Array.isArray(existingVenue.id) 
+            ? String(existingVenue.id[0]) 
+            : typeof existingVenue.id === 'string' 
+              ? existingVenue.id 
+              : String((existingVenue.id as any).id || existingVenue.id);
+          
+          // Actualizar local existente
+          const updatedVenue = await prisma.venue.update({
+            where: { id: venueIdToUpdate },
+            data: {
+              name: importItem.customName || placeDetails.name,
+              description: importItem.customDescription || placeDetails.editorialSummary?.text || `Local importado de Google Places.`,
+              location: placeDetails.formattedAddress,
+              lat: placeDetails.location?.latitude,
+              lng: placeDetails.location?.longitude,
+              address: placeDetails.formattedAddress,
+              phone: placeDetails.phoneNumber,
+              website: placeDetails.websiteUri,
+              status: 'APPROVED',
+            },
+          });
+          
+          // Asignar googlePlaceId por separado si TS se queja
+          await prisma.$executeRaw`UPDATE "Venue" SET "googlePlaceId" = ${importItem.placeId} WHERE id = ${venueIdToUpdate}`;
+          
+          venue = updatedVenue;
+        } else {
+          // Crear nuevo local
+          const newVenue = await prisma.venue.create({
+            data: {
+              name: importItem.customName || placeDetails.name,
+              slug: `${(importItem.customName || placeDetails.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`,
+              description: importItem.customDescription || placeDetails.editorialSummary?.text || `Local importado de Google Places.`,
+              location: placeDetails.formattedAddress || 'Ubicación no especificada',
+              lat: placeDetails.location?.latitude,
+              lng: placeDetails.location?.longitude,
+              address: placeDetails.formattedAddress,
+              phone: placeDetails.phoneNumber,
+              website: placeDetails.websiteUri,
+              status: 'APPROVED',
+              categoryId: importItem.categoryId,
+              userId: session.user.id,
+            },
+          });
+          
+          // Asignar googlePlaceId por separado
+          await prisma.$executeRaw`UPDATE "Venue" SET "googlePlaceId" = ${importItem.placeId} WHERE id = ${newVenue.id}`;
+          
+          venue = newVenue;
         }
-
-        if (importItem.customDescription) {
-          venueData.description = importItem.customDescription;
-        }
-
-        // Crear o actualizar el venue
-        const venue = existingVenue
-          ? await prisma.venue.update({
-              where: { id: existingVenue.id },
-              data: venueData,
-            })
-          : await prisma.venue.create({
-              data: venueData,
-            });
 
         results.push({
           placeId: importItem.placeId,
@@ -334,10 +357,11 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json({
-      success: true,
-      data: {
-        imported: results.length,
-        errors: errors.length,
+      message: 'Importación completada con errores',
+      stats: {
+        total: imports.length,
+        success: results.length,
+        errorsCount: errors.length,
         results,
         errors,
       },
