@@ -161,15 +161,17 @@ export function CommandPalette() {
 
           {/* Panel */}
           <motion.div
+            layout
             key="cp-panel"
             initial={{ opacity: 0, scale: 0.97, y: -12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: -12 }}
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-            className="fixed inset-x-4 top-[10vh] z-[201] mx-auto max-w-xl overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl"
+            style={{ borderRadius: 16 }}
+            className="fixed inset-x-4 top-[10vh] z-[201] mx-auto max-w-xl overflow-hidden border border-border/60 bg-card shadow-2xl flex flex-col"
           >
             {/* Input row */}
-            <div className="flex items-center gap-3 border-b border-border/50 px-4 py-3">
+            <motion.div layout="position" className="flex items-center gap-3 border-b border-border/50 px-4 py-3 shrink-0">
               {loading ? (
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
               ) : (
@@ -194,29 +196,29 @@ export function CommandPalette() {
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
-            </div>
+            </motion.div>
 
             {/* Results */}
-            <div className="max-h-[60vh] overflow-y-auto overscroll-contain py-2">
+            <motion.div layout="position" className="max-h-[60vh] overflow-y-auto overscroll-contain py-2">
               {/* Hint */}
               {!query.trim() && (
-                <div className="px-4 py-8 text-center">
+                <motion.div layout="position" className="px-4 py-8 text-center">
                   <Search className="mx-auto mb-2 h-8 w-8 text-muted-foreground/30" />
                   <p className="text-sm text-muted-foreground">Escribe para buscar en toda la plataforma</p>
                   <p className="mt-1 text-xs text-muted-foreground/60">Eventos · Locales · Artículos</p>
-                </div>
+                </motion.div>
               )}
 
               {/* Too short */}
               {query.trim().length === 1 && (
-                <p className="px-4 py-6 text-center text-sm text-muted-foreground">Escribe al menos 2 caracteres…</p>
+                <motion.p layout="position" className="px-4 py-6 text-center text-sm text-muted-foreground">Escribe al menos 2 caracteres…</motion.p>
               )}
 
               {/* Empty */}
               {showEmpty && (
-                <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                <motion.p layout="position" className="px-4 py-6 text-center text-sm text-muted-foreground">
                   Sin resultados para <span className="font-medium text-foreground">"{query}"</span>
-                </p>
+                </motion.p>
               )}
 
               {/* Events */}
@@ -284,11 +286,11 @@ export function CommandPalette() {
                   })}
                 </ResultSection>
               )}
-            </div>
+            </motion.div>
 
             {/* Footer */}
             {hasResults && (
-              <div className="flex items-center gap-3 border-t border-border/50 px-4 py-2">
+              <motion.div layout="position" className="flex items-center gap-3 border-t border-border/50 px-4 py-2 shrink-0">
                 <span className="text-[10px] text-muted-foreground">
                   <kbd className="rounded border border-border/60 bg-muted px-1 py-0.5 font-mono">↑↓</kbd> navegar
                 </span>
@@ -298,7 +300,7 @@ export function CommandPalette() {
                 <span className="text-[10px] text-muted-foreground">
                   <kbd className="rounded border border-border/60 bg-muted px-1 py-0.5 font-mono">ESC</kbd> cerrar
                 </span>
-              </div>
+              </motion.div>
             )}
           </motion.div>
         </>
