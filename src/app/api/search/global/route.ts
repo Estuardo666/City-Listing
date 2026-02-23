@@ -12,6 +12,14 @@ export async function GET(request: NextRequest) {
 
     const contains = q
 
+    // 1. Buscar primero las categorías que coincidan (es muy rápido)
+    const matchedCategories = await prisma.category.findMany({
+      where: { name: { contains, mode: 'insensitive' } },
+      select: { id: true },
+    })
+    const categoryIds = matchedCategories.map((c) => c.id)
+
+    // 2. Ejecutar las búsquedas principales usando el IN en lugar de un JOIN complejo
     const [events, venues, posts] = await Promise.all([
       prisma.event.findMany({
         where: {
@@ -19,7 +27,7 @@ export async function GET(request: NextRequest) {
           OR: [
             { title: { contains, mode: 'insensitive' } },
             { location: { contains, mode: 'insensitive' } },
-            { category: { name: { contains, mode: 'insensitive' } } },
+            ...(categoryIds.length > 0 ? [{ categoryId: { in: categoryIds } }] : []),
           ],
         },
         select: {
@@ -40,7 +48,7 @@ export async function GET(request: NextRequest) {
           OR: [
             { name: { contains, mode: 'insensitive' } },
             { location: { contains, mode: 'insensitive' } },
-            { category: { name: { contains, mode: 'insensitive' } } },
+            ...(categoryIds.length > 0 ? [{ categoryId: { in: categoryIds } }] : []),
           ],
         },
         select: {
@@ -59,7 +67,7 @@ export async function GET(request: NextRequest) {
           status: 'APPROVED',
           OR: [
             { title: { contains, mode: 'insensitive' } },
-            { category: { name: { contains, mode: 'insensitive' } } },
+            ...(categoryIds.length > 0 ? [{ categoryId: { in: categoryIds } }] : []),
           ],
         },
         select: {
