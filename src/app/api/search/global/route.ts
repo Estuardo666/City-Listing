@@ -17,9 +17,10 @@ export async function GET(request: NextRequest) {
         where: {
           status: 'APPROVED',
           OR: [
-            { title: { contains } },
-            { description: { contains } },
-            { location: { contains } },
+            { title: { contains, mode: 'insensitive' } },
+            { description: { contains, mode: 'insensitive' } },
+            { location: { contains, mode: 'insensitive' } },
+            { category: { name: { contains, mode: 'insensitive' } } },
           ],
         },
         select: {
@@ -38,9 +39,10 @@ export async function GET(request: NextRequest) {
         where: {
           status: 'APPROVED',
           OR: [
-            { name: { contains } },
-            { description: { contains } },
-            { location: { contains } },
+            { name: { contains, mode: 'insensitive' } },
+            { description: { contains, mode: 'insensitive' } },
+            { location: { contains, mode: 'insensitive' } },
+            { category: { name: { contains, mode: 'insensitive' } } },
           ],
         },
         select: {
@@ -58,8 +60,9 @@ export async function GET(request: NextRequest) {
         where: {
           status: 'APPROVED',
           OR: [
-            { title: { contains } },
-            { excerpt: { contains } },
+            { title: { contains, mode: 'insensitive' } },
+            { excerpt: { contains, mode: 'insensitive' } },
+            { category: { name: { contains, mode: 'insensitive' } } },
           ],
         },
         select: {
