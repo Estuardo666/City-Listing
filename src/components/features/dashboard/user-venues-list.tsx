@@ -187,7 +187,13 @@ export function UserVenuesList() {
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <CategoryIconFallback 
-                        category={venue.category} 
+                        category={{
+                          id: venue.category.name,
+                          name: venue.category.name,
+                          slug: venue.category.name.toLowerCase().replace(/\s+/g, '-'),
+                          icon: venue.category.icon,
+                          color: null
+                        }} 
                         size="sm"
                         className="opacity-50"
                       />
