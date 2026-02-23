@@ -1,0 +1,360 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
+import { googlePlacesService } from '@/lib/google-places';
+import { auth } from '@/lib/auth';
+
+// Esquemas de validación
+const ImportRequestSchema = z.object({
+  query: z.string().min(1, 'La consulta es requerida'),
+  categoryId: z.string().min(1, 'La categoría es requerida'),
+  options: z.object({
+    location: z.object({
+      lat: z.number(),
+      lng: z.number(),
+    }).optional(),
+    radius: z.number().optional(),
+    minRating: z.number().min(0).max(5).optional(),
+    isOpenNow: z.boolean().optional(),
+    priceLevels: z.array(z.number().min(1).max(4)).optional(),
+    includedTypes: z.array(z.string()).optional(),
+    excludedTypes: z.array(z.string()).optional(),
+    maxResults: z.number().min(1).max(20).default(10),
+    importDetails: z.boolean().default(false),
+    importPhotos: z.boolean().default(false),
+  }).optional(),
+});
+
+const BulkImportSchema = z.object({
+  imports: z.array(z.object({
+    placeId: z.string(),
+    categoryId: z.string(),
+    customName: z.string().optional(),
+    customDescription: z.string().optional(),
+  })),
+  options: z.object({
+    importDetails: z.boolean().default(false),
+    importPhotos: z.boolean().default(false),
+    overwriteExisting: z.boolean().default(false),
+  }).optional(),
+});
+
+// GET - Buscar lugares en Google Places
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const query = searchParams.get('query');
+    const categoryId = searchParams.get('categoryId');
+
+    if (!query || !categoryId) {
+      return NextResponse.json(
+        { error: 'Query y categoryId son requeridos' },
+        { status: 400 }
+      );
+    }
+
+    // Parsear opciones adicionales
+    const options: any = {};
+    const location = searchParams.get('location');
+    if (location) {
+      const [lat, lng] = location.split(',').map(Number);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        options.location = { lat, lng };
+      }
+    }
+
+    const radius = searchParams.get('radius');
+    if (radius) {
+      options.radius = Number(radius);
+    }
+
+    const minRating = searchParams.get('minRating');
+    if (minRating) {
+      options.minRating = Number(minRating);
+    }
+
+    const maxResults = searchParams.get('maxResults');
+    if (maxResults) {
+      options.maxResults = Number(maxResults);
+    }
+
+    // Buscar lugares en Google Places
+    const places = await googlePlacesService.searchPlaces(query, options);
+
+    // Verificar cuáles ya existen
+    const existingVenues = await prisma.venue.findMany({
+      where: {
+        googlePlaceId: {
+          in: places.map(p => p.placeId),
+        },
+      },
+      select: {
+        id: true,
+        googlePlaceId: true,
+        name: true,
+      },
+    });
+
+    const existingPlaceIds = new Set(existingVenues.map(v => v.googlePlaceId));
+
+    // Marcar lugares ya importados
+    const placesWithStatus = places.map(place => ({
+      ...place,
+      alreadyImported: existingPlaceIds.has(place.placeId),
+      existingVenue: existingVenues.find(v => v.googlePlaceId === place.placeId),
+    }));
+
+    return NextResponse.json({
+      success: true,
+      data: placesWithStatus,
+      total: places.length,
+      alreadyImported: existingPlaceIds.size,
+    });
+  } catch (error) {
+    console.error('Error searching Google Places:', error);
+    return NextResponse.json(
+      { error: 'Error al buscar lugares en Google Places' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST - Importar un lugar específico
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { query, categoryId, options } = ImportRequestSchema.parse(body);
+
+    // Buscar lugares
+    const places = await googlePlacesService.searchPlaces(query, {
+      ...options,
+      maxResultCount: options?.maxResults || 1,
+    });
+
+    if (places.length === 0) {
+      return NextResponse.json(
+        { error: 'No se encontraron lugares' },
+        { status: 404 }
+      );
+    }
+
+    const place = places[0];
+
+    // Verificar si ya existe
+    const existingVenue = await prisma.venue.findUnique({
+      where: { googlePlaceId: place.placeId },
+    });
+
+    if (existingVenue) {
+      return NextResponse.json(
+        { error: 'El lugar ya ha sido importado', existingVenue },
+        { status: 409 }
+      );
+    }
+
+    // Obtener detalles adicionales si se solicita
+    let placeDetails = place;
+    if (options?.importDetails) {
+      try {
+        placeDetails = await googlePlacesService.getPlaceDetails(place.placeId);
+      } catch (error) {
+        console.warn('No se pudieron obtener detalles adicionales:', error);
+      }
+    }
+
+    // Mapear a nuestro modelo
+    const venueData = googlePlacesService.mapToVenue(
+      placeDetails,
+      categoryId,
+      session.user.id
+    );
+
+    // Crear el venue
+    const venue = await prisma.venue.create({
+      data: venueData,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    // Importar fotos si se solicita
+    let photos: string[] = [];
+    if (options?.importPhotos && placeDetails.photos) {
+      try {
+        photos = await Promise.all(
+          placeDetails.photos.slice(0, 5).map(async (photo) => {
+            const photoUri = await googlePlacesService.getPlacePhoto(
+              photo.name,
+              800,
+              600
+            );
+            return photoUri;
+          })
+        );
+
+        // Aquí podrías guardar las fotos en tu storage (R2, S3, etc.)
+        // y actualizar el venue con la URL principal
+        if (photos.length > 0) {
+          await prisma.venue.update({
+            where: { id: venue.id },
+            data: { image: photos[0] },
+          });
+        }
+      } catch (error) {
+        console.warn('No se pudieron importar las fotos:', error);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        venue,
+        photos,
+      },
+    });
+  } catch (error) {
+    console.error('Error importing place:', error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Error al importar el lugar' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - Importación masiva
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { imports, options } = BulkImportSchema.parse(body);
+
+    const results = [];
+    const errors = [];
+
+    for (const importItem of imports) {
+      try {
+        // Verificar si ya existe
+        const existingVenue = await prisma.venue.findUnique({
+          where: { googlePlaceId: importItem.placeId },
+        });
+
+        if (existingVenue && !options?.overwriteExisting) {
+          errors.push({
+            placeId: importItem.placeId,
+            error: 'El lugar ya existe',
+            venueId: existingVenue.id,
+          });
+          continue;
+        }
+
+        // Obtener detalles del lugar
+        const placeDetails = await googlePlacesService.getPlaceDetails(importItem.placeId);
+
+        // Mapear a nuestro modelo
+        const venueData = googlePlacesService.mapToVenue(
+          placeDetails,
+          importItem.categoryId,
+          session.user.id
+        );
+
+        // Aplicar personalizaciones
+        if (importItem.customName) {
+          venueData.name = importItem.customName;
+          venueData.slug = venueData.name
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim();
+        }
+
+        if (importItem.customDescription) {
+          venueData.description = importItem.customDescription;
+        }
+
+        // Crear o actualizar el venue
+        const venue = existingVenue
+          ? await prisma.venue.update({
+              where: { id: existingVenue.id },
+              data: venueData,
+            })
+          : await prisma.venue.create({
+              data: venueData,
+            });
+
+        results.push({
+          placeId: importItem.placeId,
+          venueId: venue.id,
+          action: existingVenue ? 'updated' : 'created',
+        });
+      } catch (error) {
+        console.error(`Error importing ${importItem.placeId}:`, error);
+        errors.push({
+          placeId: importItem.placeId,
+          error: error instanceof Error ? error.message : 'Error desconocido',
+        });
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        imported: results.length,
+        errors: errors.length,
+        results,
+        errors,
+      },
+    });
+  } catch (error) {
+    console.error('Error in bulk import:', error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Error en la importación masiva' },
+      { status: 500 }
+    );
+  }
+}

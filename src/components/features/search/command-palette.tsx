@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SearchChips } from './search-chips'
 
 type SearchEvent = {
   id: string
@@ -200,13 +201,9 @@ export function CommandPalette() {
 
             {/* Results */}
             <motion.div layout="position" className="max-h-[60vh] overflow-y-auto overscroll-contain py-2">
-              {/* Hint */}
+              {/* Search Chips - Show when no query */}
               {!query.trim() && (
-                <motion.div layout="position" className="px-4 py-8 text-center">
-                  <Search className="mx-auto mb-2 h-8 w-8 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground">Escribe para buscar en toda la plataforma</p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">Eventos · Locales · Artículos</p>
-                </motion.div>
+                <SearchChips onSelectQuery={(selectedQuery) => setQuery(selectedQuery)} />
               )}
 
               {/* Too short */}

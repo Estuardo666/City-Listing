@@ -8,8 +8,14 @@ const LIMIT = 5
 // Función para realizar búsqueda inteligente con Upstash Search
 async function intelligentSearch(query: string) {
   try {
+    console.log('🤖 Trying Upstash Search for:', query)
+    const startTime = Date.now()
+    
     // 1. Buscar con Upstash Search (inteligente)
-    const searchResults = await searchDocuments(query, LIMIT * 2) // Buscamos más para filtrar
+    const searchResults = await searchDocuments(query, LIMIT * 2)
+    
+    const searchTime = Date.now() - startTime
+    console.log(`📊 Upstash Search took ${searchTime}ms, found ${searchResults.length} results`)
     
     // 2. Agrupar resultados por tipo
     const events = searchResults
@@ -27,19 +33,14 @@ async function intelligentSearch(query: string) {
       .slice(0, LIMIT)
       .map((r: any) => r.data)
 
-    // 3. Si Upstash Search no tiene suficientes resultados, complementar con PostgreSQL
-    if (events.length < LIMIT || venues.length < LIMIT || posts.length < LIMIT) {
-      console.log('🔍 Complementing search with PostgreSQL...')
-      const fallbackResults = await searchInDatabase(query)
-      
-      return {
-        events: [...events, ...fallbackResults.events.slice(events.length)].slice(0, LIMIT),
-        venues: [...venues, ...fallbackResults.venues.slice(venues.length)].slice(0, LIMIT),
-        posts: [...posts, ...fallbackResults.posts.slice(posts.length)].slice(0, LIMIT)
-      }
+    // 3. Si Upstash Search devuelve resultados, usarlos
+    if (events.length > 0 || venues.length > 0 || posts.length > 0) {
+      console.log('✅ Using Upstash Search results')
+      return { events, venues, posts }
     }
 
-    return { events, venues, posts }
+    console.log('⚠️ Upstash Search returned no results, using PostgreSQL')
+    return searchInDatabase(query)
 
   } catch (error) {
     console.error('🤖 Upstash Search error, falling back to PostgreSQL:', error)
@@ -48,27 +49,23 @@ async function intelligentSearch(query: string) {
   }
 }
 
-// Función para realizar la búsqueda en la base de datos (fallback)
+// Función para realizar la búsqueda en la base de datos (optimizada)
 async function searchInDatabase(query: string) {
+  const startTime = Date.now()
+  
+  // Usar búsqueda más simple y rápida
   const contains = query
 
-  // 1. Buscar primero las categorías que coincidan (es muy rápido)
-  const matchedCategories = await prisma.category.findMany({
-    where: { name: { contains, mode: 'insensitive' } },
-    select: { id: true },
-  })
-  const categoryIds = matchedCategories.map((c) => c.id)
-
-  // 2. Ejecutar las búsquedas principales usando el IN en lugar de un JOIN complejo
+  // Ejecutar búsquedas en paralelo con consultas optimizadas
   const [events, venues, posts] = await Promise.all([
+    // Eventos - solo campos indexados
     prisma.event.findMany({
       where: {
         status: 'APPROVED',
         OR: [
           { title: { contains, mode: 'insensitive' } },
-          { location: { contains, mode: 'insensitive' } },
-          ...(categoryIds.length > 0 ? [{ categoryId: { in: categoryIds } }] : []),
-        ],
+          { location: { contains, mode: 'insensitive' } }
+        ]
       },
       select: {
         id: true,
@@ -77,19 +74,20 @@ async function searchInDatabase(query: string) {
         image: true,
         startDate: true,
         location: true,
-        category: { select: { name: true, color: true } },
+        category: { select: { name: true, color: true } }
       },
       orderBy: [{ featured: 'desc' }, { startDate: 'asc' }],
-      take: LIMIT,
+      take: LIMIT
     }),
+    
+    // Locales - solo campos indexados
     prisma.venue.findMany({
       where: {
         status: 'APPROVED',
         OR: [
           { name: { contains, mode: 'insensitive' } },
-          { location: { contains, mode: 'insensitive' } },
-          ...(categoryIds.length > 0 ? [{ categoryId: { in: categoryIds } }] : []),
-        ],
+          { location: { contains, mode: 'insensitive' } }
+        ]
       },
       select: {
         id: true,
@@ -97,18 +95,17 @@ async function searchInDatabase(query: string) {
         slug: true,
         image: true,
         location: true,
-        category: { select: { name: true, color: true } },
+        category: { select: { name: true, color: true } }
       },
       orderBy: [{ featured: 'desc' }, { name: 'asc' }],
-      take: LIMIT,
+      take: LIMIT
     }),
+    
+    // Posts - solo título
     prisma.post.findMany({
       where: {
         status: 'APPROVED',
-        OR: [
-          { title: { contains, mode: 'insensitive' } },
-          ...(categoryIds.length > 0 ? [{ categoryId: { in: categoryIds } }] : []),
-        ],
+        title: { contains, mode: 'insensitive' }
       },
       select: {
         id: true,
@@ -116,12 +113,15 @@ async function searchInDatabase(query: string) {
         slug: true,
         image: true,
         publishedAt: true,
-        category: { select: { name: true, color: true } },
+        category: { select: { name: true, color: true } }
       },
       orderBy: [{ featured: 'desc' }, { publishedAt: 'desc' }],
-      take: LIMIT,
-    }),
+      take: LIMIT
+    })
   ])
+
+  const searchTime = Date.now() - startTime
+  console.log(`📊 PostgreSQL search took ${searchTime}ms`)
 
   return { events, venues, posts }
 }
@@ -135,6 +135,8 @@ export async function GET(request: NextRequest) {
 
     // Usar cache para búsquedas populares (más de 2 caracteres)
     const cacheKey = cacheKeys.search(q)
+    
+    // Usar TTL del cache configurado
     const results = await withCache(
       cacheKey,
       () => intelligentSearch(q),

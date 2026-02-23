@@ -8,9 +8,12 @@ export const redis = new Redis({
 
 // Tiempos de cache en segundos
 export const CACHE_TTL = {
-  SEARCH: 3600,        // 1 hora para búsquedas
-  POPULAR: 7200,       // 2 horas para contenido popular
-  CATEGORIES: 86400,   // 24 horas para categorías
+  SEARCH: 30 * 60, // 30 minutes - popular searches
+  POPULAR: 2 * 60 * 60, // 2 hours - popular content
+  CATEGORIES: 24 * 60 * 60, // 24 hours - categories rarely change
+  EVENTS: 15 * 60, // 15 minutes - events can change
+  VENUES: 2 * 60 * 60, // 2 hours - venues rarely change
+  POSTS: 1 * 60 * 60, // 1 hour - posts
 } as const
 
 // Función para generar clave de cache
