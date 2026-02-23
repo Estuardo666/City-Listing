@@ -1,3 +1,5 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
 import { Globe, ImageIcon, MapPin, Phone, ShieldCheck, Sparkles } from 'lucide-react'
