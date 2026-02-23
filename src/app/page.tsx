@@ -50,7 +50,8 @@ export default async function HomePage() {
     if (existing) existing.count++
     else categoryCountMap.set(key, { name: e.category.name, icon: e.category.icon, slug: e.category.slug, count: 1 })
   }
-  const categories = Array.from(categoryCountMap.values()).slice(0, 8)
+  // Tomamos hasta 10 categorías para formar un grid perfecto de 5x2 o 2x5
+  const categories = Array.from(categoryCountMap.values()).slice(0, 10)
 
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -92,8 +93,8 @@ export default async function HomePage() {
   }))
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20 pb-10 pt-14">
-      <main className="mt-8 space-y-14 sm:space-y-20">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20">
+      <main className="space-y-16 sm:space-y-20">
         <HomeHeroMap
           venues={heroVenues}
           events={heroEvents}
@@ -101,16 +102,13 @@ export default async function HomePage() {
           mapStyle={mapStyle}
         />
 
-        <div className="section-shell space-y-16 sm:space-y-20">
+        <div className="section-shell space-y-20 sm:space-y-24">
 
           {/* Categories visual grid */}
           <HomeCategoriesGrid categories={categories} />
 
           {/* Featured events masonry */}
           <HomeFeaturedEvents events={heroEvents} />
-
-          {/* Related events */}
-          <HomeRelatedEvents events={heroEvents} />
 
           {/* Latest venues horizontal scroll */}
           <HomeLatestVenues venues={heroVenues} />
@@ -120,6 +118,9 @@ export default async function HomePage() {
 
           {/* Promo / trending masonry grid */}
           <HomePromoGrid venues={heroVenues} events={heroEvents} />
+
+          {/* Related events */}
+          <HomeRelatedEvents events={heroEvents} />
 
           {/* Blog */}
           {featuredPosts.length > 0 && (

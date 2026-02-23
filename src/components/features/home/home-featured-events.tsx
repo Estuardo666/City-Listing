@@ -100,29 +100,30 @@ export function HomeFeaturedEvents({ events }: HomeFeaturedEventsProps) {
   const [main, second, third, fourth, fifth] = display
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🎉 Imperdibles</p>
-          <h2 className="mt-1 text-3xl font-bold text-foreground sm:text-4xl">Eventos destacados</h2>
+          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">Eventos destacados</h2>
+          <p className="text-sm text-muted-foreground sm:text-base">No te pierdas los eventos más importantes de Loja</p>
         </div>
         <Link
           href="/eventos"
-          className="hidden items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent sm:inline-flex"
+          className="hidden items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent sm:inline-flex"
         >
-          Ver todos <ArrowRight className="h-3.5 w-3.5" />
+          Ver todos <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
 
       {/* ── Desktop bento grid (md+) ── */}
-      <div className="hidden md:grid md:grid-cols-3 md:grid-rows-2 md:gap-3" style={{ height: '550px' }}>
+      <div className="hidden md:grid md:grid-cols-3 md:grid-rows-2 md:gap-4" style={{ height: '600px' }}>
         {/* Hero: col 1, row 1-2 */}
         {main && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.5 }}
             className="row-span-2 h-full"
           >
             <EventHeroCard event={main} />
@@ -131,10 +132,10 @@ export function HomeFeaturedEvents({ events }: HomeFeaturedEventsProps) {
         {/* Col 2-3, row 1 */}
         {second && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.35, delay: 0.07 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
             className="h-full"
           >
             <EventMediumCard event={second} />
@@ -142,10 +143,10 @@ export function HomeFeaturedEvents({ events }: HomeFeaturedEventsProps) {
         )}
         {third && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.35, delay: 0.12 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
             className="h-full"
           >
             <EventMediumCard event={third} />
@@ -154,10 +155,10 @@ export function HomeFeaturedEvents({ events }: HomeFeaturedEventsProps) {
         {/* Col 2-3, row 2 */}
         {fourth && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.35, delay: 0.17 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
             className="h-full"
           >
             <EventMediumCard event={fourth} />
@@ -165,10 +166,10 @@ export function HomeFeaturedEvents({ events }: HomeFeaturedEventsProps) {
         )}
         {fifth && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.35, delay: 0.22 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
             className="h-full"
           >
             <EventMediumCard event={fifth} />
@@ -177,25 +178,25 @@ export function HomeFeaturedEvents({ events }: HomeFeaturedEventsProps) {
       </div>
 
       {/* ── Mobile stack ── */}
-      <div className="flex flex-col gap-3 md:hidden">
+      <div className="flex flex-col gap-4 md:hidden">
         {main && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.5 }}
           >
             <EventHeroCard event={main} />
           </motion.div>
         )}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {display.slice(1, 5).map((event, i) => (
             <motion.div
               key={event.id}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: i * 0.07 }}
+              transition={{ duration: 0.4, delay: i * 0.1 }}
             >
               <EventMediumCard event={event} />
             </motion.div>
@@ -206,9 +207,9 @@ export function HomeFeaturedEvents({ events }: HomeFeaturedEventsProps) {
       <div className="sm:hidden">
         <Link
           href="/eventos"
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-semibold text-foreground"
         >
-          Ver todos los eventos <ArrowRight className="h-3.5 w-3.5" />
+          Ver todos los eventos <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </section>

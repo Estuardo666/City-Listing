@@ -45,25 +45,20 @@ function matchesSearch(item: ExploreItem, query: string): boolean {
 
 export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroMapProps) {
   const router = useRouter()
-  const [variant, setVariant] = useState<'clean' | 'emotional'>('clean')
   const [q, setQ] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [proximityRadius, setProximityRadius] = useState<number | null>(null)
-  const quickSearches = ['Cafe', 'Conciertos', 'Brunch', 'Rooftop', 'Pet friendly']
+  const quickSearches = [
+    'Café', 'Restaurantes', 'Bares', 'Conciertos', 'Arte',
+    'Naturaleza', 'Deportes', 'Rooftop', 'Brunch', 'Pet friendly'
+  ]
   const mapRef = useRef<{ flyTo: (opts: { center: [number, number]; zoom: number; duration: number }) => void } | null>(null)
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem('home-hero-variant')
-    if (stored === 'clean' || stored === 'emotional') {
-      setVariant(stored)
-      return
-    }
-    const next = Math.random() > 0.5 ? 'clean' : 'emotional'
-    setVariant(next)
-    window.localStorage.setItem('home-hero-variant', next)
-  }, [])
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startX, setStartX] = useState(0)
+  const [scrollLeft, setScrollLeft] = useState(0)
 
   const allItems = useMemo<ExploreItem[]>(() => {
     const venueItems: ExploreItem[] = venues.map((venue) => ({ ...venue, _type: 'venue' as const }))
@@ -79,7 +74,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
   const markers = useMemo(() => buildMarkers(visibleItems), [visibleItems])
   const suggestions = useMemo(() => {
     const term = q.trim().toLowerCase()
-    if (term.length < 2) return []
+    if (term.length < 3) return []
 
     return allItems
       .filter((item) => {
@@ -119,6 +114,49 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
     )
   }
 
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const wheelHandler = (e: WheelEvent) => {
+      const isScrollable = container.scrollWidth > container.clientWidth
+      if (isScrollable) {
+        e.preventDefault()
+        e.stopPropagation()
+        container.scrollLeft += e.deltaY
+      }
+    }
+
+    container.addEventListener('wheel', wheelHandler, { passive: false })
+    
+    return () => {
+      container.removeEventListener('wheel', wheelHandler)
+    }
+  }, [])
+
+  // Mouse drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true)
+    setStartX(e.pageX - (scrollContainerRef.current?.offsetLeft || 0))
+    setScrollLeft(scrollContainerRef.current?.scrollLeft || 0)
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return
+    e.preventDefault()
+    const x = e.pageX - (scrollContainerRef.current?.offsetLeft || 0)
+    const walk = (x - startX) * 2
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk
+  }
+
+  const handleMouseLeave = () => {
+    setIsDragging(false)
+  }
+
   const handleSearchSubmit = () => {
     if (!q.trim()) {
       router.push('/explorar')
@@ -128,7 +166,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
   }
 
   return (
-    <section className="relative h-[80vh] w-full overflow-hidden border-y border-border/60">
+    <section className="relative h-[85vh] w-full overflow-hidden border-y border-border/60 bg-background">
       <ExploreMapPanel
         markers={markers}
         items={visibleItems}
@@ -143,32 +181,37 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
           mapRef.current = ref
         }}
         showSearchOnMoveToggle={false}
-        className="h-full w-full"
+        className="h-full w-full opacity-70 transition-opacity duration-500"
       />
 
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-        className="pointer-events-none absolute inset-x-3 bottom-4 z-20 mx-auto w-full max-w-3xl sm:bottom-6"
+        layout
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="absolute left-4 right-4 bottom-4 z-20 sm:left-6 sm:bottom-6 md:left-8 md:bottom-8 md:right-auto md:w-[460px] max-w-full"
       >
-        <div
-          className={`pointer-events-auto rounded-2xl border border-border/80 p-3 shadow-2xl backdrop-blur-xl supports-[backdrop-filter]:bg-background/85 md:p-4 ${
-            variant === 'clean' ? 'bg-background/95' : 'bg-gradient-to-br from-background/95 via-background/90 to-primary/10'
-          }`}
+        <motion.div
+          layout
+          className="pointer-events-auto flex flex-col gap-3.5 sm:gap-4 rounded-[2rem] border border-border/50 bg-card p-4 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-card sm:p-5"
+          suppressHydrationWarning
         >
-          <div className="mb-4 flex flex-wrap items-center gap-3 px-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-foreground">
-              <Sparkles className="h-3 w-3" />
-              {variant === 'clean' ? 'Descubre Loja en vivo' : 'Tu próximo plan está aquí'}
-            </span>
-            <p className="text-sm text-foreground md:text-base">
-              {variant === 'clean' ? '¿Qué plan quieres hacer hoy?' : 'Hoy puede ser una noche épica en Loja'}
+          {/* Header */}
+          <motion.div layout className="flex flex-col gap-0.5 sm:gap-1">
+            <div className="flex items-center gap-2 text-foreground">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
+                Tu próximo plan está aquí
+              </h2>
+            </div>
+            <p className="text-sm font-medium text-muted-foreground pl-7">
+              Hoy puede ser una noche épica en Loja
             </p>
-          </div>
+          </motion.div>
 
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          {/* Search Input */}
+          <motion.div layout className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               value={q}
@@ -178,119 +221,150 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
               }}
               placeholder="Busca lugares, eventos o categorías en el mapa"
               aria-label="Buscar lugares, eventos o categorías"
-              className="h-12 w-full rounded-xl border border-border bg-background pl-10 pr-10 text-base text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/30 md:h-14 md:text-lg"
+              suppressHydrationWarning
+              className="h-12 w-full rounded-2xl border border-border/50 bg-input pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground shadow-sm backdrop-blur-md transition-all focus:border-primary/50 focus:bg-input focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-white/10 dark:bg-input dark:focus:bg-input"
             />
             <AnimatePresence>
               {q.length > 0 && (
                 <motion.button
                   type="button"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.8, rotate: -90 }}
+                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, rotate: 90 }}
+                  transition={{ duration: 0.2 }}
                   onClick={() => setQ('')}
                   aria-label="Limpiar búsqueda"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-black/10 hover:text-foreground dark:hover:bg-white/10"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </motion.button>
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
 
-          <AnimatePresence>
+          {/* Suggestions AnimatePresence */}
+          <AnimatePresence mode="popLayout">
             {suggestions.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                className="mt-3 rounded-xl border border-border bg-card p-2"
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden rounded-2xl border border-border/50 bg-popover backdrop-blur-md shadow-md dark:border-white/10 dark:bg-popover"
               >
-                {suggestions.map((suggestion) => (
-                  <button
-                    key={suggestion.id}
-                    type="button"
-                    onClick={() => setQ(suggestion.label)}
-                    className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
-                  >
-                    <span>{suggestion.label}</span>
-                    <span className="text-xs uppercase text-muted-foreground">
-                      {suggestion.type === 'venue' ? 'Local' : 'Evento'}
-                    </span>
-                  </button>
-                ))}
+                <div className="p-1">
+                  {suggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      type="button"
+                      onClick={() => setQ(suggestion.label)}
+                      className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground dark:hover:bg-white/10"
+                    >
+                      <span>{suggestion.label}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {suggestion.type === 'venue' ? 'Local' : 'Evento'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div className="mt-3.5 flex flex-wrap items-center gap-2.5 px-1">
-            {quickSearches.map((term) => (
-              <button
-                key={term}
-                type="button"
-                onClick={() => setQ(term)}
-                className="rounded-full border border-border bg-secondary/70 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-              >
-                {term}
-              </button>
-            ))}
-          </div>
+          {/* Tags (carousel style) */}
+          <motion.div layout className="relative">
+            <div 
+              ref={scrollContainerRef}
+              className="flex w-full gap-1.5 overflow-x-auto pb-2 scrollbar-minimal scroll-smooth touch-pan-x cursor-grab active:cursor-grabbing select-none" 
+              style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+            >
+              {quickSearches.map((term) => (
+                <button
+                  key={term}
+                  type="button"
+                  onClick={() => setQ(term)}
+                  className="flex-shrink-0 rounded-xl border border-border/50 bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:scale-105 hover:bg-emerald/10 hover:text-emerald hover:border-emerald/20 dark:bg-white/5 dark:hover:bg-emerald/20"
+                >
+                  {term}
+                </button>
+              ))}
+            </div>
+            {/* Gradient edges for scroll effect */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-card to-transparent z-10" suppressHydrationWarning />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-card to-transparent z-10" suppressHydrationWarning />
+          </motion.div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2.5 px-1">
+          {/* Location button and filters */}
+          <motion.div layout className="flex items-center gap-1 pt-0.5 w-full overflow-hidden flex-nowrap">
             <button
               type="button"
               onClick={handleRequestLocation}
-              className="inline-flex items-center gap-1.5 rounded-full border border-primary/35 bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground shadow-sm transition-all hover:scale-105 hover:bg-primary/90 whitespace-nowrap"
             >
-              {locationLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LocateFixed className="h-3.5 w-3.5" />}
+              {locationLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
               Cerca de mí
             </button>
 
-            {userLocation && (
-              <>
-                {PROXIMITY_STEPS.map((step) => (
-                  <button
-                    key={step}
-                    type="button"
-                    onClick={() => setProximityRadius(step)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                      proximityRadius === step
-                        ? 'border-primary/50 bg-primary text-primary-foreground'
-                        : 'border-border bg-secondary/70 text-foreground hover:bg-accent'
-                    }`}
-                  >
-                    {step >= 1000 ? `${step / 1000} km` : `${step} m`}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserLocation(null)
-                    setProximityRadius(null)
-                  }}
-                  className="rounded-full border border-border bg-secondary/70 px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+            <AnimatePresence mode="popLayout">
+              {userLocation && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="flex flex-wrap items-center gap-1 w-full"
                 >
-                  Quitar proximidad
-                </button>
-              </>
-            )}
-          </div>
+                  {PROXIMITY_STEPS.map((step) => (
+                    <button
+                      key={step}
+                      type="button"
+                      onClick={() => setProximityRadius(step)}
+                      className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-bold shadow-sm backdrop-blur-md transition-all hover:scale-105 whitespace-nowrap ${
+                        proximityRadius === step
+                          ? 'border-transparent bg-foreground text-background shadow-md'
+                          : 'border-border/50 bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground dark:border-white/10 dark:bg-secondary dark:hover:bg-accent'
+                      }`}
+                    >
+                      {step >= 1000 ? `${step / 1000} km` : `${step} m`}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserLocation(null)
+                      setProximityRadius(null)
+                    }}
+                    className="flex shrink-0 h-5 w-5 items-center justify-center rounded-full border border-border/50 bg-secondary text-secondary-foreground shadow-sm backdrop-blur-md transition-all hover:scale-105 hover:border-destructive hover:bg-destructive hover:text-destructive-foreground dark:border-white/10 dark:bg-secondary dark:hover:bg-destructive"
+                    aria-label="Quitar proximidad"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
-          <div className="flex flex-wrap items-center gap-2.5 px-1 pt-3 text-xs text-foreground md:text-sm">
-            <span>{visibleItems.length} resultados en tiempo real</span>
-            <span className="h-1 w-1 rounded-full bg-muted-foreground/60" />
-            <span>{venueCount} locales</span>
-            <span className="h-1 w-1 rounded-full bg-muted-foreground/60" />
-            <span>{eventCount} eventos</span>
-            <span className="h-1 w-1 rounded-full bg-muted-foreground/60" />
+          {/* Footer stats */}
+          <motion.div layout className="flex flex-wrap items-center gap-x-1.5 gap-y-1 pt-1 text-[11px] sm:text-xs font-medium text-muted-foreground border-t border-border/50 dark:border-white/10">
+            <span className="pt-1.5">{visibleItems.length} resultados</span>
+            <span className="hidden sm:inline pt-1.5">•</span>
+            <span className="pt-1.5">{venueCount} locales</span>
+            <span className="hidden sm:inline pt-1.5">•</span>
+            <span className="pt-1.5">{eventCount} eventos</span>
+            <span className="hidden sm:inline pt-1.5">•</span>
             <button
               type="button"
               onClick={handleSearchSubmit}
-              className="font-semibold text-primary underline decoration-primary/50 underline-offset-2 hover:decoration-primary"
+              className="font-bold text-primary transition-colors hover:text-primary/80 pt-1.5 ml-auto sm:ml-0"
             >
-              {variant === 'clean' ? 'Ver resultados completos' : 'Quiero descubrir ahora'}
+              Quiero descubrir ahora
             </button>
-          </div>
-        </div>
+          </motion.div>
+
+        </motion.div>
       </motion.div>
     </section>
   )

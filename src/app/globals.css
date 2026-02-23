@@ -296,3 +296,13 @@ html.dark::-webkit-scrollbar-thumb {
 html.dark::-webkit-scrollbar-thumb:hover {
   background: hsl(220 10% 60%);
 }
+
+/* Minimal scrollbar for carousel */
+.scrollbar-minimal {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-minimal::-webkit-scrollbar {
+  display: none;
+}

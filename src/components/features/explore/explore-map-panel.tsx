@@ -692,7 +692,7 @@ export function ExploreMapPanel({
 
       {/* Legend */}
       <div
-        className="absolute bottom-4 left-4 flex items-center gap-2 rounded-xl border border-border/60 bg-card/90 px-3 py-2 backdrop-blur-sm"
+        className="absolute bottom-4 right-4 flex items-center gap-2 rounded-xl border border-border/60 bg-card/90 px-3 py-2 backdrop-blur-sm"
         style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
       >
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">

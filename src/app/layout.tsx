@@ -52,6 +52,16 @@ export default function RootLayout({
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.unregister());
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then((keys) => {
+        keys.forEach((key) => caches.delete(key));
+      });
+    }
   } catch {}
 })();`,
           }}

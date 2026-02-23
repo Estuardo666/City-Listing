@@ -8,25 +8,21 @@ export function ServiceWorkerRegister() {
       return
     }
 
-    const registerServiceWorker = async () => {
+    const cleanupServiceWorkers = async () => {
       try {
-        await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(registrations.map((registration) => registration.unregister()))
+
+        if ('caches' in window) {
+          const keys = await caches.keys()
+          await Promise.all(keys.map((key) => caches.delete(key)))
+        }
       } catch {
-        // noop: service worker registration failure should not block the app
+        // noop: cleanup should never block app render
       }
     }
 
-    if (document.readyState === 'complete') {
-      void registerServiceWorker()
-      return
-    }
-
-    const onLoad = () => {
-      void registerServiceWorker()
-    }
-
-    window.addEventListener('load', onLoad)
-    return () => window.removeEventListener('load', onLoad)
+    void cleanupServiceWorkers()
   }, [])
 
   return null
