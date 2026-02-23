@@ -1,9 +1,10 @@
 import { Redis } from '@upstash/redis'
 
 // Configuración de Redis con Upstash
+// Make it safe for build time when env vars might be missing
 export const redis = new Redis({
-  url: process.env.KV_REST_API_URL!,
-  token: process.env.KV_REST_API_TOKEN!,
+  url: process.env.KV_REST_API_URL || 'https://dummy-url-for-build.upstash.io',
+  token: process.env.KV_REST_API_TOKEN || 'dummy-token-for-build',
 })
 
 // Tiempos de cache en segundos
@@ -28,6 +29,11 @@ export async function withCache<T>(
   ttl: number = CACHE_TTL.SEARCH
 ): Promise<T> {
   try {
+    // Si no hay URL de Redis configurada (ej. en build), bypass del cache
+    if (!process.env.KV_REST_API_URL) {
+      return fetcher()
+    }
+
     // 1. Intentar obtener del cache
     const cached = await redis.get<T>(key)
     if (cached !== null) {
@@ -54,6 +60,9 @@ export async function withCache<T>(
 // Función para invalidar cache
 export async function invalidateCache(pattern: string): Promise<void> {
   try {
+    // Si no hay URL de Redis configurada, no hacer nada
+    if (!process.env.KV_REST_API_URL) return
+
     const keys = await redis.keys(pattern)
     if (keys.length > 0) {
       await redis.del(...keys)
