@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence, type Transition } from 'framer-motion'
 import { Compass, Search, X, Menu, ChevronRight } from 'lucide-react'
@@ -55,9 +56,14 @@ export function SiteHeader() {
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6">
           {/* Logo */}
           <Link href="/" className="flex shrink-0 items-center gap-2 press-scale">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white">
-              <Compass className="h-3.5 w-3.5" />
-            </span>
+            <Image 
+              src="/viveloja.png" 
+              alt="Vive Loja" 
+              width={32} 
+              height={32}
+              className="h-8 w-8 rounded-lg object-contain"
+              priority
+            />
             <span className="hidden text-sm font-semibold text-foreground sm:block">
               Vive Loja
             </span>

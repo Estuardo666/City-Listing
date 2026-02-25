@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, Compass, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,33 @@ import { HomeBlogSkeleton } from '@/components/features/home/home-blog-skeleton'
 
 // Revalidate every 1 hour for ISR (Incremental Static Regeneration)
 export const revalidate = 3600
+
+export const metadata: Metadata = {
+  title: 'Vive Loja - Descubre Eventos, Locales y Noticias de tu Ciudad',
+  description: 'Explora los mejores eventos, restaurantes, bares, locales y noticias de Loja, Ecuador. Tu guía completa de entretenimiento y diversión local.',
+  openGraph: {
+    title: 'Vive Loja - Descubre Eventos, Locales y Noticias de tu Ciudad',
+    description: 'Explora los mejores eventos, restaurantes, bares, locales y noticias de Loja, Ecuador.',
+    url: 'https://viveloja.com',
+    siteName: 'Vive Loja',
+    images: [
+      {
+        url: 'https://viveloja.com/viveloja.png',
+        width: 1200,
+        height: 630,
+        alt: 'Vive Loja',
+      },
+    ],
+    locale: 'es_ES',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Vive Loja - Descubre Eventos, Locales y Noticias',
+    description: 'Explora los mejores eventos, restaurantes, bares y noticias de Loja, Ecuador.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+}
 
 export default function HomePage() {
 
