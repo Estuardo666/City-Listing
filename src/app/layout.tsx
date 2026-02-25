@@ -25,6 +25,9 @@ const googleSans = localFont({
 export const metadata: Metadata = {
   title: 'Vive Loja - Eventos, Locales y Noticias',
   description: 'Descubre todo lo que pasa en Loja, Ecuador. Eventos, restaurantes, bares, noticias y más.',
+  verification: {
+    google: 'qHtaXeEOJoJ1zVE1qL3381df3ufnZOBf4zVl4SgxZ2Y',
+  },
 }
 
 export const viewport = {
@@ -49,8 +52,7 @@ export default function RootLayout({
             __html: `(() => {
   try {
     const stored = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
+    const theme = stored === 'dark' || stored === 'light' ? stored : 'light';
     document.documentElement.classList.toggle('dark', theme === 'dark');
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((regs) => {
