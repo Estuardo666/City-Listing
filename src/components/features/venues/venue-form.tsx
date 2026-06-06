@@ -26,8 +26,13 @@ import {
 } from '@/components/ui/select'
 import { MediaUrlInput } from '@/components/features/media/media-url-input'
 import { VenueFormTextSections } from '@/components/features/venues/venue-form-text-sections'
-import { LocationPickerMap } from '@/components/features/map/location-picker-map'
+import dynamic from 'next/dynamic'
 import type { VenueCategory } from '@/types/venue'
+
+const LocationPickerMap = dynamic(
+  () => import('@/components/features/map/location-picker-map').then((mod) => mod.LocationPickerMap),
+  { ssr: false }
+)
 
 type VenueFormProps = {
   categories: VenueCategory[]
@@ -53,6 +58,7 @@ export function VenueForm({ categories, initialData }: VenueFormProps) {
       lng: initialData?.lng ?? null,
       categoryId: initialData?.categoryId ?? '',
       featured: initialData?.featured ?? false,
+      priceRange: initialData?.priceRange ?? null,
     },
   })
 
@@ -111,6 +117,31 @@ export function VenueForm({ categories, initialData }: VenueFormProps) {
                         {category.name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="priceRange"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Rango de precios</FormLabel>
+                <Select onValueChange={(v) => field.onChange(v === 'none' ? null : v)} defaultValue={field.value ?? 'none'}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">No especificar</SelectItem>
+                    <SelectItem value="$">$ - Económico</SelectItem>
+                    <SelectItem value="$$">$$ - Moderado</SelectItem>
+                    <SelectItem value="$$$">$$$ - Premium</SelectItem>
+                    <SelectItem value="$$$$">$$$$ - Lujo</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

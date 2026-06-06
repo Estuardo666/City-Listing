@@ -2,18 +2,29 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Building2, CalendarDays, Clock3, DollarSign, Edit, ExternalLink,
-  ImageIcon, MapPin, ShieldCheck, Sparkles, UserCircle2
+  ImageIcon, MapPin, Repeat, ShieldCheck, Sparkles, Star, UserCircle2
 } from 'lucide-react'
 import { EventsMap } from '@/components/features/events/events-map'
-import { EventShareButton } from '@/components/features/events/event-share-button'
+import { MediaGallery } from '@/components/media/media-gallery'
+import { ReviewForm } from '@/components/review/review-form'
+import { ReviewList } from '@/components/review/review-list'
+import { ShareButton } from '@/components/share/share-button'
 import { formatDateTime } from '@/lib/utils'
 import type { EventWithRelations } from '@/types/event'
 
 type EventDetailProps = {
   event: EventWithRelations
+  currentUserId?: string
 }
 
-export function EventDetail({ event }: EventDetailProps) {
+const RECURRENCE_LABELS: Record<string, string> = {
+  WEEKLY: 'Semanal',
+  MONTHLY: 'Mensual',
+  DAILY: 'Diario',
+  YEARLY: 'Anual',
+}
+
+export function EventDetail({ event, currentUserId }: EventDetailProps) {
   const mapQuery = encodeURIComponent(event.address ?? event.location)
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -21,6 +32,10 @@ export function EventDetail({ event }: EventDetailProps) {
     process.env.MAPBOX_STYLE ??
     process.env.NEXT_PUBLIC_MAPBOX_STYLE ??
     'mapbox://styles/mapbox/streets-v12'
+
+  const hasMedia = event.media.length > 0
+  const hasReviews = event.reviews.length > 0
+  const hasRecurrence = event.isRecurring && event.recurrenceRule
 
   return (
     <article className="space-y-0">
@@ -48,12 +63,14 @@ export function EventDetail({ event }: EventDetailProps) {
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
             {event.category.icon ?? '🎟️'} {event.category.name}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300 backdrop-blur-md">
-            <ShieldCheck className="h-3.5 w-3.5" /> Aprobado
-          </span>
           {event.featured && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
               <Sparkles className="h-3.5 w-3.5" /> Destacado
+            </span>
+          )}
+          {hasRecurrence && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/90 px-3 py-1 text-sm font-semibold text-white">
+              <Repeat className="h-3.5 w-3.5" /> Recurrente
             </span>
           )}
         </div>
@@ -66,8 +83,38 @@ export function EventDetail({ event }: EventDetailProps) {
           <p className="mt-2 line-clamp-2 text-sm text-white/75 sm:text-base">
             {event.description}
           </p>
+          {/* Rating in hero */}
+          {event.avgRating !== null && event.reviewCount > 0 && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`h-4 w-4 ${
+                      star <= Math.round(event.avgRating ?? 0)
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'fill-white/30 text-white/30'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-sm font-medium text-white/90">
+                {(event.avgRating ?? 0).toFixed(1)}
+              </span>
+              <span className="text-xs text-white/60">
+                ({event.reviewCount} {event.reviewCount === 1 ? 'reseña' : 'reseñas'})
+              </span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* ── Media Gallery ── */}
+      {hasMedia && (
+        <div className="mt-6">
+          <MediaGallery media={event.media} />
+        </div>
+      )}
 
       {/* ── 2-column body ── */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
@@ -130,6 +177,36 @@ export function EventDetail({ event }: EventDetailProps) {
             </div>
           )}
 
+          {/* Recurrence info */}
+          {hasRecurrence && event.recurrenceRule && (
+            <div className="rounded-2xl border border-border/50 bg-card p-5">
+              <h2 className="text-lg font-bold text-foreground">🔁 Evento recurrente</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Se repite {RECURRENCE_LABELS[event.recurrenceRule.frequency]?.toLowerCase() ?? event.recurrenceRule.frequency}
+                {event.recurrenceRule.interval > 1 && ` cada ${event.recurrenceRule.interval} ${event.recurrenceRule.frequency === 'WEEKLY' ? 'semanas' : 'meses'}`}
+              </p>
+            </div>
+          )}
+
+          {/* Reviews */}
+          <div className="rounded-2xl border border-border/50 bg-card p-5">
+            <h2 className="text-lg font-bold text-foreground">
+              ⭐ Reseñas {hasReviews && `(${event.reviews.length})`}
+            </h2>
+            {currentUserId && currentUserId !== event.userId && (
+              <div className="mt-4 border-b border-border/50 pb-4">
+                <h3 className="text-sm font-medium mb-3">Deja tu reseña</h3>
+                <ReviewForm entityType="event" entityId={event.id} />
+              </div>
+            )}
+            <div className="mt-4">
+              <ReviewList
+                reviews={event.reviews}
+                currentUserId={currentUserId}
+              />
+            </div>
+          </div>
+
           {/* Map */}
           {event.lat !== null && event.lng !== null && (
             <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
@@ -174,7 +251,7 @@ export function EventDetail({ event }: EventDetailProps) {
             >
               <ExternalLink className="h-4 w-4" /> Cómo llegar
             </a>
-            <EventShareButton title={event.title} />
+            <ShareButton url={`/eventos/${event.slug}`} title={event.title} />
           </div>
 
           {/* Info card */}

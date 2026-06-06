@@ -120,6 +120,12 @@ export async function createEventAction(input: unknown): Promise<ActionResponse<
           },
         },
         venue: true,
+        media: { orderBy: { order: 'asc' } },
+        reviews: {
+          include: { user: { select: { id: true, name: true, image: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+        recurrenceRule: true,
       },
     })
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -26,9 +27,13 @@ import {
 } from '@/components/ui/select'
 import { MediaUrlInput } from '@/components/features/media/media-url-input'
 import { VenueFormTextSections } from '@/components/features/venues/venue-form-text-sections'
-import { LocationPickerMap } from '@/components/features/map/location-picker-map'
 import type { VenueWithRelations } from '@/types/venue'
 import type { VenueCategory } from '@/types/venue'
+
+const LocationPickerMap = dynamic(
+  () => import('@/components/features/map/location-picker-map').then((mod) => mod.LocationPickerMap),
+  { ssr: false }
+)
 
 type VenueEditFormProps = {
   venue: VenueWithRelations

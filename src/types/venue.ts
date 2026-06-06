@@ -20,6 +20,27 @@ export type VenueWithRelations = Prisma.VenueGetPayload<{
         address: true
       }
     }
+    media: {
+      orderBy: { order: 'asc' }
+    }
+    operatingHours: true
+    reviews: {
+      include: {
+        user: {
+          select: {
+            id: true
+            name: true
+            image: true
+          }
+        }
+      }
+      orderBy: { createdAt: 'desc' }
+    }
+    promotions: {
+      where: { status: 'ACTIVE' }
+      orderBy: { createdAt: 'desc' }
+    }
+    reservationSettings: true
   }
 }>
 
@@ -57,6 +78,11 @@ export type VenueListItem = Prisma.VenueGetPayload<{
     status: true
     phone: true
     website: true
+    priceRange: true
+    avgRating: true
+    reviewCount: true
+    verified: true
+    badge: true
     category: {
       select: {
         id: true
@@ -108,6 +134,11 @@ export type VenueAdminListItem = Prisma.VenueGetPayload<{
     lng: true
     status: true
     featured: true
+    priceRange: true
+    avgRating: true
+    reviewCount: true
+    verified: true
+    badge: true
     createdAt: true
     category: {
       select: {

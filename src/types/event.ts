@@ -17,6 +17,22 @@ export type EventWithRelations = Prisma.EventGetPayload<{
         slug: true
       }
     }
+    media: {
+      orderBy: { order: 'asc' }
+    }
+    reviews: {
+      include: {
+        user: {
+          select: {
+            id: true
+            name: true
+            image: true
+          }
+        }
+      }
+      orderBy: { createdAt: 'desc' }
+    }
+    recurrenceRule: true
   }
 }>
 
@@ -56,6 +72,10 @@ export type EventListItem = Prisma.EventGetPayload<{
     venueId: true
     featured: true
     status: true
+    price: true
+    isRecurring: true
+    avgRating: true
+    reviewCount: true
     venue: {
       select: {
         id: true

@@ -4,20 +4,28 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   CalendarDays, Edit, ExternalLink, Globe,
-  ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, UserCircle2
+  ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star, UserCircle2, DollarSign, Clock
 } from 'lucide-react'
 import { VenuesMap } from '@/components/features/venues/venues-map'
 import { VenueShareButton } from '@/components/features/venues/venue-share-button'
 import { CategoryIconFallback } from '@/components/ui/category-icon-fallback'
+import { MediaGallery } from '@/components/media/media-gallery'
+import { OperatingHoursDisplay } from '@/components/operating-hours/operating-hours-display'
+import { ReviewForm } from '@/components/review/review-form'
+import { ReviewList } from '@/components/review/review-list'
+import { PromotionCard } from '@/components/promotion/promotion-card'
+import { ReservationForm } from '@/components/reservation/reservation-form'
+import { ShareButton } from '@/components/share/share-button'
 import { formatDateTime } from '@/lib/utils'
 import type { VenueWithRelations } from '@/types/venue'
 import { useState } from 'react'
 
 type VenueDetailProps = {
   venue: VenueWithRelations
+  currentUserId?: string
 }
 
-export function VenueDetail({ venue }: VenueDetailProps) {
+export function VenueDetail({ venue, currentUserId }: VenueDetailProps) {
   const [imageError, setImageError] = useState(false)
   
   const mapQuery = encodeURIComponent(venue.address ?? venue.location)
@@ -27,6 +35,12 @@ export function VenueDetail({ venue }: VenueDetailProps) {
     process.env.MAPBOX_STYLE ??
     process.env.NEXT_PUBLIC_MAPBOX_STYLE ??
     'mapbox://styles/mapbox/streets-v12'
+
+  const hasHours = venue.operatingHours !== null
+  const hasMedia = venue.media.length > 0
+  const hasReviews = venue.reviews.length > 0
+  const hasPromotions = venue.promotions.length > 0
+  const acceptsReservations = venue.reservationSettings?.acceptsReservations ?? false
 
   return (
     <article className="space-y-0">
@@ -59,12 +73,19 @@ export function VenueDetail({ venue }: VenueDetailProps) {
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
             {venue.category.icon ?? '🏬'} {venue.category.name}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300 backdrop-blur-md">
-            <ShieldCheck className="h-3.5 w-3.5" /> Verificado
-          </span>
+          {venue.verified && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300 backdrop-blur-md">
+              <ShieldCheck className="h-3.5 w-3.5" /> Verificado
+            </span>
+          )}
           {venue.featured && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
               <Sparkles className="h-3.5 w-3.5" /> Destacado
+            </span>
+          )}
+          {venue.priceRange && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-bold text-emerald-300 backdrop-blur-md">
+              <DollarSign className="h-3.5 w-3.5" /> {venue.priceRange}
             </span>
           )}
         </div>
@@ -77,8 +98,38 @@ export function VenueDetail({ venue }: VenueDetailProps) {
           <p className="mt-2 line-clamp-2 text-sm text-white/75 sm:text-base">
             {venue.description}
           </p>
+          {/* Rating in hero */}
+          {venue.avgRating !== null && venue.reviewCount > 0 && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`h-4 w-4 ${
+                      star <= Math.round(venue.avgRating ?? 0)
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'fill-white/30 text-white/30'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-sm font-medium text-white/90">
+                {(venue.avgRating ?? 0).toFixed(1)}
+              </span>
+              <span className="text-xs text-white/60">
+                ({venue.reviewCount} {venue.reviewCount === 1 ? 'reseña' : 'reseñas'})
+              </span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* ── Media Gallery ── */}
+      {hasMedia && (
+        <div className="mt-6">
+          <MediaGallery media={venue.media} />
+        </div>
+      )}
 
       {/* ── 2-column body ── */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
@@ -139,6 +190,25 @@ export function VenueDetail({ venue }: VenueDetailProps) {
             </div>
           )}
 
+          {/* Operating Hours */}
+          {hasHours && (
+            <div className="rounded-2xl border border-border/50 bg-card p-5">
+              <OperatingHoursDisplay hours={venue.operatingHours!} />
+            </div>
+          )}
+
+          {/* Promotions */}
+          {hasPromotions && (
+            <div className="rounded-2xl border border-border/50 bg-card p-5">
+              <h2 className="text-lg font-bold text-foreground">🏷️ Ofertas activas</h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {venue.promotions.map((promo) => (
+                  <PromotionCard key={promo.id} promotion={promo} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Upcoming events as cards */}
           {venue.events.length > 0 && (
             <div className="rounded-2xl border border-border/50 bg-card p-5">
@@ -162,6 +232,25 @@ export function VenueDetail({ venue }: VenueDetailProps) {
               </div>
             </div>
           )}
+
+          {/* Reviews */}
+          <div className="rounded-2xl border border-border/50 bg-card p-5">
+            <h2 className="text-lg font-bold text-foreground">
+              ⭐ Reseñas {hasReviews && `(${venue.reviews.length})`}
+            </h2>
+            {currentUserId && currentUserId !== venue.userId && (
+              <div className="mt-4 border-b border-border/50 pb-4">
+                <h3 className="text-sm font-medium mb-3">Deja tu reseña</h3>
+                <ReviewForm entityType="venue" entityId={venue.id} />
+              </div>
+            )}
+            <div className="mt-4">
+              <ReviewList
+                reviews={venue.reviews}
+                currentUserId={currentUserId}
+              />
+            </div>
+          </div>
 
           {/* Map */}
           {venue.lat !== null && venue.lng !== null && (
@@ -206,8 +295,16 @@ export function VenueDetail({ venue }: VenueDetailProps) {
             >
               <ExternalLink className="h-4 w-4" /> Cómo llegar
             </a>
-            <VenueShareButton name={venue.name} />
+            <ShareButton url={`/locales/${venue.slug}`} title={venue.name} />
           </div>
+
+          {/* Reservation */}
+          {acceptsReservations && (
+            <div className="rounded-2xl border border-border/50 bg-card p-5">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Reservar</h3>
+              <ReservationForm venueId={venue.id} />
+            </div>
+          )}
 
           {/* Info card */}
           <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
@@ -258,6 +355,18 @@ export function VenueDetail({ venue }: VenueDetailProps) {
                     >
                       {venue.website.replace(/^https?:\/\//, '')}
                     </a>
+                  </div>
+                </div>
+              )}
+
+              {venue.priceRange && (
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40">
+                    <DollarSign className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Rango de precios</p>
+                    <p className="text-sm font-semibold text-foreground">{venue.priceRange}</p>
                   </div>
                 </div>
               )}

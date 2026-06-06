@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, ImageIcon, MapPin, Sparkles } from 'lucide-react'
+import { CalendarDays, ImageIcon, MapPin, Repeat, Sparkles, Star } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 import type { EventListItem } from '@/types/event'
 
@@ -41,11 +41,23 @@ export function EventCard({ event }: EventCardProps) {
             <span className="text-xs text-muted-foreground/40">Sin imagen</span>
           </div>
         )}
-        {event.featured ? (
-          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
-            <Sparkles className="h-3 w-3" /> Destacado
+        <div className="absolute right-3 top-3 flex flex-wrap gap-1.5">
+          {event.featured && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+              <Sparkles className="h-3 w-3" /> Destacado
+            </span>
+          )}
+          {event.isRecurring && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/90 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+              <Repeat className="h-3 w-3" /> Recurrente
+            </span>
+          )}
+        </div>
+        {event.price !== null && event.price !== undefined && (
+          <span className="absolute left-3 bottom-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-bold text-white backdrop-blur-sm">
+            {event.price === 0 ? 'Gratis' : `$${event.price.toFixed(2)}`}
           </span>
-        ) : null}
+        )}
       </div>
 
       {/* Content */}
@@ -57,6 +69,27 @@ export function EventCard({ event }: EventCardProps) {
         <h3 className="mt-3 text-base font-semibold leading-snug text-foreground transition-colors duration-150 group-hover:text-primary">
           {event.title}
         </h3>
+
+        {/* Rating */}
+        {event.avgRating !== null && event.reviewCount > 0 && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`h-3 w-3 ${
+                    star <= Math.round(event.avgRating ?? 0)
+                      ? 'fill-amber-400 text-amber-400'
+                      : 'fill-gray-200 text-gray-200 dark:fill-gray-700 dark:text-gray-700'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">
+              {(event.avgRating ?? 0).toFixed(1)} ({event.reviewCount})
+            </span>
+          </div>
+        )}
 
         <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-muted-foreground">
           {event.description}

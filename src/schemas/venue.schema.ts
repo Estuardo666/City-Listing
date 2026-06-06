@@ -58,6 +58,10 @@ export const venueSchema = z.object({
   ),
   categoryId: z.string().trim().min(1, 'Selecciona una categoría'),
   featured: z.coerce.boolean().optional().default(false),
+  priceRange: z.preprocess((value) => {
+    if (value === '' || value === null || value === undefined) return null
+    return value
+  }, z.enum(['$', '$$', '$$$', '$$$$']).nullable()),
 })
 
 export const venueListFiltersSchema = z.object({

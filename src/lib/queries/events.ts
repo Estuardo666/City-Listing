@@ -33,6 +33,10 @@ const eventListSelect = Prisma.validator<Prisma.EventSelect>()({
   venueId: true,
   featured: true,
   status: true,
+  price: true,
+  isRecurring: true,
+  avgRating: true,
+  reviewCount: true,
   venue: {
     select: {
       id: true,
@@ -329,6 +333,22 @@ export async function getEventBySlug(slug: string): Promise<EventWithRelations |
         },
       },
       venue: true,
+      media: {
+        orderBy: { order: 'asc' },
+      },
+      reviews: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+      recurrenceRule: true,
     },
   })
 }

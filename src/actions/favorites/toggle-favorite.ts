@@ -11,6 +11,7 @@ const schema = z.object({
   eventId: z.string().optional(),
   venueId: z.string().optional(),
   postId:  z.string().optional(),
+  routeId: z.string().optional(),
 })
 
 type ToggleFavoriteInput = z.infer<typeof schema>
@@ -26,8 +27,8 @@ export async function toggleFavoriteAction(
     const parsed = schema.safeParse(input)
     if (!parsed.success) return { success: false, error: 'Datos inválidos' }
 
-    const { eventId, venueId, postId } = parsed.data
-    if (!eventId && !venueId && !postId) return { success: false, error: 'Debes especificar un elemento' }
+    const { eventId, venueId, postId, routeId } = parsed.data
+    if (!eventId && !venueId && !postId && !routeId) return { success: false, error: 'Debes especificar un elemento' }
 
     const userId = session.user.id
 
@@ -35,30 +36,33 @@ export async function toggleFavoriteAction(
       ? { userId_eventId: { userId, eventId } }
       : venueId
       ? { userId_venueId: { userId, venueId } }
-      : { userId_postId: { userId, postId: postId! } }
+      : postId
+      ? { userId_postId: { userId, postId } }
+      : { userId_routeId: { userId, routeId: routeId! } }
 
     const existing = await prisma.favorite.findUnique({ where })
 
     if (existing) {
       await prisma.favorite.delete({ where })
-      revalidatePaths(eventId, venueId, postId)
+      revalidatePaths(eventId, venueId, postId, routeId)
       return { success: true, data: { isFavorite: false } }
     }
 
     await prisma.favorite.create({
-      data: { userId, eventId, venueId, postId },
+      data: { userId, eventId, venueId, postId, routeId },
     })
 
-    revalidatePaths(eventId, venueId, postId)
+    revalidatePaths(eventId, venueId, postId, routeId)
     return { success: true, data: { isFavorite: true } }
   } catch {
     return { success: false, error: 'Error al actualizar favorito' }
   }
 }
 
-function revalidatePaths(eventId?: string, venueId?: string, postId?: string) {
+function revalidatePaths(eventId?: string, venueId?: string, postId?: string, routeId?: string) {
   if (eventId) revalidatePath('/eventos')
   if (venueId) revalidatePath('/locales')
   if (postId)  revalidatePath('/blog')
+  if (routeId) revalidatePath('/rutas')
   revalidatePath('/dashboard')
 }

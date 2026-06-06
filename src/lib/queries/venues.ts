@@ -30,6 +30,11 @@ const venueListSelect = Prisma.validator<Prisma.VenueSelect>()({
   status: true,
   phone: true,
   website: true,
+  priceRange: true,
+  avgRating: true,
+  reviewCount: true,
+  verified: true,
+  badge: true,
   category: {
     select: {
       id: true,
@@ -84,6 +89,11 @@ const venueAdminListSelect = Prisma.validator<Prisma.VenueSelect>()({
   lng: true,
   status: true,
   featured: true,
+  priceRange: true,
+  avgRating: true,
+  reviewCount: true,
+  verified: true,
+  badge: true,
   createdAt: true,
   category: {
     select: {
@@ -306,6 +316,27 @@ export async function getVenueBySlug(slug: string): Promise<VenueWithRelations |
           address: true,
         },
       },
+      media: {
+        orderBy: { order: 'asc' },
+      },
+      operatingHours: true,
+      reviews: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+      promotions: {
+        where: { status: 'ACTIVE' },
+        orderBy: { createdAt: 'desc' },
+      },
+      reservationSettings: true,
     },
   })
 }

@@ -6,6 +6,9 @@ import {
   eventStatusUpdateSchema,
 } from '@/schemas/event.schema'
 import { venueSchema } from '@/schemas/venue.schema'
+import { reviewSchema } from '@/schemas/review.schema'
+import { operatingHoursSchema } from '@/schemas/operating-hours.schema'
+import { mediaUploadSchema } from '@/schemas/media.schema'
 
 export const postSchema = z.object({
   title: z.string().min(3, 'Mínimo 3 caracteres'),
@@ -30,6 +33,8 @@ export type PostInput = z.infer<typeof postSchema>
 export type CategoryInput = z.infer<typeof categorySchema>
 export type EventListFiltersInput = z.infer<typeof eventListFiltersSchema>
 export type EventStatusUpdateInput = z.infer<typeof eventStatusUpdateSchema>
+export type ReviewInput = z.infer<typeof reviewSchema>
+export type OperatingHoursInput = z.infer<typeof operatingHoursSchema>
 
 export {
   eventSchema,
@@ -37,4 +42,7 @@ export {
   eventStatusSchema,
   eventStatusUpdateSchema,
   venueSchema,
+  reviewSchema,
+  operatingHoursSchema,
+  mediaUploadSchema,
 }

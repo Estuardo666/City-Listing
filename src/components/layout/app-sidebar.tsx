@@ -16,6 +16,9 @@ import {
   LogOut,
   Settings,
   FileText,
+  Route,
+  Tag,
+  ClipboardList,
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -34,6 +37,7 @@ const CREATE_NAV: NavItem[] = [
   { href: '/dashboard/eventos/crear', label: 'Crear Evento', icon: Calendar },
   { href: '/dashboard/locales/crear', label: 'Crear Local', icon: MapPin },
   { href: '/dashboard/blog/crear', label: 'Escribir Artículo', icon: FileText },
+  { href: '/rutas/crear', label: 'Crear Ruta', icon: Route },
 ]
 
 const MANAGE_NAV: NavItem[] = [
@@ -41,6 +45,7 @@ const MANAGE_NAV: NavItem[] = [
   { href: '/dashboard/eventos', label: 'Mis Eventos', icon: Calendar },
   { href: '/dashboard/locales', label: 'Mis Locales', icon: MapPin },
   { href: '/dashboard/blog', label: 'Mis Artículos', icon: FileText },
+  { href: '/dashboard/reservas', label: 'Mis Reservas', icon: ClipboardList },
   { href: '/dashboard/notificaciones', label: 'Notificaciones', icon: Bell },
 ]
 
@@ -48,6 +53,8 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/eventos', label: 'Moderar Eventos', icon: ShieldCheck, adminOnly: true },
   { href: '/admin/locales', label: 'Moderar Locales', icon: MapPin, adminOnly: true },
   { href: '/admin/blog', label: 'Moderar Blog', icon: FileText, adminOnly: true },
+  { href: '/admin/reclamos', label: 'Reclamos', icon: ClipboardList, adminOnly: true },
+  { href: '/admin/ofertas', label: 'Ofertas', icon: Tag, adminOnly: true },
 ]
 
 interface AppSidebarProps {

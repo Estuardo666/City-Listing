@@ -26,8 +26,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { MediaUrlInput } from '@/components/features/media/media-url-input'
-import { LocationPickerMap } from '@/components/features/map/location-picker-map'
+import dynamic from 'next/dynamic'
 import type { EventWithRelations } from '@/types/event'
+
+const LocationPickerMap = dynamic(
+  () => import('@/components/features/map/location-picker-map').then((mod) => mod.LocationPickerMap),
+  { ssr: false }
+)
 import type { EventCategory } from '@/types/event'
 import type { VenueSelectOption } from '@/types/venue'
 

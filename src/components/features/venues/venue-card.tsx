@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Globe, ImageIcon, MapPin, Phone, ShieldCheck, Sparkles } from 'lucide-react'
+import { Globe, ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star } from 'lucide-react'
 import { CategoryIconFallback } from '@/components/ui/category-icon-fallback'
 import type { VenueListItem } from '@/types/venue'
 import { useState } from 'react'
@@ -39,11 +39,23 @@ export function VenueCard({ venue }: VenueCardProps) {
             />
           </div>
         )}
-        {venue.featured ? (
-          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
-            <Sparkles className="h-3 w-3" /> Destacado
+        <div className="absolute right-3 top-3 flex flex-wrap gap-1.5">
+          {venue.featured && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+              <Sparkles className="h-3 w-3" /> Destacado
+            </span>
+          )}
+          {venue.badge === 'VERIFIED' && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+              <ShieldCheck className="h-3 w-3" />
+            </span>
+          )}
+        </div>
+        {venue.priceRange && (
+          <span className="absolute left-3 bottom-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-bold text-white backdrop-blur-sm">
+            {venue.priceRange}
           </span>
-        ) : null}
+        )}
       </div>
 
       {/* Content */}
@@ -55,6 +67,27 @@ export function VenueCard({ venue }: VenueCardProps) {
         <h3 className="mt-3 text-base font-semibold leading-snug text-foreground transition-colors duration-150 group-hover:text-emerald">
           {venue.name}
         </h3>
+
+        {/* Rating */}
+        {venue.avgRating !== null && venue.reviewCount > 0 && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`h-3 w-3 ${
+                    star <= Math.round(venue.avgRating ?? 0)
+                      ? 'fill-amber-400 text-amber-400'
+                      : 'fill-gray-200 text-gray-200 dark:fill-gray-700 dark:text-gray-700'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">
+              {(venue.avgRating ?? 0).toFixed(1)} ({venue.reviewCount})
+            </span>
+          </div>
+        )}
 
         <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-muted-foreground">
           {venue.description}
@@ -79,10 +112,12 @@ export function VenueCard({ venue }: VenueCardProps) {
           ) : null}
         </div>
 
-        <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-emerald">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          Verificado
-        </div>
+        {venue.verified && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-emerald">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Verificado
+          </div>
+        )}
       </div>
     </Link>
   )

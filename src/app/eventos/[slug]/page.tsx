@@ -74,7 +74,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
         </div>
 
         {/* Main detail */}
-        <EventDetail event={event} />
+        <EventDetail event={event} currentUserId={session?.user?.id} />
 
         {/* Comments */}
         <div className="rounded-2xl border border-border/50 bg-card p-6">

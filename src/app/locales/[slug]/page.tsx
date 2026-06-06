@@ -68,7 +68,7 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
         </div>
 
         {/* Main detail */}
-        <VenueDetail venue={venue} />
+        <VenueDetail venue={venue} currentUserId={session?.user?.id} />
 
         {/* Comments */}
         <div className="rounded-2xl border border-border/50 bg-card p-6">

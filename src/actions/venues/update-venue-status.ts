@@ -61,6 +61,14 @@ export async function updateVenueStatusAction(
             address: true,
           },
         },
+        media: { orderBy: { order: 'asc' } },
+        operatingHours: true,
+        reviews: {
+          include: { user: { select: { id: true, name: true, image: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+        promotions: { where: { status: 'ACTIVE' }, orderBy: { createdAt: 'desc' } },
+        reservationSettings: true,
       },
     })
 

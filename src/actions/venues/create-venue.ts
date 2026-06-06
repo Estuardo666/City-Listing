@@ -85,6 +85,7 @@ export async function createVenueAction(input: unknown): Promise<ActionResponse<
         address: parsed.data.address,
         lat: parsed.data.lat,
         lng: parsed.data.lng,
+        priceRange: parsed.data.priceRange,
         featured: parsed.data.featured,
         status: 'PENDING',
         categoryId: category.id,
@@ -115,6 +116,14 @@ export async function createVenueAction(input: unknown): Promise<ActionResponse<
             address: true,
           },
         },
+        media: { orderBy: { order: 'asc' } },
+        operatingHours: true,
+        reviews: {
+          include: { user: { select: { id: true, name: true, image: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+        promotions: { where: { status: 'ACTIVE' }, orderBy: { createdAt: 'desc' } },
+        reservationSettings: true,
       },
     })
 

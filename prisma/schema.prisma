@@ -80,6 +80,10 @@ model User {
   eventNotifications     EventNotification[]
   favorites   Favorite[]
   comments    Comment[]
+  reviews     Review[]
+  venueClaims VenueClaim[]
+  reservations Reservation[]
+  routes      Route[]
 }
 
 model VerificationToken {
@@ -107,23 +111,27 @@ model Category {
 }
 
 model Event {
-  id          String      @id @default(cuid())
-  title       String
-  slug        String      @unique
-  description String
-  content     String?
-  image       String?
-  startDate   DateTime
-  endDate     DateTime?
-  price       Float?
-  location    String
-  lat         Float?
-  lng         Float?
-  address     String?
-  status      String      @default("PENDING")
-  featured    Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id             String      @id @default(cuid())
+  title          String
+  slug           String      @unique
+  description    String
+  content        String?
+  image          String?
+  startDate      DateTime
+  endDate        DateTime?
+  price          Float?
+  location       String
+  lat            Float?
+  lng            Float?
+  address        String?
+  status         String      @default("PENDING")
+  featured       Boolean     @default(false)
+  isRecurring    Boolean     @default(false)
+  parentEventId  String?
+  avgRating      Float?
+  reviewCount    Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -134,6 +142,10 @@ model Event {
   eventNotifications EventNotification[]
   favorites   Favorite[]
   comments    Comment[]
+  media       Media[]
+  reviews     Review[]
+  recurrenceRule RecurrenceRule?
+  reservations   Reservation[]
 
   @@index([status])
   @@index([startDate])
@@ -155,8 +167,15 @@ model Venue {
   lat           Float?
   lng           Float?
   address       String?
+  priceRange    String?
   status        String      @default("PENDING")
   featured      Boolean     @default(false)
+  claimed       Boolean     @default(false)
+  claimedBy     String?
+  verified      Boolean     @default(false)
+  badge         String?
+  avgRating     Float?
+  reviewCount   Int         @default(0)
   googlePlaceId String?     @unique
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -168,10 +187,19 @@ model Venue {
   events     Event[]
   favorites  Favorite[]
   comments   Comment[]
+  media      Media[]
+  reviews    Review[]
+  operatingHours OperatingHours?
+  promotions     Promotion[]
+  reservations   Reservation[]
+  reservationSettings ReservationSettings?
+  venueClaims    VenueClaim[]
+  routeStops     RouteStop[]
 
   @@index([status])
   @@index([categoryId])
   @@index([googlePlaceId])
+  @@index([avgRating])
 }
 
 model Post {
@@ -196,6 +224,7 @@ model Post {
   favorites  Favorite[]
   comments   Comment[]
   tags       PostTag[]
+  media      Media[]
 
   @@index([status])
   @@index([publishedAt])
@@ -230,16 +259,19 @@ model Favorite {
   eventId   String?
   venueId   String?
   postId    String?
+  routeId   String?
   createdAt DateTime @default(now())
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
   venue Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
   post  Post?  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  route Route? @relation(fields: [routeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@unique([userId, venueId])
   @@unique([userId, postId])
+  @@unique([userId, routeId])
   @@index([userId])
 }
 
@@ -266,5 +298,221 @@ model Comment {
   @@index([eventId])
   @@index([venueId])
   @@index([postId])
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String
+  alt       String?
+  type      String   @default("IMAGE")
+  order     Int      @default(0)
+  venueId   String?
+  eventId   String?
+  postId    String?
+  createdAt DateTime @default(now())
+
+  venue Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  post  Post?  @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
+  @@index([eventId])
+  @@index([postId])
+}
+
+model OperatingHours {
+  id        String   @id @default(cuid())
+  venueId   String   @unique
+  mon       String?
+  tue       String?
+  wed       String?
+  thu       String?
+  fri       String?
+  sat       String?
+  sun       String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  title     String?
+  content   String?
+  userId    String
+  venueId   String?
+  eventId   String?
+  status    String   @default("APPROVED")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, venueId])
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([venueId])
+  @@index([eventId])
+  @@index([rating])
+}
+
+model VenueClaim {
+  id          String   @id @default(cuid())
+  venueId     String
+  userId      String
+  status      String   @default("PENDING")
+  proof       String?
+  message     String?
+  adminNotes  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId])
+  @@index([userId])
+  @@index([status])
+}
+
+model Promotion {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  image       String?
+  discount    String?
+  validFrom   DateTime
+  validUntil  DateTime
+  terms       String?
+  status      String    @default("PENDING")
+  featured    Boolean   @default(false)
+  venueId     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
+  @@index([status])
+  @@index([validFrom])
+  @@index([validUntil])
+}
+
+model Reservation {
+  id           String   @id @default(cuid())
+  venueId      String?
+  eventId      String?
+  userId       String
+  date         DateTime
+  time         String
+  partySize    Int
+  status       String   @default("PENDING")
+  notes        String?
+  cancelReason String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  venue Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([date])
+  @@index([status])
+}
+
+model ReservationSettings {
+  id                 String   @id @default(cuid())
+  venueId            String   @unique
+  acceptsReservations Boolean @default(true)
+  maxPartySize       Int      @default(20)
+  timeSlotDuration   Int      @default(60)
+  openingTime        String   @default("09:00")
+  closingTime        String   @default("22:00")
+  autoConfirm        Boolean  @default(false)
+  cancelBeforeHours  Int      @default(2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+}
+
+model RecurrenceRule {
+  id          String    @id @default(cuid())
+  frequency   String
+  interval    Int       @default(1)
+  daysOfWeek  String?
+  dayOfMonth  Int?
+  startDate   DateTime
+  endDate     DateTime?
+  count       Int?
+  eventId     String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Route {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  content     String?
+  image       String?
+  duration    String?
+  difficulty  String?
+  type        String
+  status      String   @default("PENDING")
+  featured    Boolean  @default(false)
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stops     RouteStop[]
+  favorites Favorite[]
+
+  @@index([status])
+  @@index([type])
+  @@index([userId])
+}
+
+model RouteStop {
+  id        String   @id @default(cuid())
+  routeId   String
+  venueId   String?
+  order     Int
+  title     String
+  notes     String?
+  duration  String?
+
+  route Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  venue Venue? @relation(fields: [venueId], references: [id], onDelete: SetNull)
+
+  @@unique([routeId, order])
+  @@index([routeId])
+}
+
+model NewsletterSubscription {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  name       String?
+  active     Boolean  @default(true)
+  token      String   @unique
+  confirmed  Boolean  @default(false)
+  preferences String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([email])
+  @@index([active])
 }
 
