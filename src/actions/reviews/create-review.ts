@@ -8,6 +8,9 @@ import { reviewSchema } from '@/schemas/review.schema'
 import { POINTS } from '@/lib/gamification'
 import { awardPointsAction, incrementUserStatsAction } from '@/actions/gamification'
 import { checkAndAwardBadgesAction } from '@/actions/gamification'
+import { containsProfanity } from '@/lib/profanity-filter'
+import { containsLinks } from '@/lib/content-validation'
+import { checkReviewRateLimit } from '@/lib/rate-limit'
 import type { ActionResponse } from '@/types/action-response'
 import type { Review, User } from '@prisma/client'
 
@@ -61,6 +64,14 @@ export async function createReviewAction(
       }
     }
 
+    const rateLimit = await checkReviewRateLimit(session.user.id)
+    if (!rateLimit.allowed) {
+      return {
+        success: false,
+        error: `Has enviado muchas reseñas. Intenta de nuevo en ${rateLimit.retryAfter} segundos.`,
+      }
+    }
+
     const existing = await prisma.review.findFirst({
       where: {
         userId: session.user.id,
@@ -75,32 +86,73 @@ export async function createReviewAction(
       }
     }
 
-    const created = await prisma.review.create({
-      data: {
-        rating: parsed.data.rating,
-        title: parsed.data.title,
-        content: parsed.data.content,
-        userId: session.user.id,
-        [`${entityType}Id`]: entityId,
-        status: 'APPROVED',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
+    const fieldsToCheck = [parsed.data.title, parsed.data.content]
+    const flagReasons: string[] = []
+
+    for (const field of fieldsToCheck) {
+      if (containsLinks(field)) {
+        return {
+          success: false,
+          error: 'No se permiten enlaces o URLs en las reseñas. Por favor, elimina los links.',
+        }
+      }
+    }
+
+    for (const field of fieldsToCheck) {
+      const profanityResult = containsProfanity(field)
+      if (profanityResult.hasProfanity) {
+        flagReasons.push('PROFANITY')
+        break
+      }
+    }
+
+    const finalStatus = flagReasons.length > 0 ? 'PENDING' : 'APPROVED'
+    const flaggedReason = flagReasons.length > 0 ? flagReasons.join(',') : null
+
+    const created = await prisma.$transaction(async (tx) => {
+      const review = await tx.review.create({
+        data: {
+          rating: parsed.data.rating,
+          title: parsed.data.title,
+          content: parsed.data.content,
+          userId: session.user.id,
+          [`${entityType}Id`]: entityId,
+          status: finalStatus,
+          flaggedReason,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
           },
         },
-      },
+      })
+
+      if (parsed.data.photos && parsed.data.photos.length > 0) {
+        await tx.reviewPhoto.createMany({
+          data: parsed.data.photos.map((url, index) => ({
+            url,
+            reviewId: review.id,
+            order: index,
+          })),
+        })
+      }
+
+      return review
     })
 
-    await recalculateAvgRating(entityType, entityId)
-
-    // Gamificación: otorgar puntos y verificar badges
-    await awardPointsAction(session.user.id, POINTS.REVIEW_TEXT, 'review_created')
-    await incrementUserStatsAction(session.user.id, { reviews: 1 })
-    await checkAndAwardBadgesAction(session.user.id)
+    if (finalStatus === 'APPROVED') {
+      await recalculateAvgRating(entityType, entityId)
+      await awardPointsAction(session.user.id, POINTS.REVIEW_TEXT, 'review_created')
+      if (parsed.data.photos && parsed.data.photos.length > 0) {
+        await awardPointsAction(session.user.id, POINTS.REVIEW_PHOTO, 'review_photo')
+      }
+      await incrementUserStatsAction(session.user.id, { reviews: 1 })
+      await checkAndAwardBadgesAction(session.user.id)
+    }
 
     if (entityType === 'venue') {
       const venue = await prisma.venue.findUnique({ where: { id: entityId }, select: { slug: true } })
@@ -108,6 +160,15 @@ export async function createReviewAction(
     } else {
       const event = await prisma.event.findUnique({ where: { id: entityId }, select: { slug: true } })
       if (event) revalidatePath(`/eventos/${event.slug}`)
+    }
+
+    revalidatePath('/admin/resenas')
+
+    if (finalStatus === 'PENDING') {
+      return {
+        success: true,
+        data: created,
+      }
     }
 
     return { success: true, data: created }
@@ -126,7 +187,7 @@ export async function deleteReviewAction(reviewId: string): Promise<ActionRespon
 
     const review = await prisma.review.findUnique({
       where: { id: reviewId },
-      select: { id: true, userId: true, venueId: true, eventId: true },
+      select: { id: true, userId: true, venueId: true, eventId: true, status: true },
     })
 
     if (!review) {
@@ -148,6 +209,8 @@ export async function deleteReviewAction(reviewId: string): Promise<ActionRespon
       const event = await prisma.event.findUnique({ where: { id: review.eventId }, select: { slug: true } })
       if (event) revalidatePath(`/eventos/${event.slug}`)
     }
+
+    revalidatePath('/admin/resenas')
 
     return { success: true }
   } catch {

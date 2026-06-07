@@ -145,7 +145,7 @@ export function AdminEventModeration({ events, selectedStatus }: AdminEventModer
                 <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
                   <p className="inline-flex items-center gap-2">
                     <Clock3 className="h-3.5 w-3.5" />
-                    Inicio: {formatDateTime(event.startDate)}
+                    Inicio: <span suppressHydrationWarning>{formatDateTime(event.startDate)}</span>
                   </p>
                   <p className="inline-flex items-center gap-2">
                     <MapPin className="h-3.5 w-3.5" />

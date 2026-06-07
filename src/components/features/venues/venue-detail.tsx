@@ -11,6 +11,9 @@ import { VenueShareButton } from '@/components/features/venues/venue-share-butto
 import { CategoryIconFallback } from '@/components/ui/category-icon-fallback'
 import { MediaGallery } from '@/components/media/media-gallery'
 import { OperatingHoursDisplay } from '@/components/operating-hours/operating-hours-display'
+import { BusinessHoursDisplay } from '@/components/business-hours/business-hours-display'
+import { ServicesDisplay } from '@/components/services/services-display'
+import { MenuDisplayV2 } from '@/components/menu/menu-display-v2'
 import { ReviewForm } from '@/components/review/review-form'
 import { ReviewList } from '@/components/review/review-list'
 import { PromotionCard } from '@/components/promotion/promotion-card'
@@ -19,6 +22,7 @@ import { ShareButton } from '@/components/share/share-button'
 import { QuestionSection } from '@/components/qa/question-section'
 import { CheckInButton } from '@/components/checkin/checkin-button'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
+import { MessageVenueButton } from '@/components/messaging/message-venue-button'
 import { MenuDisplay } from '@/components/menu/menu-display'
 import { formatDateTime } from '@/lib/utils'
 import type { VenueWithRelations } from '@/types/venue'
@@ -35,7 +39,7 @@ type QuestionItem = {
   user: { id: string; name: string | null; image: string | null }
 }
 
-type MenuItem = { id: string; name: string; description: string | null; price: number | null; image: string | null; isAvailable: boolean }
+type MenuItem = { id: string; name: string; description: string | null; price: number | null; image: string | null; isAvailable: boolean; isFeatured: boolean }
 type MenuCategory = { id: string; name: string; items: MenuItem[] }
 
 type VenueDetailProps = {
@@ -56,7 +60,8 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
     process.env.NEXT_PUBLIC_MAPBOX_STYLE ??
     'mapbox://styles/mapbox/streets-v12'
 
-  const hasHours = venue.operatingHours !== null
+  const hasHours = venue.businessHours.length > 0 || venue.operatingHours !== null
+  const hasServices = venue.services.filter((s) => s.isActive).length > 0
   const hasMedia = venue.media.length > 0
   const hasReviews = venue.reviews.length > 0
   const hasPromotions = venue.promotions.length > 0
@@ -66,7 +71,7 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
     <article className="space-y-0">
 
       {/* ── Hero full-bleed ── */}
-      <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px]">
+      <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px] mb-6">
         {venue.image && !imageError ? (
           <Image
             src={venue.image}
@@ -146,7 +151,7 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
 
       {/* ── Media Gallery ── */}
       {hasMedia && (
-        <div className="mt-6">
+        <div className="mt-0">
           <MediaGallery media={venue.media} />
         </div>
       )}
@@ -183,15 +188,15 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
               </div>
             )}
             {venue.website && (
-              <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
+              <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
                 <Globe className="h-4 w-4 shrink-0 text-primary" />
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Web</p>
                   <a
                     href={venue.website}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-sm font-semibold text-primary hover:text-primary/80"
+                    className="block truncate text-sm font-semibold text-primary hover:text-primary/80"
                   >
                     {venue.website.replace(/^https?:\/\//, '')}
                   </a>
@@ -210,10 +215,21 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
             </div>
           )}
 
-          {/* Operating Hours */}
+          {/* Business Hours */}
           {hasHours && (
             <div className="rounded-2xl border border-border/50 bg-card p-5">
-              <OperatingHoursDisplay hours={venue.operatingHours!} />
+              {venue.businessHours.length > 0 ? (
+                <BusinessHoursDisplay hours={venue.businessHours} />
+              ) : venue.operatingHours ? (
+                <OperatingHoursDisplay hours={venue.operatingHours} />
+              ) : null}
+            </div>
+          )}
+
+          {/* Services */}
+          {hasServices && (
+            <div className="rounded-2xl border border-border/50 bg-card p-5">
+              <ServicesDisplay services={venue.services} />
             </div>
           )}
 
@@ -242,7 +258,7 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
                   >
                     <div className="flex min-w-0 flex-col justify-center gap-1">
                       <p className="text-sm font-bold text-foreground line-clamp-1">{event.title}</p>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground" suppressHydrationWarning>
                         <CalendarDays className="h-3 w-3 shrink-0" />
                         {formatDateTime(event.startDate)}
                       </p>
@@ -285,7 +301,7 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
           )}
 
           {/* Menu */}
-          {menu.length > 0 && <MenuDisplay menu={menu} />}
+          {menu.length > 0 && <MenuDisplayV2 menu={menu} />}
 
           {/* Map */}
           {venue.lat !== null && venue.lng !== null && (
@@ -342,6 +358,14 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
               acceptsReservations={acceptsReservations}
             />
           )}
+
+          {/* Message Venue Button */}
+          <MessageVenueButton
+            venueId={venue.id}
+            venueOwnerId={venue.userId}
+            venueName={venue.name}
+            currentUserId={currentUserId}
+          />
 
           {/* Reservation */}
           {acceptsReservations && (
@@ -403,13 +427,13 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
                   <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <Globe className="h-4 w-4" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">Sitio web</p>
                     <a
                       href={venue.website}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-sm font-semibold text-primary hover:text-primary/80"
+                      className="block truncate text-sm font-semibold text-primary hover:text-primary/80"
                     >
                       {venue.website.replace(/^https?:\/\//, '')}
                     </a>

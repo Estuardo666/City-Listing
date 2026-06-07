@@ -15,6 +15,7 @@ export type EventWithRelations = Prisma.EventGetPayload<{
         id: true
         name: true
         slug: true
+        phone: true
       }
     }
     media: {

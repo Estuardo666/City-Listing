@@ -125,7 +125,7 @@ export function OsmHistoryTable() {
                   <div className="flex-1 min-w-0 grid grid-cols-6 gap-4 items-center">
                     <div className="col-span-1">
                       <p className="text-sm font-medium">{formatDate(imp.createdAt)}</p>
-                      <p className="text-xs text-muted-foreground">{formatDateTime(imp.createdAt).split(', ')[1]}</p>
+                      <p className="text-xs text-muted-foreground" suppressHydrationWarning>{formatDateTime(imp.createdAt).split(', ')[1]}</p>
                     </div>
                     <div className="col-span-1">
                       <p className="text-sm font-medium">{imp.city}</p>

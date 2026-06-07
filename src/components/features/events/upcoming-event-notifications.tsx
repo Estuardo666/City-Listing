@@ -35,7 +35,7 @@ export function UpcomingEventNotifications({
                 className="rounded-xl border border-border/70 bg-background/70 p-3"
               >
                 <p className="font-medium text-foreground">{item.title}</p>
-                <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground" suppressHydrationWarning>
                   <CalendarClock className="h-3.5 w-3.5" />
                   {formatDateTime(item.startDate)}
                 </p>

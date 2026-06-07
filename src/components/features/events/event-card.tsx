@@ -98,7 +98,7 @@ export function EventCard({ event }: EventCardProps) {
         <div className="mt-4 space-y-1.5 border-t border-border/50 pt-4 text-xs text-muted-foreground">
           <p className="flex items-center gap-2">
             <CalendarDays className="h-3.5 w-3.5 shrink-0 text-primary/70" />
-            <span>{formatDateTime(event.startDate)}</span>
+            <span suppressHydrationWarning>{formatDateTime(event.startDate)}</span>
           </p>
           <p className="flex items-center gap-2">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-coral/70" />

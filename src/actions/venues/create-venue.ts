@@ -118,6 +118,12 @@ export async function createVenueAction(input: unknown): Promise<ActionResponse<
         },
         media: { orderBy: { order: 'asc' } },
         operatingHours: true,
+        businessHours: {
+          orderBy: [{ dayOfWeek: 'asc' }, { openTime: 'asc' }],
+        },
+        services: {
+          orderBy: { sortOrder: 'asc' },
+        },
         reviews: {
           include: { user: { select: { id: true, name: true, image: true } } },
           orderBy: { createdAt: 'desc' },

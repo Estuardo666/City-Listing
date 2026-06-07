@@ -9,6 +9,7 @@ import { MediaGallery } from '@/components/media/media-gallery'
 import { ReviewForm } from '@/components/review/review-form'
 import { ReviewList } from '@/components/review/review-list'
 import { ShareButton } from '@/components/share/share-button'
+import { WhatsAppButton } from '@/components/venues/whatsapp-button'
 import { QuestionSection } from '@/components/qa/question-section'
 import { formatDateTime } from '@/lib/utils'
 import type { EventWithRelations } from '@/types/event'
@@ -54,7 +55,7 @@ export function EventDetail({ event, currentUserId, questions = [] }: EventDetai
     <article className="space-y-0">
 
       {/* ── Hero full-bleed ── */}
-      <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px]">
+      <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px] mb-6">
         {event.image ? (
           <Image
             src={event.image}
@@ -124,7 +125,7 @@ export function EventDetail({ event, currentUserId, questions = [] }: EventDetai
 
       {/* ── Media Gallery ── */}
       {hasMedia && (
-        <div className="mt-6">
+        <div className="mt-0">
           <MediaGallery media={event.media} />
         </div>
       )}
@@ -141,7 +142,7 @@ export function EventDetail({ event, currentUserId, questions = [] }: EventDetai
               <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Inicio</p>
-                <p className="text-sm font-semibold text-foreground">{formatDateTime(event.startDate)}</p>
+                <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.startDate)}</p>
               </div>
             </div>
             {event.endDate && (
@@ -149,7 +150,7 @@ export function EventDetail({ event, currentUserId, questions = [] }: EventDetai
                 <Clock3 className="h-4 w-4 shrink-0 text-primary" />
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Fin</p>
-                  <p className="text-sm font-semibold text-foreground">{formatDateTime(event.endDate)}</p>
+                  <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.endDate)}</p>
                 </div>
               </div>
             )}
@@ -279,6 +280,14 @@ export function EventDetail({ event, currentUserId, questions = [] }: EventDetai
             <ShareButton url={`/eventos/${event.slug}`} title={event.title} />
           </div>
 
+          {/* WhatsApp CTA */}
+          {event.venue?.phone && (
+            <WhatsAppButton
+              phone={event.venue.phone}
+              venueName={event.title}
+            />
+          )}
+
           {/* Info card */}
           <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Información</h3>
@@ -290,7 +299,7 @@ export function EventDetail({ event, currentUserId, questions = [] }: EventDetai
                 </span>
                 <div>
                   <p className="text-xs text-muted-foreground">Fecha de inicio</p>
-                  <p className="text-sm font-semibold text-foreground">{formatDateTime(event.startDate)}</p>
+                  <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.startDate)}</p>
                 </div>
               </div>
 
@@ -301,7 +310,7 @@ export function EventDetail({ event, currentUserId, questions = [] }: EventDetai
                   </span>
                   <div>
                     <p className="text-xs text-muted-foreground">Fecha de fin</p>
-                    <p className="text-sm font-semibold text-foreground">{formatDateTime(event.endDate)}</p>
+                    <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.endDate)}</p>
                   </div>
                 </div>
               )}

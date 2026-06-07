@@ -24,6 +24,10 @@ import {
   BarChart3,
   Globe,
   User,
+  MessageSquare,
+  Image,
+  Building2,
+  Mail,
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -54,12 +58,14 @@ const MANAGE_NAV: NavItem[] = [
   { href: '/dashboard/favoritos', label: 'Mis Favoritos', icon: Heart },
   { href: '/dashboard/colecciones', label: 'Colecciones', icon: Folder },
   { href: '/dashboard/notificaciones', label: 'Notificaciones', icon: Bell },
+  { href: '/dashboard/mensajes', label: 'Mensajes', icon: Mail },
 ]
 
 const ADMIN_NAV: NavItem[] = [
   { href: '/admin/eventos', label: 'Moderar Eventos', icon: ShieldCheck, adminOnly: true },
   { href: '/admin/locales', label: 'Moderar Locales', icon: MapPin, adminOnly: true },
   { href: '/admin/blog', label: 'Moderar Blog', icon: FileText, adminOnly: true },
+  { href: '/admin/resenas', label: 'Moderar Reseñas', icon: MessageSquare, adminOnly: true },
   { href: '/admin/reclamos', label: 'Reclamos', icon: ClipboardList, adminOnly: true },
   { href: '/admin/ofertas', label: 'Ofertas', icon: Tag, adminOnly: true },
   { href: '/admin/osm-imports', label: 'Importaciones OSM', icon: Globe, adminOnly: true },

@@ -98,6 +98,12 @@ model User {
   pushSubscriptions PushSubscription[]
   osmImports  OsmImport[]
   badges      UserBadge[]
+  
+  sentMessages      Message[]    @relation("SentMessages")
+  receivedMessages  Message[]    @relation("ReceivedMessages")
+  quickReplies      QuickReply[]
+  blockedUsers      BlockedUser[] @relation("BlockedUsers")
+  blockedBy         BlockedUser[] @relation("Blockers")
 }
 
 model UserBadge {
@@ -196,6 +202,8 @@ model Venue {
   description   String
   content       String?
   image         String?
+  logo          String?
+  coverImage    String?
   phone         String?
   email         String?
   website       String?
@@ -238,6 +246,17 @@ model Venue {
   checkIns       CheckIn[]
   menuCategories MenuCategory[]
   collections    CollectionItem[]
+  businessHours  VenueBusinessHours[]
+  services       VenueService[]
+  
+  parentId      String?
+  parent        Venue?    @relation("VenueBranches", fields: [parentId], references: [id], onDelete: SetNull)
+  branches      Venue[]   @relation("VenueBranches")
+  
+  messages      Message[]
+  quickReplies  QuickReply[]
+  blockedUsers  BlockedUser[]
+  branchReviews Review[]  @relation("BranchReviews")
 
   @@index([status])
   @@index([categoryId])
@@ -245,6 +264,7 @@ model Venue {
   @@index([osmId])
   @@index([avgRating])
   @@index([viewCount])
+  @@index([parentId])
 }
 
 model Post {
@@ -393,13 +413,16 @@ model Review {
   userId       String
   venueId      String?
   eventId      String?
-  status       String    @default("APPROVED")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  branchId     String?
+  status        String    @default("APPROVED")
+  flaggedReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   venue  Venue?       @relation(fields: [venueId], references: [id], onDelete: Cascade)
   event  Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  branch Venue?       @relation("BranchReviews", fields: [branchId], references: [id], onDelete: SetNull)
   photos ReviewPhoto[]
 
   @@unique([userId, venueId])
@@ -408,6 +431,8 @@ model Review {
   @@index([venueId])
   @@index([eventId])
   @@index([rating])
+  @@index([status])
+  @@index([branchId])
 }
 
 model VenueClaim {
@@ -677,6 +702,8 @@ model MenuItem {
   image          String?
   order          Int      @default(0)
   isAvailable    Boolean  @default(true)
+  isFeatured     Boolean  @default(false)
+  allergens      String?  // JSON array de alergenos
   menuCategoryId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -789,5 +816,97 @@ model OsmConfig {
   syncFrequency String?
   syncEnabled   Boolean  @default(false)
   updatedAt     DateTime @updatedAt
+}
+
+model Message {
+  id            String    @id @default(cuid())
+  content       String?
+  senderId      String
+  receiverId    String
+  venueId       String
+  images        String[]  @default([])
+  isRead        Boolean   @default(false)
+  readAt        DateTime?
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sender        User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver      User      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  venue         Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([venueId])
+  @@index([createdAt])
+  @@index([isRead])
+}
+
+model QuickReply {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  userId    String
+  venueId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue     Venue?   @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([venueId])
+}
+
+model BlockedUser {
+  id            String   @id @default(cuid())
+  venueId       String
+  blockedUserId String
+  blockedBy     String
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  venue         Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  blockedUser   User     @relation("BlockedUsers", fields: [blockedUserId], references: [id], onDelete: Cascade)
+  blocker       User     @relation("Blockers", fields: [blockedBy], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, blockedUserId])
+  @@index([venueId])
+  @@index([blockedUserId])
+}
+
+model VenueBusinessHours {
+  id         String   @id @default(cuid())
+  venueId    String
+  dayOfWeek  Int      // 0 = Domingo, 1 = Lunes, ..., 6 = Sabado
+  openTime   String   // Formato "HH:MM"
+  closeTime  String   // Formato "HH:MM"
+  isClosed   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
+  @@index([venueId, dayOfWeek])
+}
+
+model VenueService {
+  id          String   @id @default(cuid())
+  venueId     String
+  name        String
+  description String?
+  icon        String?
+  isCustom    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, name])
+  @@index([venueId])
 }
 

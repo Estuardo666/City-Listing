@@ -97,7 +97,7 @@ export function EventsMap({ events, mapboxToken, mapStyle, className }: EventsMa
               <div className="space-y-2 p-1">
                 <p className="text-sm font-semibold text-foreground">{selectedEvent.title}</p>
                 <p className="text-xs text-muted-foreground">{selectedEvent.category.name}</p>
-                <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <p className="inline-flex items-center gap-1 text-xs text-muted-foreground" suppressHydrationWarning>
                   <CalendarDays className="h-3.5 w-3.5" />
                   {formatDateTime(selectedEvent.startDate)}
                 </p>

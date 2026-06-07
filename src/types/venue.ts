@@ -24,6 +24,12 @@ export type VenueWithRelations = Prisma.VenueGetPayload<{
       orderBy: { order: 'asc' }
     }
     operatingHours: true
+    businessHours: {
+      orderBy: [{ dayOfWeek: 'asc' }, { openTime: 'asc' }]
+    }
+    services: {
+      orderBy: { sortOrder: 'asc' }
+    }
     reviews: {
       include: {
         user: {

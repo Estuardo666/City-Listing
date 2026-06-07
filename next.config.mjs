@@ -25,43 +25,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'fomento.culturaypatrimonio.gob.ec',
-      },
-      {
-        protocol: 'https',
-        hostname: 'api.mapbox.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'tiles.mapbox.com',
-      },
-      ...(process.env.R2_PUBLIC_HOSTNAME
-        ? [
-            {
-              protocol: 'https',
-              hostname: process.env.R2_PUBLIC_HOSTNAME,
-            },
-          ]
-        : []),
-      {
-        protocol: 'https',
-        hostname: 'pub-2c1df4902487c08164d8c0c8de048b47.r2.dev',
-      },
-      {
-        protocol: 'https',
-        hostname: 'ui-avatars.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'logo.clearbit.com',
+        hostname: '**',
       },
     ],
   },
