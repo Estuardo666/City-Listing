@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button'
 import { EventDetail } from '@/components/features/events'
 import { EventRelated } from '@/components/features/events/event-related'
 import { getEventBySlug, getEvents } from '@/lib/queries/events'
+import { getEventQuestions } from '@/lib/queries/features'
 import { FavoriteButton } from '@/components/features/favorites/favorite-button'
 import { CommentSection } from '@/components/features/comments/comment-section'
+import { incrementEventViewAction } from '@/actions/views'
 import type { CommentWithUser } from '@/actions/comments'
 
 type EventDetailPageProps = {
@@ -38,7 +40,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     5
   ).then((list) => list.filter((e) => e.id !== event.id).slice(0, 4))
 
-  const [isFavorite, comments] = await Promise.all([
+  const [isFavorite, comments, questions] = await Promise.all([
     session?.user?.id
       ? prisma.favorite.findUnique({
           where: { userId_eventId: { userId: session.user.id, eventId: event.id } },
@@ -53,7 +55,10 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
         user: { select: { id: true, name: true, image: true } },
       },
     }),
+    getEventQuestions(event.id),
   ])
+
+  incrementEventViewAction(event.id)
 
   return (
     <div className="pb-20 pt-10 sm:pt-14">
@@ -74,7 +79,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
         </div>
 
         {/* Main detail */}
-        <EventDetail event={event} currentUserId={session?.user?.id} />
+        <EventDetail event={event} currentUserId={session?.user?.id} questions={questions} />
 
         {/* Comments */}
         <div className="rounded-2xl border border-border/50 bg-card p-6">

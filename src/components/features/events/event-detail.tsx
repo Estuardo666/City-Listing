@@ -9,12 +9,25 @@ import { MediaGallery } from '@/components/media/media-gallery'
 import { ReviewForm } from '@/components/review/review-form'
 import { ReviewList } from '@/components/review/review-list'
 import { ShareButton } from '@/components/share/share-button'
+import { QuestionSection } from '@/components/qa/question-section'
 import { formatDateTime } from '@/lib/utils'
 import type { EventWithRelations } from '@/types/event'
+
+type QuestionItem = {
+  id: string
+  content: string
+  answer: string | null
+  answerBy: string | null
+  answeredAt: Date | null
+  status: string
+  createdAt: Date
+  user: { id: string; name: string | null; image: string | null }
+}
 
 type EventDetailProps = {
   event: EventWithRelations
   currentUserId?: string
+  questions?: QuestionItem[]
 }
 
 const RECURRENCE_LABELS: Record<string, string> = {
@@ -24,7 +37,7 @@ const RECURRENCE_LABELS: Record<string, string> = {
   YEARLY: 'Anual',
 }
 
-export function EventDetail({ event, currentUserId }: EventDetailProps) {
+export function EventDetail({ event, currentUserId, questions = [] }: EventDetailProps) {
   const mapQuery = encodeURIComponent(event.address ?? event.location)
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -203,9 +216,21 @@ export function EventDetail({ event, currentUserId }: EventDetailProps) {
               <ReviewList
                 reviews={event.reviews}
                 currentUserId={currentUserId}
+                entityOwnerId={event.userId}
               />
             </div>
           </div>
+
+          {/* Q&A */}
+          {questions.length > 0 && (
+            <QuestionSection
+              entityType="event"
+              entityId={event.id}
+              questions={questions}
+              currentUserId={currentUserId}
+              entityOwnerId={event.userId}
+            />
+          )}
 
           {/* Map */}
           {event.lat !== null && event.lng !== null && (

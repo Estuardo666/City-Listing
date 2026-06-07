@@ -19,6 +19,11 @@ import {
   Route,
   Tag,
   ClipboardList,
+  Heart,
+  Folder,
+  BarChart3,
+  Globe,
+  User,
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -46,6 +51,8 @@ const MANAGE_NAV: NavItem[] = [
   { href: '/dashboard/locales', label: 'Mis Locales', icon: MapPin },
   { href: '/dashboard/blog', label: 'Mis Artículos', icon: FileText },
   { href: '/dashboard/reservas', label: 'Mis Reservas', icon: ClipboardList },
+  { href: '/dashboard/favoritos', label: 'Mis Favoritos', icon: Heart },
+  { href: '/dashboard/colecciones', label: 'Colecciones', icon: Folder },
   { href: '/dashboard/notificaciones', label: 'Notificaciones', icon: Bell },
 ]
 
@@ -55,6 +62,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/blog', label: 'Moderar Blog', icon: FileText, adminOnly: true },
   { href: '/admin/reclamos', label: 'Reclamos', icon: ClipboardList, adminOnly: true },
   { href: '/admin/ofertas', label: 'Ofertas', icon: Tag, adminOnly: true },
+  { href: '/admin/osm-imports', label: 'Importaciones OSM', icon: Globe, adminOnly: true },
 ]
 
 interface AppSidebarProps {
@@ -171,6 +179,29 @@ export function AppSidebar({ defaultCollapsed = false }: AppSidebarProps) {
 
       {/* User section */}
       <div className="shrink-0 border-t border-border/40 p-2 space-y-0.5">
+        {/* Profile link */}
+        <Link
+          href={`/perfil/${session?.user?.id ?? ''}`}
+          className="group relative flex h-9 items-center gap-2.5 rounded-xl px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <span className="absolute inset-0 rounded-xl opacity-0 transition-opacity group-hover:opacity-100 bg-secondary" />
+          <User className="relative z-10 h-4 w-4 shrink-0" />
+          <AnimatePresence initial={false}>
+            {!collapsed && (
+              <motion.span
+                key="profile-label"
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="relative z-10 whitespace-nowrap"
+              >
+                Mi Perfil Público
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </Link>
+
         {/* Settings link */}
         <Link
           href="/dashboard/configuracion"

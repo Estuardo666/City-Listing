@@ -5,6 +5,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { reviewSchema } from '@/schemas/review.schema'
+import { POINTS } from '@/lib/gamification'
+import { awardPointsAction, incrementUserStatsAction } from '@/actions/gamification'
+import { checkAndAwardBadgesAction } from '@/actions/gamification'
 import type { ActionResponse } from '@/types/action-response'
 import type { Review, User } from '@prisma/client'
 
@@ -93,6 +96,11 @@ export async function createReviewAction(
     })
 
     await recalculateAvgRating(entityType, entityId)
+
+    // Gamificación: otorgar puntos y verificar badges
+    await awardPointsAction(session.user.id, POINTS.REVIEW_TEXT, 'review_created')
+    await incrementUserStatsAction(session.user.id, { reviews: 1 })
+    await checkAndAwardBadgesAction(session.user.id)
 
     if (entityType === 'venue') {
       const venue = await prisma.venue.findUnique({ where: { id: entityId }, select: { slug: true } })

@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { getUserEngagementStats } from '@/lib/queries/engagement'
 import { Button } from '@/components/ui/button'
 import { EngagementStatsWidget } from '@/components/features/dashboard/engagement-stats'
+import { GamificationWidget } from '@/components/features/dashboard/gamification-widget'
 
 export const metadata = {
   title: 'Dashboard — Vive Loja',
@@ -19,7 +20,7 @@ export default async function DashboardPage() {
 
   const userId = session.user.id
 
-  const [eventCount, venueCount, postStats, engagement] = await Promise.all([
+  const [eventCount, venueCount, postStats, engagement, gamificationUser] = await Promise.all([
     prisma.event.count({ where: { userId } }),
     prisma.venue.count({ where: { userId } }),
     prisma.post.groupBy({
@@ -28,6 +29,18 @@ export default async function DashboardPage() {
       _count: { status: true },
     }),
     getUserEngagementStats(userId),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        reputationScore: true,
+        reviewerLevel: true,
+        totalReviews: true,
+        totalCheckIns: true,
+        totalPhotos: true,
+      },
+    }),
   ])
 
   const postApproved = postStats.find((s) => s.status === 'APPROVED')?._count.status ?? 0
@@ -155,6 +168,11 @@ export default async function DashboardPage() {
 
         {/* Engagement stats */}
         <EngagementStatsWidget stats={engagement} />
+
+        {/* Gamification widget */}
+        {gamificationUser && (
+          <GamificationWidget user={gamificationUser} />
+        )}
 
         {/* Blog shortcut */}
         {postTotal > 0 && (

@@ -7,8 +7,10 @@ import { prisma } from '@/lib/prisma'
 import { VenueDetail } from '@/components/features/venues'
 import { Button } from '@/components/ui/button'
 import { getVenueBySlug } from '@/lib/queries/venues'
+import { getVenueQuestions, getVenueMenu } from '@/lib/queries/features'
 import { FavoriteButton } from '@/components/features/favorites/favorite-button'
 import { CommentSection } from '@/components/features/comments/comment-section'
+import { incrementVenueViewAction } from '@/actions/views'
 import type { CommentWithUser } from '@/actions/comments'
 
 type VenueDetailPageProps = {
@@ -32,7 +34,7 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
     }
   }
 
-  const [isFavorite, comments] = await Promise.all([
+  const [isFavorite, comments, questions, menu] = await Promise.all([
     session?.user?.id
       ? prisma.favorite.findUnique({
           where: { userId_venueId: { userId: session.user.id, venueId: venue.id } },
@@ -47,7 +49,11 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
         user: { select: { id: true, name: true, image: true } },
       },
     }),
+    getVenueQuestions(venue.id),
+    getVenueMenu(venue.id),
   ])
+
+  incrementVenueViewAction(venue.id)
 
   return (
     <div className="pb-20 pt-10 sm:pt-14">
@@ -68,7 +74,7 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
         </div>
 
         {/* Main detail */}
-        <VenueDetail venue={venue} currentUserId={session?.user?.id} />
+        <VenueDetail venue={venue} currentUserId={session?.user?.id} questions={questions} menu={menu} />
 
         {/* Comments */}
         <div className="rounded-2xl border border-border/50 bg-card p-6">

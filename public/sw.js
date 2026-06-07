@@ -1,23 +1,32 @@
-self.addEventListener('install', () => {
-  self.skipWaiting()
+self.addEventListener('push', function(event) {
+  if (!event.data) return
+
+  const data = event.data.json()
+  const title = data.title || 'Vive Loja'
+  const options = {
+    body: data.body || '',
+    icon: data.icon || '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: data.url || '/' },
+    tag: data.tag || 'default',
+  }
+
+  event.waitUntil(self.registration.showNotification(title, options))
 })
 
-self.addEventListener('activate', (event) => {
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close()
+
+  const url = event.notification.data?.url || '/'
+
   event.waitUntil(
-    (async () => {
-      try {
-        const keys = await caches.keys()
-        await Promise.all(keys.map((key) => caches.delete(key)))
-      } catch {
-        // noop
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (const client of clientList) {
+        if (client.url === url && 'focus' in client) {
+          return client.focus()
+        }
       }
-
-      await self.registration.unregister()
-
-      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-      clients.forEach((client) => {
-        client.navigate(client.url)
-      })
-    })()
+      return self.clients.openWindow(url)
+    })
   )
 })

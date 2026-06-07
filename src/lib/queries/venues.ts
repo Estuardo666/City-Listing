@@ -327,6 +327,8 @@ export async function getVenueBySlug(slug: string): Promise<VenueWithRelations |
               id: true,
               name: true,
               image: true,
+              reputationScore: true,
+              reviewerLevel: true,
             },
           },
         },

@@ -16,16 +16,36 @@ import { ReviewList } from '@/components/review/review-list'
 import { PromotionCard } from '@/components/promotion/promotion-card'
 import { ReservationForm } from '@/components/reservation/reservation-form'
 import { ShareButton } from '@/components/share/share-button'
+import { QuestionSection } from '@/components/qa/question-section'
+import { CheckInButton } from '@/components/checkin/checkin-button'
+import { WhatsAppButton } from '@/components/venues/whatsapp-button'
+import { MenuDisplay } from '@/components/menu/menu-display'
 import { formatDateTime } from '@/lib/utils'
 import type { VenueWithRelations } from '@/types/venue'
 import { useState } from 'react'
 
+type QuestionItem = {
+  id: string
+  content: string
+  answer: string | null
+  answerBy: string | null
+  answeredAt: Date | null
+  status: string
+  createdAt: Date
+  user: { id: string; name: string | null; image: string | null }
+}
+
+type MenuItem = { id: string; name: string; description: string | null; price: number | null; image: string | null; isAvailable: boolean }
+type MenuCategory = { id: string; name: string; items: MenuItem[] }
+
 type VenueDetailProps = {
   venue: VenueWithRelations
   currentUserId?: string
+  questions?: QuestionItem[]
+  menu?: MenuCategory[]
 }
 
-export function VenueDetail({ venue, currentUserId }: VenueDetailProps) {
+export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }: VenueDetailProps) {
   const [imageError, setImageError] = useState(false)
   
   const mapQuery = encodeURIComponent(venue.address ?? venue.location)
@@ -248,9 +268,24 @@ export function VenueDetail({ venue, currentUserId }: VenueDetailProps) {
               <ReviewList
                 reviews={venue.reviews}
                 currentUserId={currentUserId}
+                entityOwnerId={venue.userId}
               />
             </div>
           </div>
+
+          {/* Q&A */}
+          {questions.length > 0 && (
+            <QuestionSection
+              entityType="venue"
+              entityId={venue.id}
+              questions={questions}
+              currentUserId={currentUserId}
+              entityOwnerId={venue.userId}
+            />
+          )}
+
+          {/* Menu */}
+          {menu.length > 0 && <MenuDisplay menu={menu} />}
 
           {/* Map */}
           {venue.lat !== null && venue.lng !== null && (
@@ -298,11 +333,34 @@ export function VenueDetail({ venue, currentUserId }: VenueDetailProps) {
             <ShareButton url={`/locales/${venue.slug}`} title={venue.name} />
           </div>
 
+          {/* WhatsApp CTA */}
+          {venue.phone && (
+            <WhatsAppButton
+              phone={venue.phone}
+              venueName={venue.name}
+              hasMenu={menu.length > 0}
+              acceptsReservations={acceptsReservations}
+            />
+          )}
+
           {/* Reservation */}
           {acceptsReservations && (
             <div className="rounded-2xl border border-border/50 bg-card p-5">
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Reservar</h3>
               <ReservationForm venueId={venue.id} />
+            </div>
+          )}
+
+          {/* Check-in */}
+          {venue.lat !== null && venue.lng !== null && currentUserId && (
+            <div className="rounded-2xl border border-border/50 bg-card p-5">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Check-in</h3>
+              <CheckInButton
+                venueId={venue.id}
+                venueName={venue.name}
+                venueLat={venue.lat}
+                venueLng={venue.lng}
+              />
             </div>
           )}
 

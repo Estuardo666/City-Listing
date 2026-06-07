@@ -9,6 +9,8 @@ export const metadata = {
   description: 'Descubre las mejores rutas turísticas en Loja, Ecuador',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function RoutesPage() {
   const routes = await prisma.route.findMany({
     where: { status: 'APPROVED' },
