@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { venueSchema } from '@/schemas/venue.schema'
+import { invalidateVenueCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueWithRelations } from '@/types/venue'
 
@@ -132,6 +133,7 @@ export async function updateVenueAction(
     revalidatePath('/admin')
     revalidatePath('/admin/locales')
     revalidatePath('/dashboard')
+    await invalidateVenueCache(venueId)
 
     return {
       success: true,

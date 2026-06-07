@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { postStatusUpdateSchema } from '@/schemas/post.schema'
+import { invalidatePostCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { PostWithRelations } from '@/types/post'
 
@@ -50,6 +51,7 @@ export async function updatePostStatusAction(
     revalidatePath(`/blog/${updated.slug}`)
     revalidatePath('/admin/blog')
     revalidatePath('/dashboard')
+    await invalidatePostCache(parsed.data.postId)
 
     return { success: true, data: updated }
   } catch {

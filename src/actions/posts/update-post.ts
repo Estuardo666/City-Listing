@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { slugify } from '@/lib/utils'
 import { postSchema } from '@/schemas/post.schema'
+import { invalidatePostCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { PostWithRelations } from '@/types/post'
 
@@ -106,6 +107,7 @@ export async function updatePostAction(
     revalidatePath('/blog')
     revalidatePath(`/blog/${updated.slug}`)
     revalidatePath('/admin/blog')
+    await invalidatePostCache(postId)
 
     return { success: true, data: updated }
   } catch {

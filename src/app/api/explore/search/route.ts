@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withCache, getCacheKey, CACHE_TTL } from '@/lib/cache'
 
 const DEFAULT_TAKE = 60
 const MAX_TAKE = 100
@@ -21,104 +22,115 @@ export async function GET(request: NextRequest) {
     const eventSkip = Number.isFinite(eventSkipParam) ? Math.max(0, Math.floor(eventSkipParam)) : 0
     const pageTake = take + 1
 
-    const textFilter = q
-      ? { contains: q }
-      : undefined
+    // Build cache key from all query params
+    const cacheKey = getCacheKey('explore', q, type, category, String(featured), String(take), String(venueSkip), String(eventSkip))
 
-    const venueQuery = type === 'events' ? Promise.resolve([]) : prisma.venue.findMany({
-      where: {
-        status: 'APPROVED',
-        ...(textFilter && {
-          OR: [
-            { name: textFilter },
-            { description: textFilter },
-            { location: textFilter },
-            { address: textFilter },
-          ],
-        }),
-        ...(category && { category: { slug: category } }),
-        ...(featured && { featured: true }),
-      },
-      orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-      skip: venueSkip,
-      take: pageTake,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        image: true,
-        location: true,
-        address: true,
-        lat: true,
-        lng: true,
-        featured: true,
-        phone: true,
-        website: true,
-        category: {
-          select: { id: true, name: true, slug: true, color: true, icon: true },
-        },
-      },
-    })
+    const result = await withCache(
+      cacheKey,
+      async () => {
+        const textFilter = q
+          ? { contains: q }
+          : undefined
 
-    const eventQuery = type === 'venues' ? Promise.resolve([]) : prisma.event.findMany({
-      where: {
-        status: 'APPROVED',
-        ...(textFilter && {
-          OR: [
-            { title: textFilter },
-            { description: textFilter },
-            { location: textFilter },
-            { address: textFilter },
-          ],
-        }),
-        ...(category && { category: { slug: category } }),
-        ...(featured && { featured: true }),
-      },
-      orderBy: [{ featured: 'desc' }, { startDate: 'asc' }],
-      skip: eventSkip,
-      take: pageTake,
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        description: true,
-        image: true,
-        startDate: true,
-        endDate: true,
-        location: true,
-        address: true,
-        lat: true,
-        lng: true,
-        featured: true,
-        category: {
-          select: { id: true, name: true, slug: true, color: true, icon: true },
-        },
-      },
-    })
+        const venueQuery = type === 'events' ? Promise.resolve([]) : prisma.venue.findMany({
+          where: {
+            status: 'APPROVED',
+            ...(textFilter && {
+              OR: [
+                { name: textFilter },
+                { description: textFilter },
+                { location: textFilter },
+                { address: textFilter },
+              ],
+            }),
+            ...(category && { category: { slug: category } }),
+            ...(featured && { featured: true }),
+          },
+          orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
+          skip: venueSkip,
+          take: pageTake,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            image: true,
+            location: true,
+            address: true,
+            lat: true,
+            lng: true,
+            featured: true,
+            phone: true,
+            website: true,
+            category: {
+              select: { id: true, name: true, slug: true, color: true, icon: true },
+            },
+          },
+        })
 
-    const [venueRows, eventRows] = await Promise.all([
-      venueQuery,
-      eventQuery,
-    ])
+        const eventQuery = type === 'venues' ? Promise.resolve([]) : prisma.event.findMany({
+          where: {
+            status: 'APPROVED',
+            ...(textFilter && {
+              OR: [
+                { title: textFilter },
+                { description: textFilter },
+                { location: textFilter },
+                { address: textFilter },
+              ],
+            }),
+            ...(category && { category: { slug: category } }),
+            ...(featured && { featured: true }),
+          },
+          orderBy: [{ featured: 'desc' }, { startDate: 'asc' }],
+          skip: eventSkip,
+          take: pageTake,
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            description: true,
+            image: true,
+            startDate: true,
+            endDate: true,
+            location: true,
+            address: true,
+            lat: true,
+            lng: true,
+            featured: true,
+            category: {
+              select: { id: true, name: true, slug: true, color: true, icon: true },
+            },
+          },
+        })
 
-    const venues = venueRows.slice(0, take)
-    const events = eventRows.slice(0, take)
-    const hasMoreVenues = type !== 'events' && venueRows.length > take
-    const hasMoreEvents = type !== 'venues' && eventRows.length > take
-    const nextVenueSkip = venueSkip + venues.length
-    const nextEventSkip = eventSkip + events.length
+        const [venueRows, eventRows] = await Promise.all([
+          venueQuery,
+          eventQuery,
+        ])
 
-    return NextResponse.json({
-      venues,
-      events,
-      pageInfo: {
-        hasMoreVenues,
-        hasMoreEvents,
-        nextVenueSkip,
-        nextEventSkip,
+        const venues = venueRows.slice(0, take)
+        const events = eventRows.slice(0, take)
+        const hasMoreVenues = type !== 'events' && venueRows.length > take
+        const hasMoreEvents = type !== 'venues' && eventRows.length > take
+        const nextVenueSkip = venueSkip + venues.length
+        const nextEventSkip = eventSkip + events.length
+
+        return {
+          venues,
+          events,
+          pageInfo: {
+            hasMoreVenues,
+            hasMoreEvents,
+            nextVenueSkip,
+            nextEventSkip,
+          },
+        }
       },
-    })
+      5 * 60 // 5 minutos - datos más dinámicos
+    )
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Explore search error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

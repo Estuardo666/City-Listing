@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { withCache, cacheKeys, CACHE_TTL } from '@/lib/cache'
 
 const LIMIT = 5
 
@@ -98,8 +99,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ events: [], venues: [], posts: [] })
     }
 
-    // Ejecutar búsqueda optimizada directamente sin capa Redis para reducir latencia HTTP
-    const results = await searchInDatabase(q)
+    // Usar Redis cache para búsquedas frecuentes
+    const cacheKey = cacheKeys.search(q)
+    const results = await withCache(
+      cacheKey,
+      () => searchInDatabase(q),
+      CACHE_TTL.SEARCH // 30 minutos
+    )
 
     return NextResponse.json(results, {
       headers: {

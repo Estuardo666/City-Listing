@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { slugify } from '@/lib/utils'
 import { venueSchema } from '@/schemas/venue.schema'
+import { invalidateVenueCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueWithRelations } from '@/types/venue'
 
@@ -135,6 +136,7 @@ export async function createVenueAction(input: unknown): Promise<ActionResponse<
 
     revalidatePath('/locales')
     revalidatePath('/dashboard')
+    await invalidateVenueCache(created.id)
 
     return {
       success: true,

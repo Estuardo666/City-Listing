@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { eventStatusUpdateSchema } from '@/schemas/event.schema'
+import { invalidateEventCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { EventWithRelations } from '@/types/event'
 
@@ -60,6 +61,7 @@ export async function updateEventStatusAction(
     revalidatePath('/admin')
     revalidatePath('/admin/eventos')
     revalidatePath('/dashboard')
+    await invalidateEventCache(parsed.data.eventId)
 
     return {
       success: true,

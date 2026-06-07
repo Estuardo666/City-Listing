@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { eventSchema } from '@/schemas/event.schema'
+import { invalidateEventCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { EventWithRelations } from '@/types/event'
 
@@ -130,6 +131,7 @@ export async function createEventAction(input: unknown): Promise<ActionResponse<
     })
 
     revalidatePath('/eventos')
+    await invalidateEventCache(created.id)
 
     return {
       success: true,

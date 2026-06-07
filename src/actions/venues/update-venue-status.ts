@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { venueStatusUpdateSchema } from '@/schemas/venue.schema'
 import { sendVenueApprovedEmail, sendVenueRejectedEmail } from '@/lib/email/templates/venue-status'
+import { invalidateVenueCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueWithRelations } from '@/types/venue'
 
@@ -84,6 +85,7 @@ export async function updateVenueStatusAction(
     revalidatePath('/admin')
     revalidatePath('/admin/locales')
     revalidatePath('/dashboard')
+    await invalidateVenueCache(parsed.data.venueId)
 
     if (updated.user.email) {
       if (parsed.data.status === 'APPROVED') {
