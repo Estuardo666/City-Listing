@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { venueStatusUpdateSchema } from '@/schemas/venue.schema'
+import { sendVenueApprovedEmail, sendVenueRejectedEmail } from '@/lib/email/templates/venue-status'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueWithRelations } from '@/types/venue'
 
@@ -83,6 +84,14 @@ export async function updateVenueStatusAction(
     revalidatePath('/admin')
     revalidatePath('/admin/locales')
     revalidatePath('/dashboard')
+
+    if (updated.user.email) {
+      if (parsed.data.status === 'APPROVED') {
+        sendVenueApprovedEmail(updated.user.email, updated.name, updated.slug).catch(() => {})
+      } else if (parsed.data.status === 'REJECTED') {
+        sendVenueRejectedEmail(updated.user.email, updated.name, null).catch(() => {})
+      }
+    }
 
     return {
       success: true,

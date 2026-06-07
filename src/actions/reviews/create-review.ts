@@ -11,6 +11,7 @@ import { checkAndAwardBadgesAction } from '@/actions/gamification'
 import { containsProfanity } from '@/lib/profanity-filter'
 import { containsLinks } from '@/lib/content-validation'
 import { checkReviewRateLimit } from '@/lib/rate-limit'
+import { sendNewReviewEmail } from '@/lib/email/templates/new-review'
 import type { ActionResponse } from '@/types/action-response'
 import type { Review, User } from '@prisma/client'
 
@@ -155,8 +156,16 @@ export async function createReviewAction(
     }
 
     if (entityType === 'venue') {
-      const venue = await prisma.venue.findUnique({ where: { id: entityId }, select: { slug: true } })
-      if (venue) revalidatePath(`/locales/${venue.slug}`)
+      const venue = await prisma.venue.findUnique({
+        where: { id: entityId },
+        select: { slug: true, name: true, user: { select: { email: true, name: true } } },
+      })
+      if (venue) {
+        revalidatePath(`/locales/${venue.slug}`)
+        if (venue.user.email && finalStatus === 'APPROVED') {
+          sendNewReviewEmail(venue.user.email, venue.user.name ?? '', venue.name, session.user.name ?? 'Un usuario', parsed.data.rating, parsed.data.content).catch(() => {})
+        }
+      }
     } else {
       const event = await prisma.event.findUnique({ where: { id: entityId }, select: { slug: true } })
       if (event) revalidatePath(`/eventos/${event.slug}`)

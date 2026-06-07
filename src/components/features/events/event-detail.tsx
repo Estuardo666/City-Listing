@@ -28,6 +28,7 @@ type QuestionItem = {
 type EventDetailProps = {
   event: EventWithRelations
   currentUserId?: string
+  userRole?: string
   questions?: QuestionItem[]
 }
 
@@ -38,7 +39,8 @@ const RECURRENCE_LABELS: Record<string, string> = {
   YEARLY: 'Anual',
 }
 
-export function EventDetail({ event, currentUserId, questions = [] }: EventDetailProps) {
+export function EventDetail({ event, currentUserId, userRole, questions = [] }: EventDetailProps) {
+  const canEdit = currentUserId && (userRole === 'ADMIN' || currentUserId === event.userId)
   const mapQuery = encodeURIComponent(event.address ?? event.location)
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -263,12 +265,14 @@ export function EventDetail({ event, currentUserId, questions = [] }: EventDetai
 
           {/* Actions */}
           <div className="flex flex-wrap gap-3">
-            <Link
-              href={`/eventos/${event.slug}/editar`}
-              className="flex min-w-[140px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
-            >
-              <Edit className="h-4 w-4" /> Editar
-            </Link>
+            {canEdit && (
+              <Link
+                href={`/eventos/${event.slug}/editar`}
+                className="flex min-w-[140px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+              >
+                <Edit className="h-4 w-4" /> Editar
+              </Link>
+            )}
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
               target="_blank"

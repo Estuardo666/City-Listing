@@ -7,6 +7,9 @@ import { prisma } from '@/lib/prisma'
 import { reservationSchema, reservationStatusUpdateSchema, reservationSettingsSchema } from '@/schemas/reservation.schema'
 import type { ActionResponse } from '@/types/action-response'
 import type { Reservation, ReservationSettings } from '@prisma/client'
+import { sendReservationConfirmationEmail } from '@/lib/email/templates/reservation-confirmed'
+import { sendNewReservationOwnerEmail } from '@/lib/email/templates/reservation-notify-owner'
+import { sendReservationStatusEmail } from '@/lib/email/templates/reservation-status'
 
 export async function createReservationAction(input: unknown): Promise<ActionResponse<Reservation>> {
   try {
@@ -59,8 +62,21 @@ export async function createReservationAction(input: unknown): Promise<ActionRes
     })
 
     if (parsed.data.venueId) {
-      const venue = await prisma.venue.findUnique({ where: { id: parsed.data.venueId }, select: { slug: true } })
-      if (venue) revalidatePath(`/locales/${venue.slug}`)
+      const venue = await prisma.venue.findUnique({
+        where: { id: parsed.data.venueId },
+        select: { slug: true, name: true, user: { select: { email: true, name: true } } },
+      })
+      if (venue) {
+        revalidatePath(`/locales/${venue.slug}`)
+        const dateStr = new Date(parsed.data.date).toLocaleDateString('es-EC')
+        const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } })
+        if (user?.email) {
+          sendReservationConfirmationEmail(user.email, user.name ?? 'Usuario', venue.name, dateStr, parsed.data.time, parsed.data.partySize).catch(() => {})
+        }
+        if (venue.user.email) {
+          sendNewReservationOwnerEmail(venue.user.email, venue.user.name ?? '', venue.name, user?.name ?? 'Un usuario', dateStr, parsed.data.time, parsed.data.partySize).catch(() => {})
+        }
+      }
     }
 
     return { success: true, data: created }
@@ -115,8 +131,16 @@ export async function updateReservationStatusAction(
     })
 
     if (reservation.venueId) {
-      const venue = await prisma.venue.findUnique({ where: { id: reservation.venueId }, select: { slug: true } })
+      const venue = await prisma.venue.findUnique({ where: { id: reservation.venueId }, select: { slug: true, name: true } })
       if (venue) revalidatePath(`/locales/${venue.slug}`)
+
+      if (parsed.data.status === 'CONFIRMED' || parsed.data.status === 'CANCELLED') {
+        const user = await prisma.user.findUnique({ where: { id: reservation.userId }, select: { name: true, email: true } })
+        if (user?.email && venue) {
+          const dateStr = new Date(reservation.date).toLocaleDateString('es-EC')
+          sendReservationStatusEmail(user.email, user.name ?? 'Usuario', venue.name, parsed.data.status, dateStr, reservation.time).catch(() => {})
+        }
+      }
     }
 
     return { success: true, data: updated }

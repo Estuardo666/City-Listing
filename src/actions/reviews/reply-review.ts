@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { sendReviewReplyEmail } from '@/lib/email/templates/review-reply'
 import type { ActionResponse } from '@/types/action-response'
 
 const replySchema = z.object({
@@ -28,10 +29,12 @@ export async function replyToReviewAction(
       where: { id: reviewId },
       select: {
         id: true,
+        content: true,
         venueId: true,
         eventId: true,
-        venue: { select: { userId: true } },
-        event: { select: { userId: true } },
+        venue: { select: { userId: true, name: true } },
+        event: { select: { userId: true, title: true } },
+        user: { select: { name: true, email: true } },
       },
     })
 
@@ -55,6 +58,11 @@ export async function replyToReviewAction(
     if (review.eventId) {
       const event = await prisma.event.findUnique({ where: { id: review.eventId }, select: { slug: true } })
       if (event) revalidatePath(`/eventos/${event.slug}`)
+    }
+
+    if (review.user.email) {
+      const entityName = review.venue?.name ?? review.event?.title ?? 'tu reseña'
+      sendReviewReplyEmail(review.user.email, review.user.name ?? 'Usuario', entityName, review.content, parsed.data.reply).catch(() => {})
     }
 
     return { success: true, data: { ownerReply: updated.ownerReply!, ownerReplyAt: updated.ownerReplyAt! } }

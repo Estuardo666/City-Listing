@@ -45,11 +45,13 @@ type MenuCategory = { id: string; name: string; items: MenuItem[] }
 type VenueDetailProps = {
   venue: VenueWithRelations
   currentUserId?: string
+  userRole?: string
   questions?: QuestionItem[]
   menu?: MenuCategory[]
 }
 
-export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }: VenueDetailProps) {
+export function VenueDetail({ venue, currentUserId, userRole, questions = [], menu = [] }: VenueDetailProps) {
+  const canEdit = currentUserId && (userRole === 'ADMIN' || currentUserId === venue.userId)
   const [imageError, setImageError] = useState(false)
   
   const mapQuery = encodeURIComponent(venue.address ?? venue.location)
@@ -332,12 +334,14 @@ export function VenueDetail({ venue, currentUserId, questions = [], menu = [] }:
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Link
-              href={`/locales/${venue.slug}/editar`}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
-            >
-              <Edit className="h-4 w-4" /> Editar
-            </Link>
+            {canEdit && (
+              <Link
+                href={`/locales/${venue.slug}/editar`}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+              >
+                <Edit className="h-4 w-4" /> Editar
+              </Link>
+            )}
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
               target="_blank"

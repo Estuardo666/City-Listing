@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sendNewMessageEmail } from '@/lib/email/templates/new-message'
 import type { ActionResponse } from '@/types/action-response'
 
 export async function sendMessageAction(
@@ -33,7 +34,11 @@ export async function sendMessageAction(
 
     const venue = await prisma.venue.findUnique({
       where: { id: venueId },
-      select: { userId: true },
+      select: {
+        userId: true,
+        name: true,
+        user: { select: { id: true, email: true, name: true } },
+      },
     })
 
     if (!venue) {
@@ -67,6 +72,11 @@ export async function sendMessageAction(
         images,
       },
     })
+
+    if (receiverId === venue.userId && venue.user.email && content?.trim()) {
+      const sender = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true } })
+      sendNewMessageEmail(venue.user.email, venue.user.name ?? '', sender?.name ?? 'Un usuario', venue.name, content.trim()).catch(() => {})
+    }
 
     revalidatePath(`/dashboard/locales/${venueId}/mensajes`)
     revalidatePath(`/dashboard/mensajes`)
@@ -267,11 +277,32 @@ export async function reportBusinessAction(
 
     const venue = await prisma.venue.findUnique({
       where: { id: venueId },
-      select: { id: true },
+      select: {
+        userId: true,
+        name: true,
+        user: { select: { id: true, email: true, name: true } },
+      },
     })
 
     if (!venue) {
       return { success: false, error: 'Local no encontrado.' }
+    }
+
+    const isBlocked = await prisma.blockedUser.findFirst({
+      where: {
+        venueId,
+        blockedUserId: session.user.id,
+      },
+    })
+
+    if (isBlocked) {
+      return { success: false, error: 'Has sido bloqueado de este local.' }
+    }
+
+    const isVenueOwner = venue.userId === session.user.id
+
+    if (isVenueOwner) {
+      return { success: false, error: 'No puedes reportar tu propio negocio.' }
     }
 
     await prisma.venue.update({

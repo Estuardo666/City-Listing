@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { sendWelcomeEmail } from '@/lib/email/templates/welcome'
 
 const signupSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es requerido'),
@@ -46,6 +47,8 @@ export async function POST(request: NextRequest) {
         role,
       },
     })
+
+    sendWelcomeEmail(email, name).catch((err) => console.error('Welcome email error:', err))
 
     return NextResponse.json({ success: true, userId: user.id })
   } catch (error) {
