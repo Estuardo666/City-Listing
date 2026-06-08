@@ -85,7 +85,7 @@ export const eventStatusUpdateSchema = z.object({
 export const adminEventStatusFilterSchema = z
   .enum(['ALL', 'PENDING', 'APPROVED', 'REJECTED'])
   .optional()
-  .default('PENDING')
+  .default('ALL')
 
 export const upcomingEventNotificationInputSchema = z.object({
   hoursAhead: z.coerce.number().int().min(1).max(168).optional().default(48),

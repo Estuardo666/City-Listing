@@ -54,10 +54,10 @@ export default async function AdminLocalesPage({ searchParams }: AdminLocalesPag
             <div className="space-y-3">
               <p className="eyebrow">Panel de control</p>
               <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-                Moderación de locales pendientes
+                Gestión de locales
               </h1>
               <p className="max-w-2xl text-sm sm:text-base text-muted-foreground">
-                Revisa locales enviados por la comunidad. Solo locales aprobados se publican en el directorio.
+                Administra todos los locales de la plataforma. Filtra por estado para revisar pendientes o gestionar existentes.
               </p>
             </div>
 

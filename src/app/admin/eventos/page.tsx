@@ -54,10 +54,10 @@ export default async function AdminEventosPage({ searchParams }: AdminEventosPag
             <div className="space-y-3">
               <p className="eyebrow">Panel de control</p>
               <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-                Moderación de eventos pendientes
+                Gestión de eventos
               </h1>
               <p className="max-w-2xl text-sm sm:text-base text-muted-foreground">
-                Revisa solicitudes enviadas por la comunidad. Solo eventos aprobados se publican en la agenda.
+                Administra todos los eventos de la plataforma. Filtra por estado para revisar pendientes o gestionar existentes.
               </p>
             </div>
 

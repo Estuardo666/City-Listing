@@ -90,7 +90,7 @@ export const venueStatusUpdateSchema = z.object({
 export const adminVenueStatusFilterSchema = z
   .enum(['ALL', 'DRAFT', 'PENDING', 'APPROVED', 'REJECTED'])
   .optional()
-  .default('PENDING')
+  .default('ALL')
 
 export type VenueInput = z.infer<typeof venueSchema>
 export type VenueListFiltersInput = z.infer<typeof venueListFiltersSchema>
