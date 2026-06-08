@@ -13,7 +13,7 @@ type EventsVenuesMapProps = {
   events: EventMapItem[]
   venues: VenueMapItem[]
   mapboxToken: string
-  mapStyle?: string | mapboxgl.Style
+  mapStyle?: string
   className?: string
 }
 

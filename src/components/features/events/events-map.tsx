@@ -12,7 +12,7 @@ import type { EventMapItem } from '@/types/event'
 type EventsMapProps = {
   events: EventMapItem[]
   mapboxToken: string
-  mapStyle?: string | mapboxgl.Style
+  mapStyle?: string
   className?: string
 }
 
