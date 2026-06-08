@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import {
@@ -175,7 +176,7 @@ export async function getAdminPosts(
   })
 }
 
-export async function getPostBySlug(slug: string): Promise<PostWithRelations | null> {
+export const getPostBySlug = cache(async (slug: string): Promise<PostWithRelations | null> => {
   const prismaAny = prisma as unknown as {
     post: {
       findFirst: (args: unknown) => Promise<PostWithRelations | null>
@@ -200,7 +201,7 @@ export async function getPostBySlug(slug: string): Promise<PostWithRelations | n
       },
     },
   })
-}
+})
 
 type GetUserPostsInput = {
   userId: string

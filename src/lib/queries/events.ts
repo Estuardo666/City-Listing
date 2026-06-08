@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import type { EventWithRelations } from '@/types/event'
@@ -395,7 +396,7 @@ export async function getUpcomingEventNotifications(
   })
 }
 
-export async function getEventBySlug(slug: string): Promise<EventWithRelations | null> {
+export const getEventBySlug = cache(async (slug: string): Promise<EventWithRelations | null> => {
   return prisma.event.findFirst({
     where: {
       slug,
@@ -434,4 +435,4 @@ export async function getEventBySlug(slug: string): Promise<EventWithRelations |
       recurrenceRule: true,
     },
   })
-}
+})

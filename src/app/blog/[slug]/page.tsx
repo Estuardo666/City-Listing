@@ -14,6 +14,8 @@ import type { PostListItem } from '@/types/post'
 import { JsonLd } from '@/components/json-ld'
 import { buildArticleJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 
+export const revalidate = 3600
+
 type BlogSlugPageProps = {
   params: Promise<{ slug: string }>
 }

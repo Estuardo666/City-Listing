@@ -16,6 +16,8 @@ import { incrementEventViewAction } from '@/actions/views'
 import { JsonLd } from '@/components/json-ld'
 import { buildEventJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 
+export const revalidate = 3600
+
 type EventDetailPageProps = {
   params: Promise<{
     slug: string

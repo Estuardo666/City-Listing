@@ -1,7 +1,8 @@
 import 'server-only'
+import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 
-export async function getUserProfileById(userId: string) {
+export const getUserProfileById = cache(async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -66,4 +67,4 @@ export async function getUserProfileById(userId: string) {
   })
 
   return user
-}
+})

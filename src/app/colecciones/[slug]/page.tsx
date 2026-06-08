@@ -8,6 +8,8 @@ import { EventCard } from '@/components/features/events/event-card'
 import { Folder, User } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
+export const revalidate = 3600
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   return { title: `Colección — Vive Loja` }

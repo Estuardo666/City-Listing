@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import {
@@ -356,7 +357,7 @@ export async function getApprovedVenuesForEventForm(): Promise<VenueSelectOption
   })
 }
 
-export async function getVenueBySlug(slug: string): Promise<VenueWithRelations | null> {
+export const getVenueBySlug = cache(async (slug: string): Promise<VenueWithRelations | null> => {
   return prisma.venue.findFirst({
     where: {
       slug,
@@ -427,4 +428,4 @@ export async function getVenueBySlug(slug: string): Promise<VenueWithRelations |
       reservationSettings: true,
     },
   })
-}
+})

@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 
 const CATEGORY_SLUGS_TO_SKIP = [
@@ -44,7 +45,7 @@ export async function getParentVenueCategories() {
   })
 }
 
-export async function getCategoryBySlug(slug: string) {
+export const getCategoryBySlug = cache(async (slug: string) => {
   return prisma.category.findFirst({
     where: {
       slug,
@@ -68,7 +69,7 @@ export async function getCategoryBySlug(slug: string) {
       },
     },
   })
-}
+})
 
 export async function getCategorySlugsForStaticParams() {
   const categories = await prisma.category.findMany({

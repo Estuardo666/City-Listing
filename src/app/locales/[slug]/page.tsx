@@ -14,6 +14,8 @@ import { incrementVenueViewAction } from '@/actions/views'
 import { JsonLd } from '@/components/json-ld'
 import { buildLocalBusinessJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 
+export const revalidate = 3600
+
 type VenueDetailPageProps = {
   params: Promise<{
     slug: string
