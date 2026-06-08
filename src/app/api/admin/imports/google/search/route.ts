@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const categoriesParam = searchParams.get('categories')
     const radius = searchParams.get('radius')
     const address = searchParams.get('address')
+    const maxResults = Number(searchParams.get('maxResults') || '20')
 
     if (!lat || !lng || !categoriesParam || !radius) {
       return NextResponse.json(
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       location,
       Number(radius),
       categories,
-      20
+      Math.min(maxResults, 500)
     )
 
     const normalized = googlePlacesImporter.normalizePlaces(results)

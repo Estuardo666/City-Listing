@@ -3,11 +3,22 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Building2, CheckCircle2, MapPin, User2, XCircle } from 'lucide-react'
+import { Building2, CheckCircle2, MapPin, Pencil, Trash2, User2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { updateVenueStatusAction } from '@/actions/venues'
+import { updateVenueStatusAction, deleteVenueAction } from '@/actions/venues'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import type { AdminVenueStatusFilterInput } from '@/schemas/venue.schema'
 import type { VenueAdminListItem } from '@/types/venue'
@@ -43,6 +54,7 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [updatingVenueId, setUpdatingVenueId] = useState<string | null>(null)
+  const [deletingVenueId, setDeletingVenueId] = useState<string | null>(null)
 
   const statusSummary = useMemo(() => {
     return venues.reduce(
@@ -76,6 +88,24 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
       toast.success(status === 'APPROVED' ? 'Local aprobado correctamente.' : 'Local rechazado correctamente.')
       router.refresh()
       setUpdatingVenueId(null)
+    })
+  }
+
+  const handleDelete = (venueId: string) => {
+    setDeletingVenueId(venueId)
+
+    startTransition(async () => {
+      const result = await deleteVenueAction(venueId)
+
+      if (!result.success) {
+        toast.error(result.error ?? 'No se pudo eliminar el local.')
+        setDeletingVenueId(null)
+        return
+      }
+
+      toast.success('Local eliminado correctamente.')
+      router.refresh()
+      setDeletingVenueId(null)
     })
   }
 
@@ -135,6 +165,7 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
           const venueStatus = venue.status in statusPillStyles ? venue.status : 'PENDING'
 
           const isUpdatingCurrent = isPending && updatingVenueId === venue.id
+          const isDeletingCurrent = isPending && deletingVenueId === venue.id
 
           return (
             <Card key={venue.id} className="border-border/70">
@@ -166,15 +197,24 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
               </CardHeader>
 
               <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
-                  <Link href={`/locales/${venue.slug}`}>Ver detalle</Link>
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
+                    <Link href={`/locales/${venue.slug}`}>Ver detalle</Link>
+                  </Button>
+
+                  <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
+                    <Link href={`/admin/locales/${venue.id}/editar`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </Link>
+                  </Button>
+                </div>
 
                 <div className="flex flex-wrap gap-2">
                   {venueStatus !== 'APPROVED' ? (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent}
                       onClick={() => handleStatusUpdate(venue.id, 'APPROVED')}
                       className="h-9 bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:opacity-60"
                     >
@@ -186,7 +226,7 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
                   {venueStatus !== 'REJECTED' ? (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent}
                       onClick={() => handleStatusUpdate(venue.id, 'REJECTED')}
                       className="h-9 bg-rose-600 px-4 text-white hover:bg-rose-700 disabled:opacity-60"
                     >
@@ -194,6 +234,38 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
                       Rechazar
                     </Button>
                   ) : null}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        disabled={isUpdatingCurrent || isDeletingCurrent}
+                        className="h-9 bg-rose-700 px-4 text-white hover:bg-rose-800 disabled:opacity-60"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar local?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminará permanentemente el local
+                          <span className="font-semibold"> {venue.name}</span> y todos sus datos asociados
+                          (eventos, reseñas, favoritos, etc.).
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(venue.id)}
+                          className="bg-rose-600 text-white hover:bg-rose-700"
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>

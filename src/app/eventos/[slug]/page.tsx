@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -12,11 +13,48 @@ import { getUserCollections } from '@/lib/queries/features'
 import { FavoriteButton } from '@/components/features/favorites/favorite-button'
 import { AddToCollectionButton } from '@/components/collections/add-to-collection-button'
 import { incrementEventViewAction } from '@/actions/views'
+import { JsonLd } from '@/components/json-ld'
+import { buildEventJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 
 type EventDetailPageProps = {
   params: Promise<{
     slug: string
   }>
+}
+
+export async function generateMetadata({ params }: EventDetailPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const event = await getEventBySlug(slug)
+
+  if (!event) {
+    return { title: 'Evento no encontrado' }
+  }
+
+  const description = event.description.slice(0, 160)
+  const canonical = `https://viveloja.com/eventos/${event.slug}`
+
+  return {
+    title: `${event.title} en Loja | Vive Loja`,
+    description,
+    openGraph: {
+      title: event.title,
+      description,
+      url: canonical,
+      siteName: 'ViveLoja',
+      type: 'website',
+      locale: 'es_EC',
+      images: event.image ? [event.image] : [],
+    },
+    twitter: {
+      card: 'summary_large_image' as const,
+      title: event.title,
+      description,
+      images: event.image ? [event.image] : [],
+    },
+    alternates: {
+      canonical,
+    },
+  }
 }
 
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
@@ -46,8 +84,47 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   incrementEventViewAction(event.id)
 
+  const categoryName = event.eventCategories[0]?.category?.name || 'Eventos'
+  const categorySlug = event.eventCategories[0]?.category?.slug || 'eventos'
+
+  const eventJsonLd = buildEventJsonLd({
+    title: event.title,
+    slug: event.slug,
+    description: event.description,
+    content: event.content,
+    image: event.image,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    location: event.location,
+    address: event.address,
+    lat: event.lat,
+    lng: event.lng,
+    price: event.price,
+    venue: event.venue
+      ? {
+          name: event.venue.name,
+          slug: event.venue.slug,
+          address: event.venue.address,
+          lat: event.venue.lat,
+          lng: event.venue.lng,
+        }
+      : null,
+    user: { name: event.user.name },
+    eventCategories: event.eventCategories,
+    media: event.media,
+  })
+
+  const breadcrumbJsonLd = buildBreadcrumbListJsonLd([
+    { name: 'Inicio', url: 'https://viveloja.com' },
+    { name: 'Eventos', url: 'https://viveloja.com/eventos' },
+    { name: categoryName, url: `https://viveloja.com/${categorySlug}` },
+    { name: event.title },
+  ])
+
   return (
     <div className="pb-20 pt-10 sm:pt-14">
+      <JsonLd data={eventJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <section className="section-shell space-y-8">
         {/* Nav bar */}
         <div className="flex items-center justify-between">

@@ -162,27 +162,38 @@ class GooglePlacesImporter {
     const seenIds = new Set<string>()
     const allResults: any[] = []
 
+    const queryVariations = [
+      (label: string) => `${label} en ${query}`,
+      (label: string) => `${label} cerca de ${query}`,
+    ]
+
     for (const key of typesToSearch) {
       const cat = GOOGLE_CATEGORIES[key]
       if (!cat) continue
 
-      const typeQuery = `${cat.label} en ${query}`
+      if (allResults.length >= maxResults) break
 
-      try {
-        const results = await googlePlacesService.searchPlaces(typeQuery, {
-          location,
-          radius,
-          maxResultCount: Math.min(maxResults, 20),
-        })
+      for (const buildQuery of queryVariations) {
+        if (allResults.length >= maxResults) break
 
-        for (const place of results) {
-          if (place.id && !seenIds.has(place.id)) {
-            seenIds.add(place.id)
-            allResults.push(place)
+        const typeQuery = buildQuery(cat.label)
+
+        try {
+          const results = await googlePlacesService.searchPlaces(typeQuery, {
+            location,
+            radius,
+            maxResultCount: 20,
+          })
+
+          for (const place of results) {
+            if (place.id && !seenIds.has(place.id)) {
+              seenIds.add(place.id)
+              allResults.push(place)
+            }
           }
+        } catch (error) {
+          console.error(`Error searching for ${key}:`, error)
         }
-      } catch (error) {
-        console.error(`Error searching for ${key}:`, error)
       }
     }
 

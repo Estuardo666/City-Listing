@@ -3,11 +3,22 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, Clock3, MapPin, User2, XCircle } from 'lucide-react'
+import { CheckCircle2, Clock3, MapPin, Pencil, Trash2, User2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { updateEventStatusAction } from '@/actions/events'
+import { updateEventStatusAction, deleteEventAction } from '@/actions/events'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { cn, formatDateTime } from '@/lib/utils'
 import type { AdminEventStatusFilterInput } from '@/schemas/event.schema'
 import type { EventAdminListItem } from '@/types/event'
@@ -40,6 +51,7 @@ export function AdminEventModeration({ events, selectedStatus }: AdminEventModer
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [updatingEventId, setUpdatingEventId] = useState<string | null>(null)
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null)
 
   const statusSummary = useMemo(() => {
     return events.reduce(
@@ -72,6 +84,24 @@ export function AdminEventModeration({ events, selectedStatus }: AdminEventModer
       toast.success(status === 'APPROVED' ? 'Evento aprobado correctamente.' : 'Evento rechazado correctamente.')
       router.refresh()
       setUpdatingEventId(null)
+    })
+  }
+
+  const handleDelete = (eventId: string) => {
+    setDeletingEventId(eventId)
+
+    startTransition(async () => {
+      const result = await deleteEventAction(eventId)
+
+      if (!result.success) {
+        toast.error(result.error ?? 'No se pudo eliminar el evento.')
+        setDeletingEventId(null)
+        return
+      }
+
+      toast.success('Evento eliminado correctamente.')
+      router.refresh()
+      setDeletingEventId(null)
     })
   }
 
@@ -129,6 +159,7 @@ export function AdminEventModeration({ events, selectedStatus }: AdminEventModer
               ? event.status
               : 'PENDING'
           const isUpdatingCurrent = isPending && updatingEventId === event.id
+          const isDeletingCurrent = isPending && deletingEventId === event.id
 
           return (
             <Card key={event.id} className="border-border/70">
@@ -160,15 +191,24 @@ export function AdminEventModeration({ events, selectedStatus }: AdminEventModer
               </CardHeader>
 
               <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
-                  <Link href={`/eventos/${event.slug}`}>Ver detalle</Link>
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
+                    <Link href={`/eventos/${event.slug}`}>Ver detalle</Link>
+                  </Button>
+
+                  <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
+                    <Link href={`/admin/eventos/${event.id}/editar`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </Link>
+                  </Button>
+                </div>
 
                 <div className="flex flex-wrap gap-2">
                   {eventStatus !== 'APPROVED' ? (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent}
                       onClick={() => handleStatusUpdate(event.id, 'APPROVED')}
                       className="h-9 bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:opacity-60"
                     >
@@ -180,7 +220,7 @@ export function AdminEventModeration({ events, selectedStatus }: AdminEventModer
                   {eventStatus !== 'REJECTED' ? (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent}
                       onClick={() => handleStatusUpdate(event.id, 'REJECTED')}
                       className="h-9 bg-rose-600 px-4 text-white hover:bg-rose-700 disabled:opacity-60"
                     >
@@ -188,6 +228,38 @@ export function AdminEventModeration({ events, selectedStatus }: AdminEventModer
                       Rechazar
                     </Button>
                   ) : null}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        disabled={isUpdatingCurrent || isDeletingCurrent}
+                        className="h-9 bg-rose-700 px-4 text-white hover:bg-rose-800 disabled:opacity-60"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar evento?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminará permanentemente el evento
+                          <span className="font-semibold"> {event.title}</span> y todos sus datos asociados
+                          (reseñas, favoritos, comentarios, etc.).
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(event.id)}
+                          className="bg-rose-600 text-white hover:bg-rose-700"
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>

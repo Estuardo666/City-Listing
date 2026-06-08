@@ -174,6 +174,7 @@ model Subcategory {
 model GooglePlaceTypeMapping {
   id               String   @id @default(cuid())
   googleType       String   @unique
+  schemaOrgType    String?
   categorySlugs    String[]
   subcategorySlugs String[]
   confidence       Int      @default(100)
@@ -1061,5 +1062,74 @@ model GoogleImportLog {
   @@index([jobId])
   @@index([level])
   @@index([createdAt])
+}
+
+model SearchConsoleSnapshot {
+  id               String   @id @default(cuid())
+  date             DateTime @unique
+  totalClicks      Int
+  totalImpressions Float
+  averageCtr       Float
+  averagePosition  Float
+  createdAt        DateTime @default(now())
+
+  @@index([date])
+}
+
+model SearchConsoleKeyword {
+  id          String   @id @default(cuid())
+  date        DateTime
+  query       String
+  clicks      Int
+  impressions Float
+  ctr         Float
+  position    Float
+  createdAt   DateTime @default(now())
+
+  @@unique([date, query])
+  @@index([date])
+  @@index([query])
+  @@index([impressions])
+  @@index([ctr])
+}
+
+model SearchConsolePage {
+  id          String   @id @default(cuid())
+  date        DateTime
+  page        String
+  clicks      Int
+  impressions Float
+  ctr         Float
+  position    Float
+  createdAt   DateTime @default(now())
+
+  @@unique([date, page])
+  @@index([date])
+  @@index([page])
+  @@index([impressions])
+  @@index([ctr])
+}
+
+model SearchConsoleOpportunity {
+  id              String   @id @default(cuid())
+  query           String
+  page            String?
+  opportunityType String
+  score           Float
+  impressions     Float
+  clicks          Int
+  ctr             Float
+  position        Float
+  recommendation  String
+  suggestedUrl    String?
+  suggestedTitle  String?
+  status          String   @default("OPEN")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([opportunityType])
+  @@index([status])
+  @@index([score])
+  @@index([query])
 }
 

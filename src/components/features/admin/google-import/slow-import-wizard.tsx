@@ -99,6 +99,7 @@ export function SlowImportWizard() {
         radius: radius.toString(),
         categories: selectedCategories.join(','),
         address: geoResult.formattedAddress,
+        maxResults: '500',
       })
 
       const res = await fetch(`/api/admin/imports/google/search?${params}`)

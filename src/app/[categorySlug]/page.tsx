@@ -8,6 +8,7 @@ import { ListingSection } from '@/components/features/listing/listing-section'
 import { ListingCta } from '@/components/features/listing/listing-cta'
 import { NearYouSection } from '@/components/features/listing/near-you-section'
 import { JsonLd, buildCategoryJsonLd } from '@/components/json-ld'
+import { buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 import {
   getCategoryBySlug,
   getCategorySlugsForStaticParams,
@@ -223,9 +224,15 @@ export default async function CategoryPage({ params }: PageProps) {
     })),
   })
 
+  const breadcrumbJsonLd = buildBreadcrumbListJsonLd([
+    { name: 'Inicio', url: 'https://viveloja.com' },
+    { name: category.name },
+  ])
+
   return (
     <div className="bg-background pt-14">
       <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
 
       {/* Mapa */}
       <div className="h-[70vh] w-full overflow-hidden">

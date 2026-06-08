@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -10,18 +11,42 @@ import { FavoriteButton } from '@/components/features/favorites/favorite-button'
 import { CommentSection } from '@/components/features/comments/comment-section'
 import type { CommentWithUser } from '@/actions/comments'
 import type { PostListItem } from '@/types/post'
+import { JsonLd } from '@/components/json-ld'
+import { buildArticleJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 
 type BlogSlugPageProps = {
   params: Promise<{ slug: string }>
 }
 
-export async function generateMetadata({ params }: BlogSlugPageProps) {
+export async function generateMetadata({ params }: BlogSlugPageProps): Promise<Metadata> {
   const { slug } = await params
   const post = await getPostBySlug(slug)
-  if (!post) return {}
+  if (!post) return { title: 'Artículo no encontrado' }
+
+  const description = post.excerpt ?? post.content.slice(0, 160)
+  const canonical = `https://viveloja.com/blog/${post.slug}`
+
   return {
     title: `${post.title} — Vive Loja Blog`,
-    description: post.excerpt ?? post.content.slice(0, 160),
+    description,
+    openGraph: {
+      title: post.title,
+      description,
+      url: canonical,
+      siteName: 'ViveLoja',
+      type: 'article',
+      locale: 'es_EC',
+      images: post.image ? [post.image] : [],
+    },
+    twitter: {
+      card: 'summary_large_image' as const,
+      title: post.title,
+      description,
+      images: post.image ? [post.image] : [],
+    },
+    alternates: {
+      canonical,
+    },
   }
 }
 
@@ -61,8 +86,32 @@ export default async function BlogSlugPage({ params }: BlogSlugPageProps) {
     }),
   ])
 
+  const articleJsonLd = buildArticleJsonLd({
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt,
+    content: post.content,
+    image: post.image,
+    publishedAt: post.publishedAt,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    user: { name: post.user.name, image: null },
+    category: post.category ? { name: post.category.name, slug: post.category.slug } : null,
+  })
+
+  const breadcrumbJsonLd = buildBreadcrumbListJsonLd([
+    { name: 'Inicio', url: 'https://viveloja.com' },
+    { name: 'Blog', url: 'https://viveloja.com/blog' },
+    ...(post.category
+      ? [{ name: post.category.name, url: `https://viveloja.com/${post.category.slug}` }]
+      : []),
+    { name: post.title },
+  ])
+
   return (
     <div className="min-h-screen bg-background pt-14">
+      <JsonLd data={articleJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <div className="relative">
         <div className="absolute right-4 top-4 z-10 sm:right-6">
           <FavoriteButton postId={post.id} initialIsFavorite={isFavorite} />

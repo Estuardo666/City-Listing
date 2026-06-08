@@ -11,6 +11,8 @@ import { getVenueBySlug } from '@/lib/queries/venues'
 import { getVenueMenu, getUserCollections } from '@/lib/queries/features'
 import { FavoriteButton } from '@/components/features/favorites/favorite-button'
 import { incrementVenueViewAction } from '@/actions/views'
+import { JsonLd } from '@/components/json-ld'
+import { buildLocalBusinessJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 
 type VenueDetailPageProps = {
   params: Promise<{
@@ -34,10 +36,30 @@ export async function generateMetadata({ params }: VenueDetailPageProps): Promis
     .trim()
   const phonePart = venue.phone ? `, Teléfono ${venue.phone}` : ''
   const addressPart = cleanAddress ? ` lo encuentras en ${cleanAddress}` : ''
+  const description = `${category} ${venue.name} en Loja,${addressPart}${phonePart}. Descubre más en Vive Loja.`
+  const canonical = `https://viveloja.com/locales/${venue.slug}`
 
   return {
     title: `${venue.name} en Loja | Dirección y teléfono`,
-    description: `${category} ${venue.name} en Loja,${addressPart}${phonePart}. Descubre más en Vive Loja.`,
+    description,
+    openGraph: {
+      title: `${venue.name} en Loja`,
+      description,
+      url: canonical,
+      siteName: 'ViveLoja',
+      type: 'website',
+      locale: 'es_EC',
+      images: venue.image ? [venue.image] : [],
+    },
+    twitter: {
+      card: 'summary_large_image' as const,
+      title: `${venue.name} en Loja`,
+      description,
+      images: venue.image ? [venue.image] : [],
+    },
+    alternates: {
+      canonical,
+    },
   }
 }
 
@@ -65,8 +87,41 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
 
   incrementVenueViewAction(venue.id)
 
+  const categoryName = venue.venueCategories[0]?.category?.name || 'Locales'
+  const categorySlug = venue.venueCategories[0]?.category?.slug || 'locales'
+
+  const localBusinessJsonLd = buildLocalBusinessJsonLd({
+    name: venue.name,
+    slug: venue.slug,
+    description: venue.description,
+    phone: venue.phone,
+    email: venue.email,
+    website: venue.website,
+    image: venue.image,
+    logo: venue.logo,
+    address: venue.address,
+    location: venue.location,
+    lat: venue.lat,
+    lng: venue.lng,
+    priceRange: venue.priceRange,
+    avgRating: venue.avgRating,
+    reviewCount: venue.reviewCount,
+    venueCategories: venue.venueCategories,
+    businessHours: venue.businessHours,
+    services: venue.services,
+  })
+
+  const breadcrumbJsonLd = buildBreadcrumbListJsonLd([
+    { name: 'Inicio', url: 'https://viveloja.com' },
+    { name: 'Locales', url: 'https://viveloja.com/locales' },
+    { name: categoryName, url: `https://viveloja.com/${categorySlug}` },
+    { name: venue.name },
+  ])
+
   return (
     <div className="pb-20 pt-10 sm:pt-14">
+      <JsonLd data={localBusinessJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <section className="section-shell space-y-8">
         {/* Nav bar */}
         <div className="flex items-center justify-between">

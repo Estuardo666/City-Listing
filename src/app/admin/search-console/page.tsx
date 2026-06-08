@@ -1,6 +1,7 @@
 import { Search, AlertCircle, ExternalLink } from 'lucide-react'
 import { getSearchConsoleData, isSearchConsoleConfigured, type DateRangePreset } from '@/lib/queries/search-console'
-import { SearchConsoleDashboard } from '@/components/features/admin/search-console/search-console-dashboard'
+import { getSearchConsoleInsights, type SearchConsoleInsightsData } from '@/lib/seo/search-console-insights'
+import { SearchConsoleTabs } from '@/components/features/admin/search-console/search-console-tabs'
 
 export const metadata = {
   title: 'Search Console — Admin',
@@ -8,7 +9,22 @@ export const metadata = {
 }
 
 type SearchConsolePageProps = {
-  searchParams: Promise<{ range?: string; setup?: string; error?: string; refresh_token?: string }>
+  searchParams: Promise<{ range?: string; setup?: string; error?: string; refresh_token?: string; tab?: string }>
+}
+
+const EMPTY_INSIGHTS: SearchConsoleInsightsData = {
+  keywordOpportunities: [],
+  keywordGaps: [],
+  contentIdeas: [],
+  topLocalQueries: [],
+  topVenuePages: [],
+  topEventPages: [],
+  topBlogPages: [],
+  trends: [],
+  lastSyncDate: null,
+  totalKeywords: 0,
+  totalOpportunities: 0,
+  totalGaps: 0,
 }
 
 export default async function SearchConsolePage({ searchParams }: SearchConsolePageProps) {
@@ -84,9 +100,9 @@ export default async function SearchConsolePage({ searchParams }: SearchConsoleP
     )
   }
 
-  let data
+  let overviewData
   try {
-    data = await getSearchConsoleData(range)
+    overviewData = await getSearchConsoleData(range)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error desconocido'
     return (
@@ -117,6 +133,13 @@ export default async function SearchConsolePage({ searchParams }: SearchConsoleP
     )
   }
 
+  let insightsData: SearchConsoleInsightsData = EMPTY_INSIGHTS
+  try {
+    insightsData = await getSearchConsoleInsights()
+  } catch {
+    // Insights are optional - overview still works
+  }
+
   return (
     <div className="min-h-screen bg-background pt-14">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -129,14 +152,14 @@ export default async function SearchConsolePage({ searchParams }: SearchConsoleP
               <h1 className="text-3xl font-medium text-foreground">Search Console</h1>
               <p className="text-muted-foreground">
                 Metricas de rendimiento en busqueda de Google &middot;{' '}
-                {new Date(data.dateRange.startDate).toLocaleDateString('es-EC')} -{' '}
-                {new Date(data.dateRange.endDate).toLocaleDateString('es-EC')}
+                {new Date(overviewData.dateRange.startDate).toLocaleDateString('es-EC')} -{' '}
+                {new Date(overviewData.dateRange.endDate).toLocaleDateString('es-EC')}
               </p>
             </div>
           </div>
         </div>
 
-        <SearchConsoleDashboard data={data} />
+        <SearchConsoleTabs overviewData={overviewData} insightsData={insightsData} />
       </div>
     </div>
   )
