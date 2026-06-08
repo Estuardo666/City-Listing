@@ -1,13 +1,22 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Building2, CheckCircle2, EyeOff, Eye, MapPin, Pencil, Trash2, User2, XCircle } from 'lucide-react'
+import {
+  ArrowDownUp, CheckCircle2, Eye, EyeOff,
+  MapPin, Pencil, Search, Trash2, User2, XCircle,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { updateVenueStatusAction, deleteVenueAction, toggleVenueActiveAction } from '@/actions/venues'
+import {
+  updateVenueStatusAction,
+  deleteVenueAction,
+  toggleVenueActiveAction,
+  bulkDeleteVenuesAction,
+  bulkToggleActiveAction,
+} from '@/actions/venues'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,23 +26,36 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import type { AdminVenueStatusFilterInput } from '@/schemas/venue.schema'
 import type { VenueAdminListItem } from '@/types/venue'
+import type { VenueCategory } from '@/types/venue'
 
 type AdminVenueModerationProps = {
   venues: VenueAdminListItem[]
-  selectedStatus: AdminVenueStatusFilterInput
+  categories: VenueCategory[]
+  currentFilters: {
+    status: AdminVenueStatusFilterInput
+    category: string
+    sort: string
+    q: string
+  }
 }
 
-const statusFilters: Array<{ label: string; value: AdminVenueStatusFilterInput }> = [
+const STATUS_FILTERS: Array<{ label: string; value: AdminVenueStatusFilterInput }> = [
+  { label: 'Todos', value: 'ALL' },
   { label: 'Borradores', value: 'DRAFT' },
   { label: 'Pendientes', value: 'PENDING' },
   { label: 'Aprobados', value: 'APPROVED' },
   { label: 'Rechazados', value: 'REJECTED' },
-  { label: 'Todos', value: 'ALL' },
+]
+
+const SORT_OPTIONS = [
+  { label: 'Más recientes', value: 'newest' },
+  { label: 'Más antiguos', value: 'oldest' },
+  { label: 'Nombre A-Z', value: 'name-asc' },
+  { label: 'Nombre Z-A', value: 'name-desc' },
 ]
 
 const statusLabel: Record<string, string> = {
@@ -50,12 +72,28 @@ const statusPillStyles: Record<string, string> = {
   REJECTED: 'bg-rose-100 text-rose-800 border-rose-200',
 }
 
-export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModerationProps) {
+function buildFilterUrl(
+  current: AdminVenueModerationProps['currentFilters'],
+  overrides: Partial<AdminVenueModerationProps['currentFilters']>
+) {
+  const params = new URLSearchParams()
+  const merged = { ...current, ...overrides }
+
+  if (merged.status !== 'ALL') params.set('status', merged.status)
+  if (merged.category) params.set('category', merged.category)
+  if (merged.sort !== 'newest') params.set('sort', merged.sort)
+  if (merged.q) params.set('q', merged.q)
+
+  const qs = params.toString()
+  return `/admin/locales${qs ? `?${qs}` : ''}`
+}
+
+export function AdminVenueModeration({ venues, categories, currentFilters }: AdminVenueModerationProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [updatingVenueId, setUpdatingVenueId] = useState<string | null>(null)
-  const [deletingVenueId, setDeletingVenueId] = useState<string | null>(null)
-  const [togglingVenueId, setTogglingVenueId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [searchInput, setSearchInput] = useState(currentFilters.q)
+  const [dialogAction, setDialogAction] = useState<'delete' | 'deactivate' | 'activate' | null>(null)
 
   const statusSummary = useMemo(() => {
     return venues.reduce(
@@ -65,264 +103,374 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
         }
         return acc
       },
-      {
-        DRAFT: 0,
-        PENDING: 0,
-        APPROVED: 0,
-        REJECTED: 0,
-      }
+      { DRAFT: 0, PENDING: 0, APPROVED: 0, REJECTED: 0 }
     )
   }, [venues])
 
-  const handleStatusUpdate = (venueId: string, status: 'APPROVED' | 'REJECTED') => {
-    setUpdatingVenueId(venueId)
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === venues.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(venues.map((v) => v.id)))
+    }
+  }, [selectedIds.size, venues])
+
+  const handleStatusUpdate = useCallback((venueId: string, status: 'APPROVED' | 'REJECTED') => {
     startTransition(async () => {
       const result = await updateVenueStatusAction({ venueId, status })
-
       if (!result.success) {
-        toast.error(result.error ?? 'No se pudo actualizar el estado del local.')
-        setUpdatingVenueId(null)
+        toast.error(result.error ?? 'No se pudo actualizar el estado.')
         return
       }
-
-      toast.success(status === 'APPROVED' ? 'Local aprobado correctamente.' : 'Local rechazado correctamente.')
+      toast.success(status === 'APPROVED' ? 'Local aprobado.' : 'Local rechazado.')
       router.refresh()
-      setUpdatingVenueId(null)
     })
-  }
+  }, [router])
 
-  const handleDelete = (venueId: string) => {
-    setDeletingVenueId(venueId)
-
-    startTransition(async () => {
-      const result = await deleteVenueAction(venueId)
-
-      if (!result.success) {
-        toast.error(result.error ?? 'No se pudo eliminar el local.')
-        setDeletingVenueId(null)
-        return
-      }
-
-      toast.success('Local eliminado correctamente.')
-      router.refresh()
-      setDeletingVenueId(null)
-    })
-  }
-
-  const handleToggleActive = (venueId: string) => {
-    setTogglingVenueId(venueId)
-
+  const handleToggleActive = useCallback((venueId: string) => {
     startTransition(async () => {
       const result = await toggleVenueActiveAction(venueId)
-
       if (!result.success) {
-        toast.error(result.error ?? 'No se pudo cambiar el estado del local.')
-        setTogglingVenueId(null)
+        toast.error(result.error ?? 'No se pudo cambiar el estado.')
         return
       }
-
-      toast.success(result.data?.isActive ? 'Local activado correctamente.' : 'Local desactivado correctamente.')
+      toast.success(result.data?.isActive ? 'Local activado.' : 'Local desactivado.')
       router.refresh()
-      setTogglingVenueId(null)
     })
+  }, [router])
+
+  const handleBulkAction = useCallback(async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+
+    startTransition(async () => {
+      let result
+      if (dialogAction === 'delete') {
+        result = await bulkDeleteVenuesAction(ids)
+        if (result.success) {
+          toast.success(`${result.data?.count ?? ids.length} locales eliminados.`)
+        }
+      } else if (dialogAction === 'deactivate') {
+        result = await bulkToggleActiveAction(ids, false)
+        if (result.success) {
+          toast.success(`${result.data?.count ?? ids.length} locales desactivados.`)
+        }
+      } else if (dialogAction === 'activate') {
+        result = await bulkToggleActiveAction(ids, true)
+        if (result.success) {
+          toast.success(`${result.data?.count ?? ids.length} locales activados.`)
+        }
+      }
+
+      if (result && !result.success) {
+        toast.error(result.error ?? 'No se pudo completar la acción.')
+      }
+
+      setSelectedIds(new Set())
+      setDialogAction(null)
+      router.refresh()
+    })
+  }, [selectedIds, dialogAction, router])
+
+  const handleSearch = () => {
+    router.push(buildFilterUrl(currentFilters, { q: searchInput }))
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="space-y-4">
-          <CardTitle className="text-xl">Moderación de locales</CardTitle>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900">
-              <p className="font-semibold">Borradores</p>
-              <p>{statusSummary.DRAFT}</p>
-            </div>
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              <p className="font-semibold">Pendientes</p>
-              <p>{statusSummary.PENDING}</p>
-            </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              <p className="font-semibold">Aprobados</p>
-              <p>{statusSummary.APPROVED}</p>
-            </div>
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-              <p className="font-semibold">Rechazados</p>
-              <p>{statusSummary.REJECTED}</p>
-            </div>
+    <div className="space-y-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+          <p className="text-xs font-medium text-muted-foreground">Borradores</p>
+          <p className="font-semibold">{statusSummary.DRAFT}</p>
+        </div>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
+          <p className="text-xs font-medium text-muted-foreground">Pendientes</p>
+          <p className="font-semibold">{statusSummary.PENDING}</p>
+        </div>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
+          <p className="text-xs font-medium text-muted-foreground">Aprobados</p>
+          <p className="font-semibold">{statusSummary.APPROVED}</p>
+        </div>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm">
+          <p className="text-xs font-medium text-muted-foreground">Rechazados</p>
+          <p className="font-semibold">{statusSummary.REJECTED}</p>
+        </div>
+      </div>
+
+      {/* Filters bar */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-1.5">
+          {STATUS_FILTERS.map((f) => (
+            <Button
+              key={f.value}
+              asChild
+              size="sm"
+              className={cn(
+                'h-7 px-2.5 text-xs',
+                currentFilters.status === f.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-border/80 bg-background text-muted-foreground hover:bg-accent'
+              )}
+            >
+              <Link href={buildFilterUrl(currentFilters, { status: f.value })}>{f.label}</Link>
+            </Button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <ArrowDownUp className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <select
+              value={currentFilters.sort}
+              onChange={(e) => router.push(buildFilterUrl(currentFilters, { sort: e.target.value }))}
+              className="h-8 rounded-md border border-input bg-background pl-8 pr-2 text-xs ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {statusFilters.map((filter) => (
-              <Button
-                key={filter.value}
-                asChild
-                className={cn(
-                  'h-9 px-4 text-sm',
-                  selectedStatus === filter.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'border border-border/80 bg-background text-foreground hover:bg-accent'
-                )}
-              >
-                <Link href={`/admin/locales?status=${filter.value}`}>{filter.label}</Link>
-              </Button>
-            ))}
+          <div className="relative">
+            <select
+              value={currentFilters.category}
+              onChange={(e) => router.push(buildFilterUrl(currentFilters, { category: e.target.value }))}
+              className="h-8 rounded-md border border-input bg-background px-2 text-xs ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Todas las categorías</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.slug}>{cat.name}</option>
+              ))}
+            </select>
           </div>
-        </CardHeader>
-      </Card>
 
-      {venues.length === 0 ? (
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No hay locales para el filtro seleccionado.
-          </CardContent>
-        </Card>
-      ) : null}
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
+          <Button size="sm" className="h-8 text-xs" onClick={handleSearch}>
+            Buscar
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 gap-4">
+      {/* Bulk actions bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/50 bg-primary/5 px-3 py-2">
+          <span className="text-xs font-medium">
+            {selectedIds.size} seleccionado{selectedIds.size > 1 ? 's' : ''}
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            <Button
+              size="sm"
+              className="h-7 bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+              onClick={() => setDialogAction('activate')}
+            >
+              <Eye className="mr-1 h-3 w-3" />
+              Activar
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 bg-amber-600 text-xs text-white hover:bg-amber-700"
+              onClick={() => setDialogAction('deactivate')}
+            >
+              <EyeOff className="mr-1 h-3 w-3" />
+              Desactivar
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 bg-rose-600 text-xs text-white hover:bg-rose-700"
+              onClick={() => setDialogAction('delete')}
+            >
+              <Trash2 className="mr-1 h-3 w-3" />
+              Eliminar
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Deseleccionar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Select all */}
+      {venues.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={toggleSelectAll}
+          >
+            {selectedIds.size === venues.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            {venues.length} local{venues.length !== 1 ? 'es' : ''}
+          </span>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {venues.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border/60 bg-card px-6 py-10 text-center">
+          <p className="text-sm text-muted-foreground">No hay locales para los filtros seleccionados.</p>
+        </div>
+      )}
+
+      {/* Compact rows */}
+      <div className="space-y-1.5">
         {venues.map((venue) => {
           const venueStatus = venue.status in statusPillStyles ? venue.status : 'PENDING'
-
-          const isUpdatingCurrent = isPending && updatingVenueId === venue.id
-          const isDeletingCurrent = isPending && deletingVenueId === venue.id
-          const isTogglingCurrent = isPending && togglingVenueId === venue.id
+          const cfg = { label: statusLabel[venueStatus], pill: statusPillStyles[venueStatus] }
+          const isSelected = selectedIds.has(venue.id)
 
           return (
-            <Card key={venue.id} className="border-border/70">
-              <CardHeader className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <CardTitle className="text-lg">{venue.name}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    {!venue.isActive && (
-                      <span className="rounded-full border px-3 py-1 text-xs font-semibold bg-gray-200 text-gray-600 border-gray-300">
-                        Inactivo
-                      </span>
-                    )}
-                    <span className={cn('rounded-full border px-3 py-1 text-xs font-semibold', statusPillStyles[venueStatus])}>
-                      {statusLabel[venueStatus]}
+            <div
+              key={venue.id}
+              className={cn(
+                'flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 transition-colors hover:border-border',
+                isSelected ? 'border-primary/50 bg-primary/5' : 'border-border/60'
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => toggleSelect(venue.id)}
+                className="h-4 w-4 shrink-0 rounded border-border accent-primary"
+              />
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <h3 className="line-clamp-1 text-sm font-medium text-foreground">{venue.name}</h3>
+                  {!venue.isActive && (
+                    <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-semibold bg-gray-200 text-gray-600 border-gray-300">
+                      Inactivo
                     </span>
-                  </div>
+                  )}
+                  <span className={cn('rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', cfg.pill)}>
+                    {cfg.label}
+                  </span>
                 </div>
-
-                <p className="text-sm text-muted-foreground">{venue.description}</p>
-
-                <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
-                  <p className="inline-flex items-center gap-2">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {venue.address ?? venue.location}
-                  </p>
-                  <p className="inline-flex items-center gap-2">
-                    <User2 className="h-3.5 w-3.5" />
+                <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                  <span>{venue.venueCategories[0]?.category.name ?? 'Sin categoría'}</span>
+                  {(venue.address ?? venue.location) && (
+                    <span className="inline-flex items-center gap-0.5">
+                      <MapPin className="h-3 w-3" />
+                      {venue.address ?? venue.location}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-0.5">
+                    <User2 className="h-3 w-3" />
                     {venue.user.name ?? venue.user.email ?? 'Sin autor'}
-                  </p>
-                  <p className="text-muted-foreground">Categoría: {venue.venueCategories[0]?.category.name}</p>
-                  <p className="inline-flex items-center gap-2">
-                    <Building2 className="h-3.5 w-3.5" />
-                    {venue._count.events} eventos asociados
-                  </p>
+                  </span>
                 </div>
-              </CardHeader>
+              </div>
 
-              <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap gap-2">
-                  <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
-                    <Link href={`/locales/${venue.slug}`}>Ver detalle</Link>
-                  </Button>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  asChild
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0"
+                >
+                  <Link href={`/admin/locales/${venue.id}/editar`}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
 
-                  <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
-                    <Link href={`/admin/locales/${venue.id}/editar`}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Editar
-                    </Link>
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {venueStatus !== 'APPROVED' ? (
-                    <Button
-                      type="button"
-                      disabled={isUpdatingCurrent || isDeletingCurrent || isTogglingCurrent}
-                      onClick={() => handleStatusUpdate(venue.id, 'APPROVED')}
-                      className="h-9 bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:opacity-60"
-                    >
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Aprobar
-                    </Button>
-                  ) : null}
-
-                  {venueStatus !== 'REJECTED' ? (
-                    <Button
-                      type="button"
-                      disabled={isUpdatingCurrent || isDeletingCurrent || isTogglingCurrent}
-                      onClick={() => handleStatusUpdate(venue.id, 'REJECTED')}
-                      className="h-9 bg-rose-600 px-4 text-white hover:bg-rose-700 disabled:opacity-60"
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Rechazar
-                    </Button>
-                  ) : null}
-
+                {venueStatus !== 'APPROVED' && (
                   <Button
-                    type="button"
-                    disabled={isUpdatingCurrent || isDeletingCurrent || isTogglingCurrent}
-                    onClick={() => handleToggleActive(venue.id)}
-                    className={cn(
-                      'h-9 px-4 text-white disabled:opacity-60',
-                      venue.isActive
-                        ? 'bg-amber-600 hover:bg-amber-700'
-                        : 'bg-emerald-600 hover:bg-emerald-700'
-                    )}
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                    onClick={() => handleStatusUpdate(venue.id, 'APPROVED')}
                   >
-                    {venue.isActive ? (
-                      <>
-                        <EyeOff className="mr-2 h-4 w-4" />
-                        Desactivar
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Activar
-                      </>
-                    )}
+                    <CheckCircle2 className="h-3.5 w-3.5" />
                   </Button>
+                )}
 
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        type="button"
-                        disabled={isUpdatingCurrent || isDeletingCurrent || isTogglingCurrent}
-                        className="h-9 bg-rose-700 px-4 text-white hover:bg-rose-800 disabled:opacity-60"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>¿Eliminar local?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta acción no se puede deshace. Se eliminará permanentemente el local
-                          <span className="font-semibold"> {venue.name}</span> y todos sus datos asociados
-                          (eventos, reseñas, favoritos, etc.).
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDelete(venue.id)}
-                          className="bg-rose-600 text-white hover:bg-rose-700"
-                        >
-                          Eliminar
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-            </Card>
+                {venueStatus !== 'REJECTED' && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                    onClick={() => handleStatusUpdate(venue.id, 'REJECTED')}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={cn(
+                    'h-7 w-7 p-0',
+                    venue.isActive
+                      ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                      : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                  )}
+                  onClick={() => handleToggleActive(venue.id)}
+                >
+                  {venue.isActive ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                </Button>
+              </div>
+            </div>
           )
         })}
       </div>
+
+      {/* Confirmation dialog */}
+      <AlertDialog open={dialogAction !== null} onOpenChange={() => setDialogAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {dialogAction === 'delete' && `¿Eliminar ${selectedIds.size} local${selectedIds.size > 1 ? 'es' : ''}?`}
+              {dialogAction === 'deactivate' && `¿Desactivar ${selectedIds.size} local${selectedIds.size > 1 ? 'es' : ''}?`}
+              {dialogAction === 'activate' && `¿Activar ${selectedIds.size} local${selectedIds.size > 1 ? 'es' : ''}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {dialogAction === 'delete' && 'Esta acción no se puede deshace. Se eliminarán permanentemente los locales seleccionados y todos sus datos asociados.'}
+              {dialogAction === 'deactivate' && 'Los locales desactivados se ocultarán del público pero seguirán visibles en el admin.'}
+              {dialogAction === 'activate' && 'Los locales activados volverán a ser visibles para el público.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkAction}
+              disabled={isPending}
+              className={cn(
+                dialogAction === 'delete' ? 'bg-rose-600 hover:bg-rose-700' : '',
+                dialogAction === 'deactivate' ? 'bg-amber-600 hover:bg-amber-700' : '',
+                dialogAction === 'activate' ? 'bg-emerald-600 hover:bg-emerald-700' : '',
+                'text-white'
+              )}
+            >
+              {isPending ? 'Procesando...' : 'Confirmar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

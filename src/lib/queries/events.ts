@@ -310,10 +310,17 @@ export async function getEventsForMap(): Promise<EventMapItem[]> {
   })
 }
 
+export type AdminEventFilters = {
+  status?: AdminEventStatusFilterInput
+  category?: string
+  sort?: string
+  q?: string
+}
+
 export async function getAdminEvents(
-  rawStatus: AdminEventStatusFilterInput = 'PENDING'
+  filters: AdminEventFilters = {}
 ): Promise<EventAdminListItem[]> {
-  const status = adminEventStatusFilterSchema.parse(rawStatus)
+  const status = adminEventStatusFilterSchema.parse(filters.status ?? 'ALL')
 
   const where: Prisma.EventWhereInput =
     status === 'ALL'
@@ -322,16 +329,44 @@ export async function getAdminEvents(
           status,
         }
 
+  if (filters.category) {
+    where.eventCategories = {
+      some: {
+        category: {
+          slug: filters.category,
+        },
+      },
+    }
+  }
+
+  if (filters.q) {
+    where.OR = [
+      { title: { contains: filters.q, mode: 'insensitive' } },
+      { address: { contains: filters.q, mode: 'insensitive' } },
+      { location: { contains: filters.q, mode: 'insensitive' } },
+    ]
+  }
+
+  const orderBy: Prisma.EventOrderByWithRelationInput = (() => {
+    switch (filters.sort) {
+      case 'title-asc':
+        return { title: 'asc' }
+      case 'title-desc':
+        return { title: 'desc' }
+      case 'oldest':
+        return { createdAt: 'asc' }
+      case 'startDate-asc':
+        return { startDate: 'asc' }
+      case 'startDate-desc':
+        return { startDate: 'desc' }
+      default:
+        return { createdAt: 'desc' }
+    }
+  })()
+
   return prisma.event.findMany({
     where,
-    orderBy: [
-      {
-        createdAt: 'desc',
-      },
-      {
-        startDate: 'asc',
-      },
-    ],
+    orderBy,
     select: eventAdminListSelect,
   })
 }

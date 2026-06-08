@@ -281,10 +281,17 @@ export async function getVenuesForMap(): Promise<VenueMapItem[]> {
   })
 }
 
+export type AdminVenueFilters = {
+  status?: AdminVenueStatusFilterInput
+  category?: string
+  sort?: string
+  q?: string
+}
+
 export async function getAdminVenues(
-  rawStatus: AdminVenueStatusFilterInput = 'PENDING'
+  filters: AdminVenueFilters = {}
 ): Promise<VenueAdminListItem[]> {
-  const status = adminVenueStatusFilterSchema.parse(rawStatus)
+  const status = adminVenueStatusFilterSchema.parse(filters.status ?? 'ALL')
 
   const where: Prisma.VenueWhereInput =
     status === 'ALL'
@@ -293,16 +300,40 @@ export async function getAdminVenues(
           status,
         }
 
+  if (filters.category) {
+    where.venueCategories = {
+      some: {
+        category: {
+          slug: filters.category,
+        },
+      },
+    }
+  }
+
+  if (filters.q) {
+    where.OR = [
+      { name: { contains: filters.q, mode: 'insensitive' } },
+      { address: { contains: filters.q, mode: 'insensitive' } },
+      { location: { contains: filters.q, mode: 'insensitive' } },
+    ]
+  }
+
+  const orderBy: Prisma.VenueOrderByWithRelationInput = (() => {
+    switch (filters.sort) {
+      case 'name-asc':
+        return { name: 'asc' }
+      case 'name-desc':
+        return { name: 'desc' }
+      case 'oldest':
+        return { createdAt: 'asc' }
+      default:
+        return { createdAt: 'desc' }
+    }
+  })()
+
   return prisma.venue.findMany({
     where,
-    orderBy: [
-      {
-        createdAt: 'desc',
-      },
-      {
-        name: 'asc',
-      },
-    ],
+    orderBy,
     select: venueAdminListSelect,
   })
 }
