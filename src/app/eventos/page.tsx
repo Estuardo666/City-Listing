@@ -59,7 +59,16 @@ export default async function EventosPage() {
     }),
     prisma.category.findMany({
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, slug: true, icon: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        icon: true,
+        subcategories: {
+          select: { id: true, name: true, slug: true, icon: true },
+          orderBy: { name: 'asc' },
+        },
+      },
     }),
   ])
 

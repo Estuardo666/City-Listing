@@ -17,7 +17,16 @@ export default async function ExplorarPage() {
     getEvents({ status: 'APPROVED' }, INITIAL_EXPLORE_LIMIT),
     prisma.category.findMany({
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, slug: true, icon: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        icon: true,
+        subcategories: {
+          select: { id: true, name: true, slug: true, icon: true },
+          orderBy: { name: 'asc' },
+        },
+      },
     }),
   ])
 

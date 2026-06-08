@@ -16,11 +16,19 @@ import {
 } from '@/lib/constants/filters'
 import { GASTRONOMIC_CATEGORY_SLUGS } from '@/lib/constants/services'
 
+type Subcategory = {
+  id: string
+  name: string
+  slug: string
+  icon: string | null
+}
+
 type Category = {
   id: string
   name: string
   slug: string
   icon: string | null
+  subcategories?: Subcategory[]
 }
 
 type ExploreFiltersProps = {

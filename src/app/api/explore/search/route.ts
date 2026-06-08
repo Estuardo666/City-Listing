@@ -6,6 +6,25 @@ import { Prisma } from '@prisma/client'
 const DEFAULT_TAKE = 60
 const MAX_TAKE = 100
 
+async function resolveCategorySlugs(slugs: string[]): Promise<string[]> {
+  if (slugs.length === 0) return []
+  const categories = await prisma.category.findMany({
+    where: { slug: { in: slugs } },
+    select: {
+      slug: true,
+      subcategories: { select: { slug: true } },
+    },
+  })
+  const allSlugs = new Set<string>()
+  for (const cat of categories) {
+    allSlugs.add(cat.slug)
+    for (const sub of cat.subcategories) {
+      allSlugs.add(sub.slug)
+    }
+  }
+  return Array.from(allSlugs)
+}
+
 function getDateRange(preset: string): { start: Date; end: Date } {
   const now = new Date()
   const start = new Date(now)
@@ -135,6 +154,9 @@ export async function GET(request: NextRequest) {
       async () => {
         const textFilter = q ? { contains: q, mode: 'insensitive' as const } : undefined
 
+        // Resolve category slugs to include subcategories
+        const categorySlugs = category ? await resolveCategorySlugs(category.split(',').filter(Boolean)) : []
+
         // ── Venue query ──
         const venueQuery = type === 'events' ? Promise.resolve([]) : (async () => {
           const where: Prisma.VenueWhereInput = {
@@ -148,7 +170,7 @@ export async function GET(request: NextRequest) {
                 { venueCategories: { some: { category: { name: textFilter } } } },
               ],
             }),
-            ...(category && { venueCategories: { some: { category: { slug: category } } } }),
+            ...(categorySlugs.length > 0 && { venueCategories: { some: { category: { slug: { in: categorySlugs } } } } }),
             ...(featured && { featured: true }),
             ...(minRating !== null && { avgRating: { gte: minRating } }),
             ...(verified && { verified: true }),
@@ -278,7 +300,7 @@ export async function GET(request: NextRequest) {
                 { eventCategories: { some: { category: { name: textFilter } } } },
               ],
             }),
-            ...(category && { eventCategories: { some: { category: { slug: category } } } }),
+            ...(categorySlugs.length > 0 && { eventCategories: { some: { category: { slug: { in: categorySlugs } } } } }),
             ...(featured && { featured: true }),
             ...(minRating !== null && { avgRating: { gte: minRating } }),
             ...(eventDatePreset && (() => {

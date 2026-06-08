@@ -17,4 +17,11 @@ export const PREDEFINED_SERVICES = [
   { name: 'Sin gluten', icon: '🌾', description: 'Opciones sin gluten' },
 ] as const
 
-export const GASTRONOMIC_CATEGORY_SLUGS = ['restaurantes', 'bares', 'cafeterias']
+export const GASTRONOMIC_CATEGORY_SLUGS = [
+  'gastronomia',
+  'restaurantes', 'bares', 'cafeterias', 'cafe-reposteria',
+  'comida-tradicional', 'comida-internacional', 'comida-rapida',
+  'parrillas', 'mariscos', 'pizzerias', 'hamburgueserias',
+  'cervecerias', 'wine-bar', 'coctelerias', 'food-trucks',
+  'heladerias', 'delivery', 'take-away', 'panaderias', 'pastelerias',
+]
