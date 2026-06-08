@@ -52,6 +52,76 @@ async function generateUniqueSlug(name: string): Promise<string> {
   }
 }
 
+function normalizeWebsite(details: any): string | null {
+  return details.websiteUri || null
+}
+
+const DAY_MAP: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+}
+
+function parseTime12to24(timeStr: string): string {
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (!match) return timeStr
+  let hours = parseInt(match[1], 10)
+  const minutes = match[2]
+  const period = match[3].toUpperCase()
+
+  if (period === 'PM' && hours !== 12) hours += 12
+  if (period === 'AM' && hours === 12) hours = 0
+
+  return `${String(hours).padStart(2, '0')}:${minutes}`
+}
+
+export function normalizeOpeningHours(
+  details: any
+): Array<{ dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }> {
+  const descriptions: string[] = details?.regularOpeningHours?.weekdayDescriptions
+  if (!descriptions || !Array.isArray(descriptions) || descriptions.length === 0) return []
+
+  const result: Array<{ dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }> = []
+
+  for (const desc of descriptions) {
+    const colonIndex = desc.indexOf(':')
+    if (colonIndex === -1) continue
+
+    const dayName = desc.substring(0, colonIndex).trim().toLowerCase()
+    const dayOfWeek = DAY_MAP[dayName]
+    if (dayOfWeek === undefined) continue
+
+    const timePart = desc.substring(colonIndex + 1).trim()
+
+    if (/closed/i.test(timePart)) {
+      result.push({ dayOfWeek, openTime: '00:00', closeTime: '00:00', isClosed: true })
+      continue
+    }
+
+    if (/open 24 hours/i.test(timePart)) {
+      result.push({ dayOfWeek, openTime: '00:00', closeTime: '23:59', isClosed: false })
+      continue
+    }
+
+    const ranges = timePart.split(',').map((r) => r.trim()).filter(Boolean)
+    for (const range of ranges) {
+      const parts = range.split(/\s*[–-]\s*/)
+      if (parts.length !== 2) continue
+
+      const openTime = parseTime12to24(parts[0].trim())
+      const closeTime = parseTime12to24(parts[1].trim())
+
+      result.push({ dayOfWeek, openTime, closeTime, isClosed: false })
+    }
+  }
+
+  return result
+}
+
 class GooglePlacesImporter {
   async searchPlaces(
     query: string,
@@ -98,6 +168,15 @@ class GooglePlacesImporter {
     try {
       const details = await googlePlacesService.getPlaceDetails(placeId)
       return this.normalizePlace(details)
+    } catch (error) {
+      console.error('Error fetching place details:', error)
+      return null
+    }
+  }
+
+  async getPlaceDetailsRaw(placeId: string): Promise<any | null> {
+    try {
+      return await googlePlacesService.getPlaceDetails(placeId)
     } catch (error) {
       console.error('Error fetching place details:', error)
       return null
@@ -235,6 +314,11 @@ class GooglePlacesImporter {
       }
 
       if (duplicateAction === 'update') {
+        const details = await this.getPlaceDetailsRaw(place.google_place_id)
+        const website = details ? normalizeWebsite(details) : null
+        const hours = details ? normalizeOpeningHours(details) : []
+        const now = new Date()
+
         await prisma.venue.update({
           where: { id: duplicate.existingVenue.id },
           data: {
@@ -244,10 +328,21 @@ class GooglePlacesImporter {
             lng: place.lng,
             address: place.address,
             phone: place.phone,
+            website,
             googlePlaceId: place.google_place_id,
+            sourceLastSync: now,
+            hoursLastSync: hours.length > 0 ? now : undefined,
           } as any,
         })
-        if (categoryIds.length > 0 && duplicate.existingVenue) {
+
+        if (hours.length > 0) {
+          await prisma.venueBusinessHours.deleteMany({ where: { venueId: duplicate.existingVenue.id } })
+          await prisma.venueBusinessHours.createMany({
+            data: hours.map((h) => ({ ...h, venueId: duplicate.existingVenue!.id })),
+          })
+        }
+
+        if (categoryIds.length > 0) {
           const venueId = duplicate.existingVenue.id
           await prisma.venueCategory.deleteMany({ where: { venueId } })
           await prisma.venueCategory.createMany({
@@ -257,6 +352,11 @@ class GooglePlacesImporter {
         return { venueId: duplicate.existingVenue.id, action: 'updated' }
       }
     }
+
+    const details = await this.getPlaceDetailsRaw(place.google_place_id)
+    const website = details ? normalizeWebsite(details) : null
+    const hours = details ? normalizeOpeningHours(details) : []
+    const now = new Date()
 
     const slug = await generateUniqueSlug(place.name)
     const venue = await prisma.venue.create({
@@ -269,11 +369,20 @@ class GooglePlacesImporter {
         lng: place.lng,
         address: place.address,
         phone: place.phone,
+        website,
         status: 'APPROVED',
         userId,
         googlePlaceId: place.google_place_id,
+        sourceLastSync: now,
+        hoursLastSync: hours.length > 0 ? now : null,
       } as any,
     })
+
+    if (hours.length > 0) {
+      await prisma.venueBusinessHours.createMany({
+        data: hours.map((h) => ({ ...h, venueId: venue.id })),
+      })
+    }
 
     if (categoryIds.length > 0) {
       await prisma.venueCategory.createMany({

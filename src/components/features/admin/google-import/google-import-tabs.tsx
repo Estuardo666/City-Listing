@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 const TABS = [
   { href: '/admin/imports/google', label: 'Importador', key: 'import' },
   { href: '/admin/imports/google/jobs', label: 'Historial', key: 'jobs' },
+  { href: '/admin/imports/google/sync', label: 'Sincronizar', key: 'sync' },
 ]
 
 export function GoogleImportTabs() {

@@ -304,7 +304,8 @@ class GooglePlacesService {
       'types',
       'primaryType',
       'primaryTypeDisplayName',
-      'editorialSummary'
+      'editorialSummary',
+      'regularOpeningHours'
     ].join(',');
     
     const url = `${this.baseUrl}/places/${placeId}?languageCode=${language}`;

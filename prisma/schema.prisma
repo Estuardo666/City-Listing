@@ -306,6 +306,8 @@ model Venue {
   viewCount     Int         @default(0)
   googlePlaceId String?     @unique
   osmId         String?     @unique
+  sourceLastSync DateTime?
+  hoursLastSync  DateTime?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
