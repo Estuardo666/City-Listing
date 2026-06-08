@@ -62,7 +62,7 @@ export function Wizard({ steps, onComplete, isSubmitting = false, submitLabel = 
   }, [currentStep, completedSteps, goToStep])
 
   return (
-    <div className={cn('mx-auto w-full max-w-full lg:max-w-[60%]', className)}>
+    <div className={cn('w-full', className)}>
       <WizardProgress
         steps={steps}
         currentStep={currentStep}
@@ -78,7 +78,7 @@ export function Wizard({ steps, onComplete, isSubmitting = false, submitLabel = 
           )}
         </div>
 
-        <div className="min-h-[400px]">
+        <div>
           {currentStepData.content}
         </div>
       </div>

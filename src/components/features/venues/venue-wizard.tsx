@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { TimePicker } from '@/components/ui/time-picker'
+import { ImageUpload } from '@/components/ui/image-upload'
 import {
   Select,
   SelectContent,
@@ -19,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MediaUrlInputSimple } from '@/components/features/media/media-url-input-simple'
 import {
   Plus, Trash2, Check, MapPin, Clock, Utensils, Package, Info,
   Tag, FileText, ImageIcon, Phone, Mail, Globe, DollarSign,
@@ -419,21 +420,9 @@ function StepBasicInfo({
           <Label>Imagen destacada</Label>
           <WizardTooltip content="Imagen principal que aparecerá en tarjetas y en la parte superior de tu ficha." />
         </div>
-        {data.image && data.image.startsWith('http') && (
-          <div className="relative h-40 w-full overflow-hidden rounded-xl border border-border/50">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={data.image}
-              alt="Vista previa"
-              className="h-full w-full object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-            />
-          </div>
-        )}
-        <MediaUrlInputSimple
+        <ImageUpload
           value={data.image}
           onChange={(v) => onChange('image', v)}
-          placeholder="https://..."
         />
       </div>
     </div>
@@ -630,7 +619,7 @@ function StepLocationHours({
                         <Plus className="h-2.5 w-2.5" />
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => applyToAll(dayIdx)}>
+                    <Button size="sm" variant="ghost" className="h-5 px-1 text-[9px]" onClick={() => applyToAll(dayIdx)}>
                       Copiar
                     </Button>
                   </div>
@@ -640,18 +629,16 @@ function StepLocationHours({
                   <div className="px-2.5 py-1.5 space-y-1">
                     {day.slots.map((slot, slotIdx) => (
                       <div key={slotIdx} className="flex items-center gap-1">
-                        <Input
-                          type="time"
+                        <TimePicker
                           value={slot.openTime}
-                          onChange={(e) => updateSlot(dayIdx, slotIdx, 'openTime', e.target.value)}
-                          className="w-20 h-6 text-[11px] px-1"
+                          onChange={(v) => updateSlot(dayIdx, slotIdx, 'openTime', v)}
+                          disabled={false}
                         />
                         <span className="text-[10px] text-muted-foreground">-</span>
-                        <Input
-                          type="time"
+                        <TimePicker
                           value={slot.closeTime}
-                          onChange={(e) => updateSlot(dayIdx, slotIdx, 'closeTime', e.target.value)}
-                          className="w-20 h-6 text-[11px] px-1"
+                          onChange={(v) => updateSlot(dayIdx, slotIdx, 'closeTime', v)}
+                          disabled={false}
                         />
                         {day.slots.length > 1 && (
                           <Button
@@ -730,8 +717,8 @@ function StepServices({
                 onClick={() => toggleService(ps.name)}
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
                   active
-                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-700 dark:text-emerald-200'
-                    : 'bg-card border-border/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                    ? 'border-emerald-400 bg-emerald-100 text-emerald-900 dark:border-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-100'
+                    : 'bg-card border-border/50 text-foreground hover:bg-muted/50'
                 }`}
               >
                 <span>{ps.icon}</span>
@@ -965,21 +952,11 @@ function StepMenuProducts({
                           <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
                       </div>
-                      {/* Imagen con preview */}
-                      <div className="flex items-center gap-2">
-                        {item.image && item.image.startsWith('http') && (
-                          <div className="h-8 w-8 shrink-0 overflow-hidden rounded border border-border/30">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={item.image} alt="" className="h-full w-full object-cover" />
-                          </div>
-                        )}
-                        <Input
-                          placeholder="URL imagen (opcional)"
-                          value={item.image}
-                          onChange={(e) => updateMenuItem(catIdx, itemIdx, 'image', e.target.value)}
-                          className="text-xs h-7 flex-1"
-                        />
-                      </div>
+                      {/* Imagen con upload */}
+                      <ImageUpload
+                        value={item.image}
+                        onChange={(v) => updateMenuItem(catIdx, itemIdx, 'image', v)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -1040,21 +1017,11 @@ function StepMenuProducts({
                 step="0.01"
               />
             </div>
-            {/* Imagen con preview */}
-            <div className="flex items-center gap-2">
-              {product.image && product.image.startsWith('http') && (
-                <div className="h-8 w-8 shrink-0 overflow-hidden rounded border border-border/30">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={product.image} alt="" className="h-full w-full object-cover" />
-                </div>
-              )}
-              <Input
-                placeholder="URL imagen (opcional)"
-                value={product.image}
-                onChange={(e) => updateProduct(idx, 'image', e.target.value)}
-                className="text-xs h-7 flex-1"
-              />
-            </div>
+            {/* Imagen con upload */}
+            <ImageUpload
+              value={product.image}
+              onChange={(v) => updateProduct(idx, 'image', v)}
+            />
           </div>
         ))}
       </div>
@@ -1082,9 +1049,9 @@ function StepSummary({
 
   return (
     <div className="space-y-4">
-      {/* Alerta legible */}
-      <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-3">
-        <p className="text-sm text-amber-900 dark:text-amber-100 font-medium">
+      {/* Alerta informativa */}
+      <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3">
+        <p className="text-sm text-emerald-900 dark:text-emerald-100 font-medium">
           Tu local será revisado antes de publicarse. Revisa que toda la información sea correcta.
         </p>
       </div>

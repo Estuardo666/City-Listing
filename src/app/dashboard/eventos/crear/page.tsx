@@ -19,7 +19,7 @@ export default async function DashboardCreateEventPage() {
 
   return (
     <div className="pb-16 pt-8">
-      <section className="section-shell space-y-8">
+      <section className="section-shell mx-auto max-w-3xl space-y-8 px-4 sm:px-6 lg:max-w-4xl">
         <div className="surface-glass rounded-3xl p-6 sm:p-8">
           <div className="mb-8 space-y-4">
             <p className="eyebrow">Crear nuevo evento</p>

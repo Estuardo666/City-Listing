@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MediaUrlInputSimple } from '@/components/features/media/media-url-input-simple'
+import { ImageUpload } from '@/components/ui/image-upload'
 import {
   Calendar, MapPin, Info, Package, Tag, FileText, ImageIcon,
   DollarSign, Clock, Star,
@@ -275,16 +275,9 @@ function StepEventInfo({
           <Label>Imagen destacada</Label>
           <WizardTooltip content="Imagen principal del evento." />
         </div>
-        {data.image && data.image.startsWith('http') && (
-          <div className="relative h-40 w-full overflow-hidden rounded-xl border border-border/50">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={data.image} alt="Vista previa" className="h-full w-full object-cover" />
-          </div>
-        )}
-        <MediaUrlInputSimple
+        <ImageUpload
           value={data.image}
           onChange={(v) => onChange('image', v)}
-          placeholder="https://..."
         />
       </div>
     </div>
@@ -466,8 +459,8 @@ function StepEventSummary({
   return (
     <div className="space-y-4">
       {/* Alerta */}
-      <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-3">
-        <p className="text-sm text-amber-900 dark:text-amber-100 font-medium">
+      <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3">
+        <p className="text-sm text-emerald-900 dark:text-emerald-100 font-medium">
           Revisa la información antes de crear el evento.
         </p>
       </div>
