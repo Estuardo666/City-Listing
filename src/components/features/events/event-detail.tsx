@@ -310,7 +310,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
           {/* Uber */}
           {event.lat !== null && event.lng !== null && (
             <a
-              href={generateUberLink({ latitude: event.lat, longitude: event.lng, name: event.title })}
+              href={generateUberLink({ latitude: event.lat, longitude: event.lng })}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Ir con Uber a ${event.title}`}

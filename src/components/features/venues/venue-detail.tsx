@@ -344,7 +344,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [] }: Venue
           {/* Uber */}
           {venue.lat !== null && venue.lng !== null && (
             <a
-              href={generateUberLink({ latitude: venue.lat, longitude: venue.lng, name: venue.name })}
+              href={generateUberLink({ latitude: venue.lat, longitude: venue.lng })}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Ir con Uber a ${venue.name}`}

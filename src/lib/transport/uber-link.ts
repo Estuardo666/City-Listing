@@ -1,19 +1,24 @@
-import type { TransportLocationParams, UberPickupParams } from './types'
+import type { UberPickupParams } from './types'
 
 const UBER_BASE_URL = 'https://m.uber.com/ul/'
+
+type GenerateUberLinkParams = {
+  latitude: number
+  longitude: number
+  pickupLatitude?: number
+  pickupLongitude?: number
+}
 
 export function generateUberLink({
   latitude,
   longitude,
-  name,
   pickupLatitude,
   pickupLongitude,
-}: TransportLocationParams & UberPickupParams): string {
+}: GenerateUberLinkParams & UberPickupParams): string {
   const params = [
     `action=setPickup`,
     `dropoff[latitude]=${latitude}`,
     `dropoff[longitude]=${longitude}`,
-    `dropoff[nickname]=${encodeURIComponent(name)}`,
   ]
 
   if (pickupLatitude !== undefined && pickupLongitude !== undefined) {

@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react'
 export type TransportLocationParams = {
   latitude: number
   longitude: number
-  name: string
+  name?: string
 }
 
 export type UberPickupParams = {
