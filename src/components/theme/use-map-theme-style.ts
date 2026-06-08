@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { VIVE_LOJA_MAP_STYLE } from '@/lib/map-style'
 
 type ThemeMode = 'light' | 'dark'
 
 const THEME_STORAGE_KEY = 'theme'
-const DEFAULT_LIGHT_MAP_STYLE = 'mapbox://styles/mapbox/light-v11'
 const DEFAULT_DARK_MAP_STYLE = 'mapbox://styles/mapbox/dark-v11'
 
 function getInitialThemeMode(): ThemeMode {
@@ -17,7 +17,7 @@ function getInitialThemeMode(): ThemeMode {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-export function useMapThemeStyle(lightStyle?: string, darkStyle?: string): string {
+export function useMapThemeStyle(lightStyle?: string | mapboxgl.Style, darkStyle?: string): string | mapboxgl.Style {
   const [themeMode, setThemeMode] = useState<ThemeMode>('light')
 
   useEffect(() => {
@@ -45,8 +45,9 @@ export function useMapThemeStyle(lightStyle?: string, darkStyle?: string): strin
   }, [])
 
   return useMemo(() => {
-    const resolvedLight = lightStyle ?? DEFAULT_LIGHT_MAP_STYLE
-    const resolvedDark = darkStyle ?? process.env.NEXT_PUBLIC_MAPBOX_DARK_STYLE ?? DEFAULT_DARK_MAP_STYLE
-    return themeMode === 'dark' ? resolvedDark : resolvedLight
+    if (themeMode === 'dark') {
+      return darkStyle ?? process.env.NEXT_PUBLIC_MAPBOX_DARK_STYLE ?? DEFAULT_DARK_MAP_STYLE
+    }
+    return lightStyle ?? (VIVE_LOJA_MAP_STYLE as unknown as mapboxgl.Style)
   }, [darkStyle, lightStyle, themeMode])
 }

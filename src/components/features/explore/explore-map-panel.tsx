@@ -19,7 +19,7 @@ type ExploreMapPanelProps = {
   onZoomChange?: (zoom: number) => void
   markerRenderMode?: 'dom' | 'canvas'
   mapboxToken: string
-  mapStyle?: string
+  mapStyle?: string | mapboxgl.Style
   userLocation?: UserLocation | null
   proximityRadius?: number | null
   onMapRef?: (ref: { flyTo: (opts: { center: [number, number]; zoom: number; duration: number }) => void } | null) => void

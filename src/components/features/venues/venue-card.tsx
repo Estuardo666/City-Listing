@@ -91,11 +91,11 @@ export function VenueCard({ venue }: VenueCardProps) {
           </div>
         )}
 
-        <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-1 line-clamp-2 flex-1 text-sm leading-relaxed text-muted-foreground sm:mt-2">
           {venue.description}
         </p>
 
-        <div className="mt-4 space-y-1.5 border-t border-border/50 pt-4 text-xs text-muted-foreground">
+        <div className="mt-2 space-y-1 border-t border-border/50 pt-2 text-xs text-muted-foreground sm:mt-4 sm:space-y-1.5 sm:pt-4">
           <p className="flex items-center gap-2">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-coral/70" />
             <span className="truncate">{venue.address ?? venue.location}</span>

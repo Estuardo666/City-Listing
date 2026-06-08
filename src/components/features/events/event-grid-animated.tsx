@@ -42,7 +42,7 @@ export function EventGridAnimated({ events }: EventGridAnimatedProps) {
   return (
     <AnimatePresence mode="wait">
       <motion.div 
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+        className="grid grid-cols-2 gap-4 xl:grid-cols-3"
         variants={container}
         initial="hidden"
         animate="show"

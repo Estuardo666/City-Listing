@@ -85,7 +85,7 @@ export function ListingSection({
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         {type === 'venues'
           ? (items as VenueListItem[]).map((v) => <VenueCard key={v.id} venue={v} />)
           : (items as EventListItem[]).map((e) => <EventCard key={e.id} event={e} />)}

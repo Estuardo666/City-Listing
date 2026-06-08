@@ -12,7 +12,7 @@ import type { VenueMapItem } from '@/types/venue'
 type VenuesMapProps = {
   venues: VenueMapItem[]
   mapboxToken: string
-  mapStyle?: string
+  mapStyle?: string | mapboxgl.Style
   className?: string
 }
 

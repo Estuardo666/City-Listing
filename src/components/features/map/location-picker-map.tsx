@@ -13,7 +13,7 @@ type LocationPickerMapProps = {
   onChange: (lat: number, lng: number) => void
   onClear?: () => void
   mapboxToken: string
-  mapStyle?: string
+  mapStyle?: string | mapboxgl.Style
   className?: string
 }
 
