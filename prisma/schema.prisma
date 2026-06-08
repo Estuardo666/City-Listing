@@ -245,6 +245,7 @@ model Venue {
   questions      Question[]
   checkIns       CheckIn[]
   menuCategories MenuCategory[]
+  products       Product[]
   collections    CollectionItem[]
   businessHours  VenueBusinessHours[]
   services       VenueService[]
@@ -711,6 +712,24 @@ model MenuItem {
   menuCategory MenuCategory @relation(fields: [menuCategoryId], references: [id], onDelete: Cascade)
 
   @@index([menuCategoryId])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  venueId     String
+  name        String
+  description String?
+  price       Float?
+  image       String?
+  isAvailable Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
 }
 
 model CheckIn {

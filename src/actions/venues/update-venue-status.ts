@@ -71,6 +71,9 @@ export async function updateVenueStatusAction(
         services: {
           orderBy: { sortOrder: 'asc' },
         },
+        products: {
+          orderBy: { order: 'asc' },
+        },
         reviews: {
           include: { user: { select: { id: true, name: true, image: true } } },
           orderBy: { createdAt: 'desc' },

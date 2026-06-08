@@ -30,6 +30,9 @@ export type VenueWithRelations = Prisma.VenueGetPayload<{
     services: {
       orderBy: { sortOrder: 'asc' }
     }
+    products: {
+      orderBy: { order: 'asc' }
+    }
     reviews: {
       include: {
         user: {

@@ -24,6 +24,7 @@ type ExploreMapPanelProps = {
   proximityRadius?: number | null
   onMapRef?: (ref: { flyTo: (opts: { center: [number, number]; zoom: number; duration: number }) => void } | null) => void
   showSearchOnMoveToggle?: boolean
+  colorScheme?: 'monochrome' | 'blue' | 'orange'
   className?: string
 }
 
@@ -373,6 +374,7 @@ export function ExploreMapPanel({
   proximityRadius,
   onMapRef,
   showSearchOnMoveToggle = true,
+  colorScheme,
   className,
 }: ExploreMapPanelProps) {
   const themedMapStyle = useMapThemeStyle(mapStyle)
@@ -629,7 +631,34 @@ export function ExploreMapPanel({
     }
 
     ensureAllEmojiImages(map)
-  }, [ensureAllEmojiImages, ensureEmojiImage])
+
+    // Hide all business/POI labels and road labels
+    const layers = map.getStyle().layers
+    for (const layer of layers) {
+      const isOurLayer = layer.id.startsWith('canvas-') || layer.id === 'proximity-fill' || layer.id === 'proximity-border'
+      if (isOurLayer) continue
+
+      // Hide symbol layers with text (labels)
+      if (layer.type === 'symbol' && layer.layout?.['text-field']) {
+        map.setLayoutProperty(layer.id, 'visibility', 'none')
+      }
+
+      // Hide POI layers
+      if (layer.id.includes('poi') || layer.id.includes('place-label') || layer.id.includes('road-label') || layer.id.includes('transit-label')) {
+        map.setLayoutProperty(layer.id, 'visibility', 'none')
+      }
+    }
+
+    // Apply color scheme via CSS filter on the canvas
+    const canvas = map.getCanvas()
+    if (colorScheme === 'monochrome') {
+      canvas.style.filter = 'saturate(0) brightness(1.08) contrast(1.05)'
+    } else if (colorScheme === 'blue') {
+      canvas.style.filter = 'hue-rotate(10deg) saturate(0.85) brightness(1.03)'
+    } else if (colorScheme === 'orange') {
+      canvas.style.filter = 'hue-rotate(-15deg) saturate(0.9) brightness(1.05)'
+    }
+  }, [ensureAllEmojiImages, ensureEmojiImage, colorScheme])
 
   const handleMapStyleData = useCallback((event: any) => {
     const map = event?.target

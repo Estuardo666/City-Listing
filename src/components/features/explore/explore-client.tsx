@@ -214,7 +214,7 @@ export function ExploreClient({
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         setUserLocation(loc)
-        setProximityRadius(PROXIMITY_STEPS[1]) // default 1km
+        setProximityRadius(PROXIMITY_STEPS[2]) // default 1km
         setLocationLoading(false)
         mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 14, duration: 800 })
       },
@@ -398,6 +398,7 @@ export function ExploreClient({
   }, [])
 
   const showResults = mode === 'all'
+  const colorScheme: 'monochrome' | 'blue' | 'orange' = mode === 'venues' ? 'blue' : mode === 'events' ? 'orange' : 'monochrome'
 
   return (
     <>
@@ -787,12 +788,13 @@ export function ExploreClient({
                 proximityRadius={proximityRadius}
                 onMapRef={(ref) => { mapRef.current = ref }}
                 showSearchOnMoveToggle={showResults}
+                colorScheme={colorScheme}
                 className="h-full w-full"
               />
 
               {/* Bottom bar: search + location — only when no results */}
               {!showResults && (
-                <div className="absolute bottom-4 left-1/2 z-20 flex w-full max-w-lg -translate-x-1/2 items-center gap-2 px-4 sm:max-w-xl">
+                <div className="absolute bottom-4 left-1/2 z-20 flex w-full max-w-2xl -translate-x-1/2 items-center gap-0 rounded-full bg-white/95 px-1.5 py-1.5 shadow-lg backdrop-blur-sm sm:max-w-3xl">
                   {/* Search input */}
                   <div className="relative flex-1">
                     <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
@@ -801,7 +803,7 @@ export function ExploreClient({
                       value={filters.q}
                       onChange={(e) => handleFilterChange({ q: e.target.value })}
                       placeholder={mode === 'venues' ? 'Buscar locales...' : 'Buscar eventos...'}
-                      className="h-10 w-full rounded-full border border-border/60 bg-card/95 pl-10 pr-10 text-sm shadow-lg backdrop-blur-sm placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10"
+                      className="h-9 w-full rounded-full bg-transparent pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
                     />
                     <AnimatePresence>
                       {filters.q && (
@@ -819,7 +821,7 @@ export function ExploreClient({
                     </AnimatePresence>
                   </div>
 
-                  {/* Location button */}
+                  {/* Location button + expandable slider */}
                   <LocationButton
                     userLocation={userLocation}
                     locationLoading={locationLoading}
@@ -827,7 +829,7 @@ export function ExploreClient({
                     onRequestLocation={handleRequestLocation}
                     onClearLocation={handleClearLocation}
                     onProximityChange={handleProximityChange}
-                    maxRadius={2000}
+                    mode={mode}
                   />
                 </div>
               )}
@@ -867,7 +869,7 @@ type LocationButtonProps = {
   onRequestLocation: () => void
   onClearLocation: () => void
   onProximityChange: (meters: number) => void
-  maxRadius?: number
+  mode?: 'all' | 'venues' | 'events'
 }
 
 function LocationButton({
@@ -877,35 +879,25 @@ function LocationButton({
   onRequestLocation,
   onClearLocation,
   onProximityChange,
-  maxRadius,
+  mode = 'all',
 }: LocationButtonProps) {
-  const [open, setOpen] = useState(false)
-  const popoverRef = useRef<HTMLDivElement | null>(null)
+  const isVenues = mode === 'venues'
+  const activeColor = isVenues
+    ? 'bg-blue-500 text-white hover:bg-blue-600'
+    : 'bg-orange-500 text-white hover:bg-orange-600'
+  const inactiveColor = isVenues
+    ? 'text-blue-600 hover:bg-blue-50'
+    : 'text-orange-600 hover:bg-orange-50'
 
-  const steps = maxRadius
-    ? PROXIMITY_STEPS.filter((s) => s <= maxRadius)
-    : PROXIMITY_STEPS
-
-  // Close popover on outside click
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
-
-  if (!userLocation) {
-    return (
+  return (
+    <div className="flex items-center gap-0">
       <button
         type="button"
-        onClick={onRequestLocation}
+        onClick={userLocation ? onClearLocation : onRequestLocation}
         disabled={locationLoading}
         className={cn(
-          'flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-border/60 bg-card/95 px-3.5 text-xs font-medium text-muted-foreground shadow-lg backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground',
+          'flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-colors',
+          userLocation ? activeColor : inactiveColor,
           locationLoading && 'cursor-wait opacity-70'
         )}
       >
@@ -916,60 +908,45 @@ function LocationButton({
         )}
         <span className="hidden sm:inline">Cerca de mi</span>
       </button>
-    )
-  }
-
-  return (
-    <div className="relative" ref={popoverRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3.5 text-xs font-medium text-emerald-600 shadow-lg backdrop-blur-sm transition-colors hover:bg-emerald-500/20"
-      >
-        <Locate className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Cerca de mi</span>
-      </button>
 
       <AnimatePresence>
-        {open && (
+        {userLocation && (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bottom-12 right-0 z-30 w-52 rounded-2xl border border-border/60 bg-card p-3 shadow-xl"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 'auto', opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center gap-2 overflow-hidden"
           >
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-medium text-emerald-600">Ubicacion activa</span>
-              <button
-                type="button"
-                onClick={() => { onClearLocation(); setOpen(false) }}
-                className="flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent"
-              >
-                <X className="h-3 w-3" />
-                Quitar
-              </button>
-            </div>
-            <div className="space-y-2">
-              <span className="text-[11px] text-muted-foreground">Radio de busqueda</span>
-              <div className="flex flex-wrap gap-1.5">
-                {steps.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => onProximityChange(s)}
-                    className={cn(
-                      'rounded-lg border px-2 py-1 text-[11px] font-medium transition-all',
-                      proximityRadius === s
-                        ? 'border-primary/30 bg-primary text-white'
-                        : 'border-border/60 bg-secondary/40 text-foreground hover:border-primary/40 hover:text-primary'
-                    )}
-                  >
-                    {formatRadius(s)}
-                  </button>
+            <div className="flex flex-col gap-0.5 px-2 py-1 sm:px-3">
+              <input
+                type="range"
+                min={0}
+                max={PROXIMITY_STEPS.length - 1}
+                step={1}
+                value={PROXIMITY_STEPS.indexOf(proximityRadius ?? PROXIMITY_STEPS[2])}
+                onChange={(e) => onProximityChange(PROXIMITY_STEPS[Number(e.target.value)])}
+                className="w-32 accent-primary sm:w-44"
+              />
+              <div className="flex justify-between gap-2 text-[11px] font-medium text-foreground/70 whitespace-nowrap">
+                {PROXIMITY_STEPS.map((s) => (
+                  <span key={s}>{formatRadius(s)}</span>
                 ))}
               </div>
             </div>
+
+            <span className="min-w-[3rem] text-center text-[12px] font-semibold text-primary">
+              {formatRadius(proximityRadius ?? PROXIMITY_STEPS[2])}
+            </span>
+
+            <button
+              type="button"
+              onClick={onClearLocation}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500 text-white shadow-sm transition-colors hover:bg-red-600"
+              title="Quitar ubicacion"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

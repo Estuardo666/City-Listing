@@ -13,6 +13,8 @@ import { ReviewForm } from '@/components/review/review-form'
 import { ReviewList } from '@/components/review/review-list'
 import { ShareButton } from '@/components/share/share-button'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
+import { UberIcon } from '@/components/ui/uber-icon'
+import { generateUberLink } from '@/lib/transport/uber-link'
 import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import { formatDateTime } from '@/lib/utils'
@@ -303,6 +305,20 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
               phone={event.venue.phone}
               venueName={event.title}
             />
+          )}
+
+          {/* Uber */}
+          {event.lat !== null && event.lng !== null && (
+            <a
+              href={generateUberLink({ latitude: event.lat, longitude: event.lng, name: event.title })}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Ir con Uber a ${event.title}`}
+              className="flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+            >
+              <UberIcon size={18} className="text-white" />
+              Ir con Uber
+            </a>
           )}
 
           {/* Info card */}

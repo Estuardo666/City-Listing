@@ -125,6 +125,9 @@ export async function createVenueAction(input: unknown): Promise<ActionResponse<
         services: {
           orderBy: { sortOrder: 'asc' },
         },
+        products: {
+          orderBy: { order: 'asc' },
+        },
         reviews: {
           include: { user: { select: { id: true, name: true, image: true } } },
           orderBy: { createdAt: 'desc' },

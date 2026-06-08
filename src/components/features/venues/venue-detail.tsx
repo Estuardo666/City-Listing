@@ -6,15 +6,12 @@ import {
   CalendarDays, Edit, ExternalLink, Globe, Info, Link2, LogIn,
   ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star, Tag, Ticket, UserCircle2, DollarSign, Clock, Map
 } from 'lucide-react'
-import { VenuesMap } from '@/components/features/venues/venues-map'
-import { VenueShareButton } from '@/components/features/venues/venue-share-button'
-import { CategoryIconFallback } from '@/components/ui/category-icon-fallback'
 import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import { MediaGallery } from '@/components/media/media-gallery'
-import { OperatingHoursDisplay } from '@/components/operating-hours/operating-hours-display'
-import { BusinessHoursDisplay } from '@/components/business-hours/business-hours-display'
-import { ServicesDisplay } from '@/components/services/services-display'
+import { LocationHoursSection } from '@/components/features/venues/location-hours-section'
+import { AmenitiesSection } from '@/components/features/venues/amenities-section'
+import { ProductsDisplay } from '@/components/features/venues/products-display'
 import { MenuDisplayV2 } from '@/components/menu/menu-display-v2'
 import { ReviewForm } from '@/components/review/review-form'
 import { ReviewList } from '@/components/review/review-list'
@@ -24,8 +21,10 @@ import { ShareButton } from '@/components/share/share-button'
 import { CheckInButton } from '@/components/checkin/checkin-button'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
 import { MessageVenueButton } from '@/components/messaging/message-venue-button'
-import { MenuDisplay } from '@/components/menu/menu-display'
+import { UberIcon } from '@/components/ui/uber-icon'
+import { generateUberLink } from '@/lib/transport/uber-link'
 import { formatDateTime } from '@/lib/utils'
+import { GASTRONOMIC_CATEGORY_SLUGS } from '@/lib/constants/services'
 import type { VenueWithRelations } from '@/types/venue'
 import { useState } from 'react'
 
@@ -51,12 +50,13 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [] }: Venue
     process.env.NEXT_PUBLIC_MAPBOX_STYLE ??
     'mapbox://styles/mapbox/streets-v12'
 
-  const hasHours = venue.businessHours.length > 0 || venue.operatingHours !== null
   const hasServices = venue.services.filter((s) => s.isActive).length > 0
   const hasMedia = venue.media.length > 0
   const hasReviews = venue.reviews.length > 0
   const hasPromotions = venue.promotions.length > 0
+  const hasProducts = venue.products.length > 0
   const acceptsReservations = venue.reservationSettings?.acceptsReservations ?? false
+  const isGastronomic = GASTRONOMIC_CATEGORY_SLUGS.includes(venue.category.slug)
 
   return (
     <article className="space-y-0">
@@ -212,23 +212,25 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [] }: Venue
             </div>
           )}
 
-          {/* Business Hours */}
-          {hasHours && (
-            <div className="rounded-2xl border border-border/50 bg-card p-5">
-              {venue.businessHours.length > 0 ? (
-                <BusinessHoursDisplay hours={venue.businessHours} />
-              ) : venue.operatingHours ? (
-                <OperatingHoursDisplay hours={venue.operatingHours} />
-              ) : null}
-            </div>
+          {/* Location & Hours */}
+          <LocationHoursSection
+            venue={venue}
+            businessHours={venue.businessHours}
+            operatingHours={venue.operatingHours}
+            mapboxToken={mapboxToken}
+            mapStyle={mapStyle}
+          />
+
+          {/* Amenities and more */}
+          {hasServices && (
+            <AmenitiesSection services={venue.services} />
           )}
 
-          {/* Services */}
-          {hasServices && (
-            <div className="rounded-2xl border border-border/50 bg-card p-5">
-              <ServicesDisplay services={venue.services} />
-            </div>
-          )}
+          {/* Menu (restaurants only) */}
+          {isGastronomic && menu.length > 0 && <MenuDisplayV2 menu={menu} />}
+
+          {/* Products (all businesses) */}
+          {hasProducts && <ProductsDisplay products={venue.products} />}
 
           {/* Promotions */}
           {hasPromotions && (
@@ -266,7 +268,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [] }: Venue
             </div>
           )}
 
-          {/* Reviews */}
+          {/* Reviews (at the end) */}
           <div className="rounded-2xl border border-border/50 bg-card p-5">
             <h2 className="text-lg font-medium text-foreground flex items-center gap-2">
               <Star className="h-5 w-5 text-primary" /> Reseñas {hasReviews && `(${venue.reviews.length})`}
@@ -303,32 +305,6 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [] }: Venue
               />
             </div>
           </div>
-
-          {/* Menu */}
-          {menu.length > 0 && <MenuDisplayV2 menu={menu} />}
-
-          {/* Map */}
-          {venue.lat !== null && venue.lng !== null && (
-            <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
-              <div className="border-b border-border/50 px-5 py-4">
-                <h2 className="text-lg font-medium text-foreground flex items-center gap-2"><Map className="h-5 w-5 text-primary" /> Ubicación en el mapa</h2>
-              </div>
-              <VenuesMap
-                venues={[{
-                  id: venue.id,
-                  name: venue.name,
-                  slug: venue.slug,
-                  location: venue.location,
-                  address: venue.address,
-                  lat: venue.lat,
-                  lng: venue.lng,
-                  category: { name: venue.category.name },
-                }]}
-                mapboxToken={mapboxToken}
-                mapStyle={mapStyle}
-              />
-            </div>
-          )}
         </div>
 
         {/* RIGHT: sticky sidebar */}
@@ -363,6 +339,20 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [] }: Venue
               hasMenu={menu.length > 0}
               acceptsReservations={acceptsReservations}
             />
+          )}
+
+          {/* Uber */}
+          {venue.lat !== null && venue.lng !== null && (
+            <a
+              href={generateUberLink({ latitude: venue.lat, longitude: venue.lng, name: venue.name })}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Ir con Uber a ${venue.name}`}
+              className="flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+            >
+              <UberIcon size={18} className="text-white" />
+              Ir con Uber
+            </a>
           )}
 
           {/* Message Venue Button */}
