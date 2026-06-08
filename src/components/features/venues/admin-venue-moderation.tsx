@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Building2, CheckCircle2, MapPin, Pencil, Trash2, User2, XCircle } from 'lucide-react'
+import { Building2, CheckCircle2, EyeOff, Eye, MapPin, Pencil, Trash2, User2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { updateVenueStatusAction, deleteVenueAction } from '@/actions/venues'
+import { updateVenueStatusAction, deleteVenueAction, toggleVenueActiveAction } from '@/actions/venues'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -55,6 +55,7 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
   const [isPending, startTransition] = useTransition()
   const [updatingVenueId, setUpdatingVenueId] = useState<string | null>(null)
   const [deletingVenueId, setDeletingVenueId] = useState<string | null>(null)
+  const [togglingVenueId, setTogglingVenueId] = useState<string | null>(null)
 
   const statusSummary = useMemo(() => {
     return venues.reduce(
@@ -106,6 +107,24 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
       toast.success('Local eliminado correctamente.')
       router.refresh()
       setDeletingVenueId(null)
+    })
+  }
+
+  const handleToggleActive = (venueId: string) => {
+    setTogglingVenueId(venueId)
+
+    startTransition(async () => {
+      const result = await toggleVenueActiveAction(venueId)
+
+      if (!result.success) {
+        toast.error(result.error ?? 'No se pudo cambiar el estado del local.')
+        setTogglingVenueId(null)
+        return
+      }
+
+      toast.success(result.data?.isActive ? 'Local activado correctamente.' : 'Local desactivado correctamente.')
+      router.refresh()
+      setTogglingVenueId(null)
     })
   }
 
@@ -166,15 +185,23 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
 
           const isUpdatingCurrent = isPending && updatingVenueId === venue.id
           const isDeletingCurrent = isPending && deletingVenueId === venue.id
+          const isTogglingCurrent = isPending && togglingVenueId === venue.id
 
           return (
             <Card key={venue.id} className="border-border/70">
               <CardHeader className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <CardTitle className="text-lg">{venue.name}</CardTitle>
-                  <span className={cn('rounded-full border px-3 py-1 text-xs font-semibold', statusPillStyles[venueStatus])}>
-                    {statusLabel[venueStatus]}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {!venue.isActive && (
+                      <span className="rounded-full border px-3 py-1 text-xs font-semibold bg-gray-200 text-gray-600 border-gray-300">
+                        Inactivo
+                      </span>
+                    )}
+                    <span className={cn('rounded-full border px-3 py-1 text-xs font-semibold', statusPillStyles[venueStatus])}>
+                      {statusLabel[venueStatus]}
+                    </span>
+                  </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground">{venue.description}</p>
@@ -214,7 +241,7 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
                   {venueStatus !== 'APPROVED' ? (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent || isDeletingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent || isTogglingCurrent}
                       onClick={() => handleStatusUpdate(venue.id, 'APPROVED')}
                       className="h-9 bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:opacity-60"
                     >
@@ -226,7 +253,7 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
                   {venueStatus !== 'REJECTED' ? (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent || isDeletingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent || isTogglingCurrent}
                       onClick={() => handleStatusUpdate(venue.id, 'REJECTED')}
                       className="h-9 bg-rose-600 px-4 text-white hover:bg-rose-700 disabled:opacity-60"
                     >
@@ -235,11 +262,35 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
                     </Button>
                   ) : null}
 
+                  <Button
+                    type="button"
+                    disabled={isUpdatingCurrent || isDeletingCurrent || isTogglingCurrent}
+                    onClick={() => handleToggleActive(venue.id)}
+                    className={cn(
+                      'h-9 px-4 text-white disabled:opacity-60',
+                      venue.isActive
+                        ? 'bg-amber-600 hover:bg-amber-700'
+                        : 'bg-emerald-600 hover:bg-emerald-700'
+                    )}
+                  >
+                    {venue.isActive ? (
+                      <>
+                        <EyeOff className="mr-2 h-4 w-4" />
+                        Desactivar
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Activar
+                      </>
+                    )}
+                  </Button>
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
                         type="button"
-                        disabled={isUpdatingCurrent || isDeletingCurrent}
+                        disabled={isUpdatingCurrent || isDeletingCurrent || isTogglingCurrent}
                         className="h-9 bg-rose-700 px-4 text-white hover:bg-rose-800 disabled:opacity-60"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
@@ -250,7 +301,7 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
                       <AlertDialogHeader>
                         <AlertDialogTitle>¿Eliminar local?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Esta acción no se puede deshacer. Se eliminará permanentemente el local
+                          Esta acción no se puede deshace. Se eliminará permanentemente el local
                           <span className="font-semibold"> {venue.name}</span> y todos sus datos asociados
                           (eventos, reseñas, favoritos, etc.).
                         </AlertDialogDescription>

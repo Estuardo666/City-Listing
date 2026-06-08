@@ -69,6 +69,7 @@ export type UserVenueListItem = Prisma.VenueGetPayload<{
     slug: true
     image: true
     status: true
+    isActive: true
     location: true
     address: true
     createdAt: true
@@ -163,6 +164,7 @@ export type VenueAdminListItem = Prisma.VenueGetPayload<{
     lat: true
     lng: true
     status: true
+    isActive: true
     featured: true
     priceRange: true
     avgRating: true

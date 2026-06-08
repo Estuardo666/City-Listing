@@ -187,6 +187,7 @@ type GetUserEventsInput = {
   take?: number
   q?: string
   status?: 'ALL' | 'APPROVED' | 'PENDING' | 'REJECTED'
+  sort?: string
 }
 
 export async function getUserEvents(
@@ -208,10 +209,27 @@ export async function getUserEvents(
     ]
   }
 
+  const orderBy: Prisma.EventOrderByWithRelationInput = (() => {
+    switch (input.sort) {
+      case 'title-asc':
+        return { title: 'asc' }
+      case 'title-desc':
+        return { title: 'desc' }
+      case 'oldest':
+        return { createdAt: 'asc' }
+      case 'startDate-asc':
+        return { startDate: 'asc' }
+      case 'startDate-desc':
+        return { startDate: 'desc' }
+      default:
+        return { createdAt: 'desc' }
+    }
+  })()
+
   const [items, total] = await Promise.all([
     prisma.event.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       skip,
       take,
       select: userEventListSelect,

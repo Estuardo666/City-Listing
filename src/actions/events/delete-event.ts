@@ -11,22 +11,32 @@ export async function deleteEventAction(eventId: string): Promise<ActionResponse
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id) {
       return {
         success: false,
-        error: 'No autorizado. Solo administradores pueden eliminar eventos.',
+        error: 'No autorizado. Inicia sesión para eliminar eventos.',
       }
     }
 
     const existingEvent = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { id: true, slug: true },
+      select: { id: true, userId: true },
     })
 
     if (!existingEvent) {
       return {
         success: false,
         error: 'Evento no encontrado.',
+      }
+    }
+
+    const isOwner = existingEvent.userId === session.user.id
+    const isAdmin = session.user.role === 'ADMIN'
+
+    if (!isOwner && !isAdmin) {
+      return {
+        success: false,
+        error: 'No tienes permiso para eliminar este evento.',
       }
     }
 

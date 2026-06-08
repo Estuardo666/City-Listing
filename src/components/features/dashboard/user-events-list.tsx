@@ -1,17 +1,28 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  CalendarDays, CheckCircle2, Clock, Edit2,
-  ExternalLink, ImageIcon, Loader2, MapPin, Search, XCircle,
+  ArrowDownUp, CalendarDays, CheckCircle2, Clock, Edit2,
+  ExternalLink, ImageIcon, Loader2, MapPin, Search, Trash2, XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { bulkDeleteEventsAction } from '@/actions/events'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import type { UserEventListItem } from '@/types/event'
 
@@ -22,6 +33,15 @@ const STATUS_FILTERS: Array<{ label: string; value: StatusFilter }> = [
   { label: 'Publicados', value: 'APPROVED' },
   { label: 'En revisión', value: 'PENDING' },
   { label: 'Rechazados', value: 'REJECTED' },
+]
+
+const SORT_OPTIONS = [
+  { label: 'Más recientes', value: 'newest' },
+  { label: 'Más antiguos', value: 'oldest' },
+  { label: 'Nombre A-Z', value: 'title-asc' },
+  { label: 'Nombre Z-A', value: 'title-desc' },
+  { label: 'Próximos primero', value: 'startDate-asc' },
+  { label: 'Más lejanos primero', value: 'startDate-desc' },
 ]
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; pill: string }> = {
@@ -45,8 +65,12 @@ const PAGE_SIZE = 10
 export function UserEventsList() {
   const [filter, setFilter] = useState<StatusFilter>('ALL')
   const [search, setSearch] = useState('')
+  const [sort, setSort] = useState('newest')
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300)
@@ -54,12 +78,13 @@ export function UserEventsList() {
   }, [search])
 
   const query = useInfiniteQuery<EventsResponse>({
-    queryKey: ['dashboard-events', filter, debouncedSearch],
+    queryKey: ['dashboard-events', filter, debouncedSearch, sort],
     queryFn: async ({ pageParam = 0 }) => {
       const params = new URLSearchParams({
         skip: String(pageParam),
         take: String(PAGE_SIZE),
         status: filter,
+        sort,
       })
       if (debouncedSearch) params.set('q', debouncedSearch)
 
@@ -110,17 +135,63 @@ export function UserEventsList() {
 
   const loadingInitial = query.isLoading
 
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === events.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(events.map((e) => e.id)))
+    }
+  }, [selectedIds.size, events])
+
+  const handleBulkDelete = useCallback(async () => {
+    setIsDeleting(true)
+    const ids = Array.from(selectedIds)
+    const result = await bulkDeleteEventsAction(ids)
+    if (!result.success) {
+      toast.error(result.error ?? 'No se pudieron eliminar los eventos.')
+    } else {
+      toast.success(`${result.data?.count ?? ids.length} eventos eliminados.`)
+      setSelectedIds(new Set())
+      query.refetch()
+    }
+    setIsDeleting(false)
+    setShowBulkDeleteDialog(false)
+  }, [selectedIds, query])
+
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nombre o ubicación..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      {/* Search + Sort */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre o ubicación..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="relative">
+          <ArrowDownUp className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background pl-9 pr-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -146,6 +217,47 @@ export function UserEventsList() {
           </button>
         ))}
       </div>
+
+      {/* Bulk actions bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/50 bg-primary/5 px-4 py-3">
+          <span className="text-sm font-medium">
+            {selectedIds.size} evento{selectedIds.size > 1 ? 's' : ''} seleccionado{selectedIds.size > 1 ? 's' : ''}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="h-8 bg-rose-600 text-white hover:bg-rose-700"
+              onClick={() => setShowBulkDeleteDialog(true)}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Eliminar seleccionados
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Deseleccionar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Select all */}
+      {events.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={toggleSelectAll}
+          >
+            {selectedIds.size === events.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+          </Button>
+        </div>
+      )}
 
       {/* Empty state */}
       {loadingInitial ? (
@@ -173,8 +285,21 @@ export function UserEventsList() {
           {events.map((event) => {
             const cfg = statusConfig[event.status] ?? statusConfig.PENDING
             const StatusIcon = cfg.icon
+            const isSelected = selectedIds.has(event.id)
             return (
-              <div key={event.id} className="flex items-start gap-4 rounded-2xl border border-border/60 bg-card p-4 transition-colors hover:border-border">
+              <div
+                key={event.id}
+                className={cn(
+                  'flex items-start gap-4 rounded-2xl border bg-card p-4 transition-colors hover:border-border',
+                  isSelected ? 'border-primary/50 bg-primary/5' : 'border-border/60'
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleSelect(event.id)}
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-border accent-primary"
+                />
                 <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-accent">
                   {event.image ? (
                     <Image src={event.image} alt={event.title} fill className="object-cover" sizes="80px" />
@@ -235,6 +360,28 @@ export function UserEventsList() {
           )}
         </div>
       )}
+
+      {/* Bulk delete confirmation dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar eventos?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshace. Se eliminarán permanentemente {selectedIds.size} evento{selectedIds.size > 1 ? 's' : ''} y todos sus datos asociados (reseñas, favoritos, comentarios, etc.).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              className="bg-rose-600 text-white hover:bg-rose-700"
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

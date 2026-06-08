@@ -56,6 +56,7 @@ const userVenueListSelect = Prisma.validator<Prisma.VenueSelect>()({
   slug: true,
   image: true,
   status: true,
+  isActive: true,
   location: true,
   address: true,
   createdAt: true,
@@ -100,6 +101,7 @@ const venueAdminListSelect = Prisma.validator<Prisma.VenueSelect>()({
   lat: true,
   lng: true,
   status: true,
+  isActive: true,
   featured: true,
   priceRange: true,
   avgRating: true,
@@ -158,6 +160,7 @@ type GetUserVenuesInput = {
   take?: number
   q?: string
   status?: 'ALL' | 'APPROVED' | 'PENDING' | 'REJECTED'
+  sort?: string
 }
 
 export async function getUserVenues(
@@ -179,10 +182,23 @@ export async function getUserVenues(
     ]
   }
 
+  const orderBy: Prisma.VenueOrderByWithRelationInput = (() => {
+    switch (input.sort) {
+      case 'name-asc':
+        return { name: 'asc' }
+      case 'name-desc':
+        return { name: 'desc' }
+      case 'oldest':
+        return { createdAt: 'asc' }
+      default:
+        return { createdAt: 'desc' }
+    }
+  })()
+
   const [items, total] = await Promise.all([
     prisma.venue.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       skip,
       take,
       select: userVenueListSelect,
@@ -205,6 +221,7 @@ export async function getVenues(
 
   const where: Prisma.VenueWhereInput = {
     status: filters.status,
+    isActive: true,
   }
 
   if (filters.q) {
@@ -249,6 +266,7 @@ export async function getVenuesForMap(): Promise<VenueMapItem[]> {
   return prisma.venue.findMany({
     where: {
       status: 'APPROVED',
+      isActive: true,
       lat: {
         not: null,
       },
@@ -293,6 +311,7 @@ export async function getApprovedVenuesForEventForm(): Promise<VenueSelectOption
   return prisma.venue.findMany({
     where: {
       status: 'APPROVED',
+      isActive: true,
     },
     orderBy: {
       name: 'asc',
@@ -310,6 +329,7 @@ export async function getVenueBySlug(slug: string): Promise<VenueWithRelations |
     where: {
       slug,
       status: 'APPROVED',
+      isActive: true,
     },
     include: {
       venueCategories: { include: { category: true } },

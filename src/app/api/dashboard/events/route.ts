@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const take = Number(searchParams.get('take') ?? String(DEFAULT_TAKE))
     const q = searchParams.get('q') ?? ''
     const statusParam = (searchParams.get('status') ?? 'ALL').toUpperCase()
+    const sort = searchParams.get('sort') ?? 'newest'
 
     const status =
       statusParam === 'APPROVED' || statusParam === 'PENDING' || statusParam === 'REJECTED'
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
       take: Number.isFinite(take) ? Math.min(Math.max(1, take), 50) : DEFAULT_TAKE,
       q,
       status,
+      sort,
     })
 
     return NextResponse.json(data)

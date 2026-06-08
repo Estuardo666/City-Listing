@@ -3,3 +3,5 @@ export { createVenueCompleteAction, type VenueCompleteInput } from '@/actions/ve
 export { updateVenueAction } from '@/actions/venues/update-venue'
 export { updateVenueStatusAction } from '@/actions/venues/update-venue-status'
 export { deleteVenueAction } from '@/actions/venues/delete-venue'
+export { bulkDeleteVenuesAction } from '@/actions/venues/bulk-delete-venues'
+export { toggleVenueActiveAction } from '@/actions/venues/toggle-venue-active'

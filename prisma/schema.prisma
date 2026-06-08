@@ -297,6 +297,7 @@ model Venue {
   address       String?
   priceRange    String?
   status        String      @default("PENDING")
+  isActive      Boolean     @default(true)
   featured      Boolean     @default(false)
   claimed       Boolean     @default(false)
   claimedBy     String?
@@ -346,6 +347,7 @@ model Venue {
   branchReviews Review[]  @relation("BranchReviews")
 
   @@index([status])
+  @@index([isActive])
   @@index([googlePlaceId])
   @@index([osmId])
   @@index([avgRating])
