@@ -257,8 +257,11 @@ export async function GET(request: NextRequest) {
 
           // Clean up extra fields before returning
           return filtered.slice(0, take).map((v) => {
-            const { events: _e, ...rest } = v as any
-            return rest
+            const { events: _e, venueCategories, ...rest } = v as any
+            return {
+              ...rest,
+              categories: venueCategories?.map((vc: any) => vc.category) ?? [],
+            }
           })
         })()
 
@@ -331,7 +334,13 @@ export async function GET(request: NextRequest) {
             })
           }
 
-          return filteredEvents.slice(0, take)
+          return filteredEvents.slice(0, take).map((e) => {
+            const { eventCategories, ...rest } = e as any
+            return {
+              ...rest,
+              categories: eventCategories?.map((ec: any) => ec.category) ?? [],
+            }
+          })
         })()
 
         const [venues, events] = await Promise.all([venueQuery, eventQuery])

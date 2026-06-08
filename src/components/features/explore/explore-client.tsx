@@ -95,7 +95,7 @@ function buildMarkers(items: ExploreItem[]): ExploreMapMarker[] {
       lng: i.lng as number,
       name: i._type === 'venue' ? i.name : i.title,
       slug: i.slug,
-      categories: i.categories,
+      categories: i.categories ?? [],
     }))
 }
 

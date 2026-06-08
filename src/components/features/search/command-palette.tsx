@@ -14,7 +14,10 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import { SearchChips } from './search-chips'
+
+type CategoryInfo = { name: string; slug: string; color: string | null }
 
 type SearchEvent = {
   id: string
@@ -23,7 +26,7 @@ type SearchEvent = {
   image: string | null
   startDate: string
   location: string
-  eventCategories: { name: string; color: string | null }[]
+  eventCategories: { category: CategoryInfo }[]
 }
 
 type SearchVenue = {
@@ -32,7 +35,7 @@ type SearchVenue = {
   slug: string
   image: string | null
   location: string
-  venueCategories: { name: string; color: string | null }[]
+  venueCategories: { category: CategoryInfo }[]
 }
 
 type SearchPost = {
@@ -41,7 +44,7 @@ type SearchPost = {
   slug: string
   image: string | null
   publishedAt: string | null
-  category: { name: string; color: string | null }
+  category: CategoryInfo
 }
 
 type SearchResults = {
@@ -251,8 +254,9 @@ export function CommandPalette() {
                         image={e.image}
                         title={e.title}
                         meta={e.location}
-                        badge={e.eventCategories[0]?.name ?? ''}
-                        badgeColor={e.eventCategories[0]?.color ?? null}
+                        categorySlug={e.eventCategories[0]?.category?.slug}
+                        badge={e.eventCategories[0]?.category?.name ?? ''}
+                        badgeColor={e.eventCategories[0]?.category?.color ?? null}
                         active={activeIndex === globalIdx}
                         onHover={() => setActiveIndex(globalIdx)}
                         onClick={() => navigate(`/eventos/${e.slug}`)}
@@ -273,8 +277,9 @@ export function CommandPalette() {
                         image={v.image}
                         title={v.name}
                         meta={v.location}
-                        badge={v.venueCategories[0]?.name ?? ''}
-                        badgeColor={v.venueCategories[0]?.color ?? null}
+                        categorySlug={v.venueCategories[0]?.category?.slug}
+                        badge={v.venueCategories[0]?.category?.name ?? ''}
+                        badgeColor={v.venueCategories[0]?.category?.color ?? null}
                         active={activeIndex === globalIdx}
                         onHover={() => setActiveIndex(globalIdx)}
                         onClick={() => navigate(`/locales/${v.slug}`)}
@@ -295,6 +300,7 @@ export function CommandPalette() {
                         image={p.image}
                         title={p.title}
                         meta={p.publishedAt ? new Intl.DateTimeFormat('es-EC', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(p.publishedAt)) : undefined}
+                        categorySlug={p.category?.slug}
                         badge={p.category.name}
                         badgeColor={p.category.color}
                         active={activeIndex === globalIdx}
@@ -352,6 +358,7 @@ function ResultRow({
   image,
   title,
   meta,
+  categorySlug,
   badge,
   badgeColor,
   active,
@@ -361,6 +368,7 @@ function ResultRow({
   image: string | null
   title: string
   meta?: string
+  categorySlug?: string
   badge: string
   badgeColor: string | null
   active: boolean
@@ -385,9 +393,13 @@ function ResultRow({
         {hasValidImage && !imageError ? (
           <Image src={image!} alt={title} fill className="object-cover" sizes="48px" onError={() => setImageError(true)} />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <ImageIcon className="h-4 w-4 text-muted-foreground/40" />
-          </div>
+          <CategoryGradientBg
+            categorySlug={categorySlug}
+            name={title}
+            showInitials
+            className="h-full w-full"
+            initialsClassName="text-[10px]"
+          />
         )}
       </div>
       {/* Text */}

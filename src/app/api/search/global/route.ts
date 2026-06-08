@@ -36,7 +36,7 @@ async function searchInDatabase(query: string) {
         image: true,
         startDate: true,
         location: true,
-        eventCategories: { select: { category: { select: { name: true, color: true } } } }
+        eventCategories: { select: { category: { select: { name: true, slug: true, color: true } } } }
       },
       orderBy: [{ featured: 'desc' }, { startDate: 'asc' }],
       take: LIMIT
@@ -58,7 +58,7 @@ async function searchInDatabase(query: string) {
         slug: true,
         image: true,
         location: true,
-        venueCategories: { select: { category: { select: { name: true, color: true } } } }
+        venueCategories: { select: { category: { select: { name: true, slug: true, color: true } } } }
       },
       orderBy: [{ featured: 'desc' }, { name: 'asc' }],
       take: LIMIT
@@ -79,7 +79,7 @@ async function searchInDatabase(query: string) {
         slug: true,
         image: true,
         publishedAt: true,
-        category: { select: { name: true, color: true } }
+        category: { select: { name: true, slug: true, color: true } }
       },
       orderBy: [{ featured: 'desc' }, { publishedAt: 'desc' }],
       take: LIMIT
