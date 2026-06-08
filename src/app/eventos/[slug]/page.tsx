@@ -8,11 +8,8 @@ import { Button } from '@/components/ui/button'
 import { EventDetail } from '@/components/features/events'
 import { EventRelated } from '@/components/features/events/event-related'
 import { getEventBySlug, getEvents } from '@/lib/queries/events'
-import { getEventQuestions } from '@/lib/queries/features'
 import { FavoriteButton } from '@/components/features/favorites/favorite-button'
-import { CommentSection } from '@/components/features/comments/comment-section'
 import { incrementEventViewAction } from '@/actions/views'
-import type { CommentWithUser } from '@/actions/comments'
 
 type EventDetailPageProps = {
   params: Promise<{
@@ -29,34 +26,17 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   if (!event) notFound()
 
-  const prismaAny = prisma as unknown as {
-    comment: {
-      findMany: (args: unknown) => Promise<CommentWithUser[]>
-    }
-  }
-
   const relatedEvents = await getEvents(
     { status: 'APPROVED', category: event.category.slug },
     5
   ).then((list) => list.filter((e) => e.id !== event.id).slice(0, 4))
 
-  const [isFavorite, comments, questions] = await Promise.all([
-    session?.user?.id
-      ? prisma.favorite.findUnique({
-          where: { userId_eventId: { userId: session.user.id, eventId: event.id } },
-          select: { id: true },
-        }).then(Boolean)
-      : Promise.resolve(false),
-    prismaAny.comment.findMany({
-      where: { eventId: event.id },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true, content: true, parentId: true, createdAt: true,
-        user: { select: { id: true, name: true, image: true } },
-      },
-    }),
-    getEventQuestions(event.id),
-  ])
+  const isFavorite = await (session?.user?.id
+    ? prisma.favorite.findUnique({
+        where: { userId_eventId: { userId: session.user.id, eventId: event.id } },
+        select: { id: true },
+      }).then(Boolean)
+    : Promise.resolve(false))
 
   incrementEventViewAction(event.id)
 
@@ -79,15 +59,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
         </div>
 
         {/* Main detail */}
-        <EventDetail event={event} currentUserId={session?.user?.id} userRole={session?.user?.role} questions={questions} />
-
-        {/* Comments */}
-        <div className="rounded-2xl border border-border/50 bg-card p-6">
-          <CommentSection
-            initialComments={comments}
-            eventId={event.id}
-          />
-        </div>
+        <EventDetail event={event} currentUserId={session?.user?.id} userRole={session?.user?.role} />
 
         {/* Related events */}
         <EventRelated events={relatedEvents} />

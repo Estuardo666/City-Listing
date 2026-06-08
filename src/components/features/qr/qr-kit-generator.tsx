@@ -43,7 +43,7 @@ export function QRKitGenerator({ venueName, venueSlug }: QRKitGeneratorProps) {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Kit QR / Sticker de Puerta</h1>
+        <h1 className="text-2xl font-medium text-foreground">Kit QR / Sticker de Puerta</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Genera un sticker con código QR para que tus clientes accedan a tu perfil en Vive Loja.
         </p>
@@ -53,7 +53,7 @@ export function QRKitGenerator({ venueName, venueSlug }: QRKitGeneratorProps) {
         {/* Panel de configuración */}
         <div className="space-y-6">
           <div className="rounded-2xl border border-border/50 bg-card p-6">
-            <h2 className="text-lg font-bold text-foreground">Personalizar</h2>
+            <h2 className="text-lg font-medium text-foreground">Personalizar</h2>
 
             <div className="mt-4 space-y-4">
               <div>
@@ -81,28 +81,28 @@ export function QRKitGenerator({ venueName, venueSlug }: QRKitGeneratorProps) {
 
           {/* Instrucciones */}
           <div className="rounded-2xl border border-border/50 bg-card p-6">
-            <h2 className="text-lg font-bold text-foreground">Instrucciones de uso</h2>
+            <h2 className="text-lg font-medium text-foreground">Instrucciones de uso</h2>
             <ol className="mt-3 space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
                   1
                 </span>
                 Personaliza el texto si lo deseas
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
                   2
                 </span>
                 Haz clic en &quot;Descargar PNG&quot;
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
                   3
                 </span>
                 Imprime el sticker en papel adhesivo (tamaño recomendado: 10x12 cm)
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
                   4
                 </span>
                 Pégalo en la puerta de tu negocio donde sea visible
@@ -114,7 +114,7 @@ export function QRKitGenerator({ venueName, venueSlug }: QRKitGeneratorProps) {
           <button
             onClick={handleDownload}
             disabled={isGenerating}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             {isGenerating ? (
               <>
@@ -133,7 +133,7 @@ export function QRKitGenerator({ venueName, venueSlug }: QRKitGeneratorProps) {
         {/* Preview del sticker */}
         <div className="space-y-4">
           <div className="rounded-2xl border border-border/50 bg-card p-6">
-            <h2 className="text-lg font-bold text-foreground">Vista previa</h2>
+            <h2 className="text-lg font-medium text-foreground">Vista previa</h2>
             <p className="mt-1 text-xs text-muted-foreground">
               Así se verá tu sticker impreso
             </p>

@@ -56,7 +56,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
             )}
           </div>
           <div className="flex-1 text-center sm:text-left">
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-2xl font-medium text-foreground">
               {user.name ?? 'Usuario'}
             </h1>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
@@ -83,7 +83,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
         {/* Reseñas recientes */}
         {user.reviews.length > 0 && (
           <div className="mt-8 rounded-2xl border border-border/50 bg-card p-6">
-            <h2 className="text-lg font-bold text-foreground">
+            <h2 className="text-lg font-medium text-foreground">
               <Star className="inline h-5 w-5 mr-2 text-amber-500" />
               Reseñas recientes ({user._count.reviews})
             </h2>
@@ -142,7 +142,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
         {/* Check-ins recientes */}
         {user.checkIns.length > 0 && (
           <div className="mt-8 rounded-2xl border border-border/50 bg-card p-6">
-            <h2 className="text-lg font-bold text-foreground">
+            <h2 className="text-lg font-medium text-foreground">
               <MapPin className="inline h-5 w-5 mr-2 text-rose-500" />
               Check-ins recientes ({user._count.checkIns})
             </h2>

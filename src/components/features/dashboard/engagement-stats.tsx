@@ -25,7 +25,7 @@ export function EngagementStatsWidget({ stats }: EngagementStatsProps) {
             <Heart className="h-4 w-4" />
             <span className="text-xs font-medium">Favoritos</span>
           </div>
-          <p className="mt-2 text-2xl font-bold text-rose-900">{stats.totalFavorites}</p>
+          <p className="mt-2 text-2xl font-medium text-rose-900">{stats.totalFavorites}</p>
           <div className="mt-1 space-y-0.5">
             {stats.eventFavorites > 0 && (
               <p className="text-[10px] text-rose-600">{stats.eventFavorites} en eventos</p>
@@ -48,7 +48,7 @@ export function EngagementStatsWidget({ stats }: EngagementStatsProps) {
             <MessageCircle className="h-4 w-4" />
             <span className="text-xs font-medium">Comentarios</span>
           </div>
-          <p className="mt-2 text-2xl font-bold text-blue-900">{stats.totalComments}</p>
+          <p className="mt-2 text-2xl font-medium text-blue-900">{stats.totalComments}</p>
           <div className="mt-1 space-y-0.5">
             {stats.eventComments > 0 && (
               <p className="text-[10px] text-blue-600">{stats.eventComments} en eventos</p>
@@ -71,7 +71,7 @@ export function EngagementStatsWidget({ stats }: EngagementStatsProps) {
             <Eye className="h-4 w-4" />
             <span className="text-xs font-medium">Vistas</span>
           </div>
-          <p className="mt-2 text-2xl font-bold text-violet-900">{stats.totalViews}</p>
+          <p className="mt-2 text-2xl font-medium text-violet-900">{stats.totalViews}</p>
           <div className="mt-1">
             {stats.postViews > 0 ? (
               <p className="text-[10px] text-violet-600">{stats.postViews} en artículos</p>

@@ -23,6 +23,13 @@ async function getHeroData(limit: number) {
     phone: venue.phone,
     website: venue.website,
     category: venue.category,
+    priceRange: venue.priceRange ?? null,
+    avgRating: venue.avgRating ?? null,
+    reviewCount: venue.reviewCount ?? 0,
+    verified: venue.verified ?? false,
+    promotions: [],
+    services: [],
+    businessHours: [],
     _type: 'venue' as const,
   }))
 
@@ -39,6 +46,9 @@ async function getHeroData(limit: number) {
     lat: event.lat ?? null,
     lng: event.lng ?? null,
     featured: event.featured,
+    price: event.price ?? null,
+    avgRating: event.avgRating ?? null,
+    reviewCount: event.reviewCount ?? 0,
     category: event.category,
     _type: 'event' as const,
   }))

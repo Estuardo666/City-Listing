@@ -42,16 +42,16 @@ export function CategorySearcher({ categories, selectedCategory, onCategoryChang
   }
 
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('flex flex-col', className)}>
       {/* Search input */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Buscar categoría..."
-          className="h-9 w-full rounded-xl border border-border/60 bg-secondary/40 pl-9 pr-7 text-sm placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10"
+          className="h-9 w-full rounded-lg border border-border/60 bg-secondary/40 pl-9 pr-7 text-sm placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10"
         />
         {searchTerm && (
           <button
@@ -66,9 +66,8 @@ export function CategorySearcher({ categories, selectedCategory, onCategoryChang
 
       {/* Selected category display */}
       {selectedCategoryData && (
-        <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-primary px-3 py-2">
+        <div className="mt-2 flex shrink-0 items-center justify-between rounded-lg border border-primary/30 bg-primary px-3 py-2">
           <span className="flex items-center gap-2 text-sm font-medium text-white">
-            <span>{selectedCategoryData.icon}</span>
             {selectedCategoryData.name}
           </span>
           <button
@@ -81,37 +80,40 @@ export function CategorySearcher({ categories, selectedCategory, onCategoryChang
         </div>
       )}
 
-      {/* Categories grid - always visible */}
-      <div className="grid grid-cols-2 gap-1.5">
-        <button
-          type="button"
-          onClick={() => handleSelect('')}
-          className={cn(
-            'col-span-2 rounded-xl border px-2.5 py-1.5 text-xs font-medium transition-all',
-            selectedCategory === ''
-              ? 'border-primary/30 bg-primary text-white'
-              : 'border-border/60 bg-background text-muted-foreground hover:border-primary/30 hover:text-primary'
-          )}
-        >
-          Todas las categorías
-        </button>
-        {filteredCategories.map((category) => (
-          <motion.button
-            key={category.id}
-            type="button"
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleSelect(category.slug)}
-            className={cn(
-              'rounded-full border px-2 py-1 text-xs font-medium transition-all text-left',
-              selectedCategory === category.slug
-                ? 'border-primary bg-primary text-white'
-                : 'border-border/60 bg-secondary/40 text-foreground hover:border-primary/40 hover:bg-primary/8 hover:text-primary'
-            )}
-          >
-            <span className="mr-1">{category.icon}</span>
-            {category.name}
-          </motion.button>
-        ))}
+      {/* "Todas" button — always visible */}
+      <button
+        type="button"
+        onClick={() => handleSelect('')}
+        className={cn(
+          'mt-2 w-full shrink-0 rounded-lg border px-2.5 py-1.5 font-medium transition-all chip-14',
+          selectedCategory === ''
+            ? 'border-primary/30 bg-primary text-white'
+            : 'border-border/60 bg-background text-muted-foreground hover:border-primary/30 hover:text-primary'
+        )}
+      >
+        Todas las categorías
+      </button>
+
+      {/* Categories chips — scrollable */}
+      <div className="mt-2 max-h-[40vh] overflow-y-auto explore-scrollbar">
+        <div className="flex flex-wrap gap-1.5">
+          {filteredCategories.map((category) => (
+            <motion.button
+              key={category.id}
+              type="button"
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleSelect(category.slug)}
+              className={cn(
+                'rounded-lg border font-medium transition-all whitespace-nowrap chip-14',
+                selectedCategory === category.slug
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-border/60 bg-secondary/40 text-foreground hover:border-primary/40 hover:bg-primary/8 hover:text-primary'
+              )}
+            >
+              {category.name}
+            </motion.button>
+          ))}
+        </div>
       </div>
 
       {/* Show message when search has no results */}

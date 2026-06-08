@@ -136,7 +136,7 @@ export function EventCalendar({ events, className = '' }: EventCalendarProps) {
                 isSelected
                   ? 'bg-primary text-primary-foreground'
                   : isToday
-                  ? 'bg-muted font-bold'
+                  ? 'bg-muted font-medium'
                   : 'hover:bg-muted'
               }`}
             >

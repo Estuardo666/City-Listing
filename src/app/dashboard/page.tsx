@@ -71,7 +71,7 @@ export default async function DashboardPage() {
               <Calendar className="h-4 w-4" />
               <span className="text-xs font-medium">Eventos</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">{eventCount}</p>
+            <p className="mt-2 text-2xl font-medium text-foreground">{eventCount}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">creados</p>
           </div>
           <div className="rounded-2xl border border-border/60 bg-card p-4">
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
               <MapPin className="h-4 w-4" />
               <span className="text-xs font-medium">Locales</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">{venueCount}</p>
+            <p className="mt-2 text-2xl font-medium text-foreground">{venueCount}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">registrados</p>
           </div>
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
               <CheckCircle2 className="h-4 w-4" />
               <span className="text-xs font-medium">Publicados</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-emerald-900">{postApproved}</p>
+            <p className="mt-2 text-2xl font-medium text-emerald-900">{postApproved}</p>
             <p className="mt-0.5 text-xs text-emerald-700">artículos</p>
           </div>
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
               <Clock className="h-4 w-4" />
               <span className="text-xs font-medium">En revisión</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-amber-900">{postPending}</p>
+            <p className="mt-2 text-2xl font-medium text-amber-900">{postPending}</p>
             <p className="mt-0.5 text-xs text-amber-700">artículos</p>
           </div>
         </div>

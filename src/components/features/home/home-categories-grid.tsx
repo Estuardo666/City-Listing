@@ -70,7 +70,7 @@ export function HomeCategoriesGrid({ categories }: HomeCategoriesGridProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">¿Qué buscas?</p>
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">Explora por categoría</h2>
+          <h2 className="text-3xl font-medium text-foreground sm:text-4xl">Explora por categoría</h2>
           <p className="text-sm text-muted-foreground sm:text-base">Descubre lugares y eventos organizados por tipo</p>
         </div>
         <Link
@@ -98,7 +98,7 @@ export function HomeCategoriesGrid({ categories }: HomeCategoriesGridProps) {
                 <CategoryIcon name={cat.name} icon={cat.icon} />
               </div>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-sm font-bold text-foreground sm:text-base">{cat.name}</span>
+                <span className="text-sm font-medium text-foreground sm:text-base">{cat.name}</span>
                 {cat.count > 0 && (
                   <span className="text-xs font-medium text-foreground/60">{cat.count} lugares</span>
                 )}

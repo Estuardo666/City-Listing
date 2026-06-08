@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { CalendarDays, ImageIcon, MapPin, Phone, Sparkles } from 'lucide-react'
+import { CalendarDays, MapPin, Phone, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ExploreItem } from '@/types/explore'
+import { resolveIconEmoji } from './explore-map-panel'
+import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 
 type ExploreCardProps = {
   item: ExploreItem
@@ -21,6 +24,8 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
   const image = item.image
   const category = item.category
   const address = item.address ?? item.location
+  const [imageError, setImageError] = useState(false)
+  const hasValidImage = Boolean(image && image.startsWith('http'))
 
   return (
     <motion.div
@@ -49,23 +54,28 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
       >
         {/* Image */}
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-accent sm:h-28 sm:w-28">
-          {image ? (
+          {hasValidImage && !imageError ? (
             <Image
-              src={image}
+              src={image!}
               alt={name}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="112px"
+              onError={() => setImageError(true)}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-accent to-secondary">
-              <ImageIcon className="h-8 w-8 text-muted-foreground/20" />
-            </div>
+            <CategoryGradientBg
+              categorySlug={category.slug}
+              name={name}
+              showInitials
+              className="h-full w-full"
+              initialsClassName="text-xl sm:text-2xl"
+            />
           )}
           {/* Type badge on image */}
           <span
             className={cn(
-              'absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white',
+              'absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white',
               isVenue ? 'bg-emerald' : 'bg-coral'
             )}
           >
@@ -78,20 +88,21 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
           <div className="space-y-1">
             {/* Category */}
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-              {category.icon ?? (isVenue ? '🏬' : '📍')}
+              {resolveIconEmoji(category.icon, isVenue ? 'venue' : 'event')}
               {category.name}
             </span>
 
             {/* Name */}
             <p
               className={cn(
-                'truncate text-sm font-semibold leading-snug transition-colors',
+                'truncate font-medium leading-snug transition-colors',
                 isActive
                   ? isVenue
                     ? 'text-emerald'
                     : 'text-coral'
                   : 'text-foreground group-hover:text-primary'
               )}
+              style={{ fontSize: '1.37rem' }}
             >
               {name}
             </p>
@@ -135,16 +146,6 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
           </div>
         </div>
 
-        {/* Active indicator */}
-        {isActive && (
-          <motion.div
-            layoutId="active-card-indicator"
-            className={cn(
-              'absolute left-0 top-0 h-full w-0.5 rounded-r-full',
-              isVenue ? 'bg-emerald' : 'bg-coral'
-            )}
-          />
-        )}
       </Link>
     </motion.div>
   )

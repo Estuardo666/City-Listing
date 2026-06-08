@@ -20,7 +20,7 @@ export function MenuDisplayV2({ menu, className = '' }: MenuDisplayV2Props) {
 
   return (
     <div className={className}>
-      <h2 className="text-lg font-bold text-foreground mb-4">🍽️ Menú</h2>
+      <h2 className="text-lg font-medium text-foreground mb-4">🍽️ Menú</h2>
       <div className="space-y-6">
         {menu.map((cat) => {
           const availableItems = cat.items.filter((i) => i.isAvailable)
@@ -29,7 +29,7 @@ export function MenuDisplayV2({ menu, className = '' }: MenuDisplayV2Props) {
 
           return (
             <div key={cat.id}>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">{cat.name}</h3>
+              <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-3">{cat.name}</h3>
               <div className="space-y-3">
                 {availableItems.map((item) => (
                   <div key={item.id} className="flex items-start gap-3 rounded-lg border border-border/30 bg-card p-3">

@@ -18,7 +18,7 @@ export default async function NuevaImportacionPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Nueva Importación</h1>
+        <h1 className="text-3xl font-medium">Nueva Importación</h1>
         <p className="text-muted-foreground mt-2">
           Busca e importa lugares desde OpenStreetMap usando Overpass API
         </p>

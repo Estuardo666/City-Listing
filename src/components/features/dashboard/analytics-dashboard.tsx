@@ -28,7 +28,7 @@ export function AnalyticsDashboard({ analytics }: AnalyticsDashboardProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Contenido</p>
-              <p className="mt-1 text-2xl font-bold text-foreground">{totalContent}</p>
+              <p className="mt-1 text-2xl font-medium text-foreground">{totalContent}</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
               <FileText className="h-5 w-5 text-blue-600" />
@@ -40,7 +40,7 @@ export function AnalyticsDashboard({ analytics }: AnalyticsDashboardProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Vistas</p>
-              <p className="mt-1 text-2xl font-bold text-foreground">{analytics.posts.totalViews.toLocaleString()}</p>
+              <p className="mt-1 text-2xl font-medium text-foreground">{analytics.posts.totalViews.toLocaleString()}</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
               <Eye className="h-5 w-5 text-green-600" />
@@ -52,7 +52,7 @@ export function AnalyticsDashboard({ analytics }: AnalyticsDashboardProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Favoritos</p>
-              <p className="mt-1 text-2xl font-bold text-foreground">{totalEngagement}</p>
+              <p className="mt-1 text-2xl font-medium text-foreground">{totalEngagement}</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
               <Heart className="h-5 w-5 text-red-600" />
@@ -64,7 +64,7 @@ export function AnalyticsDashboard({ analytics }: AnalyticsDashboardProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Comentarios</p>
-              <p className="mt-1 text-2xl font-bold text-foreground">{analytics.posts.totalComments}</p>
+              <p className="mt-1 text-2xl font-medium text-foreground">{analytics.posts.totalComments}</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
               <MessageCircle className="h-5 w-5 text-purple-600" />

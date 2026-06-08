@@ -46,7 +46,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
         <div className="mx-auto max-w-7xl">
           <MotionDiv {...fadeInUp} className="space-y-4">
             <p className="eyebrow">Vive Loja Blog</p>
-            <h1 className="text-4xl font-bold leading-tight text-foreground sm:text-5xl">
+            <h1 className="text-4xl font-medium leading-tight text-foreground sm:text-5xl">
               Historias de Loja
             </h1>
             <p className="max-w-xl text-base text-muted-foreground sm:text-lg">

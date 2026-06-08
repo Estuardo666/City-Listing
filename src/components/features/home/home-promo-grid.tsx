@@ -56,7 +56,7 @@ export function HomePromoGrid({ venues, events }: HomePromoGridProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">📸 En tendencia</p>
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">Lo que está pasando ahora</h2>
+          <h2 className="text-3xl font-medium text-foreground sm:text-4xl">Lo que está pasando ahora</h2>
           <p className="text-sm text-muted-foreground sm:text-base">Los lugares y eventos más populares del momento</p>
         </div>
         <Link
@@ -104,7 +104,7 @@ export function HomePromoGrid({ venues, events }: HomePromoGridProps) {
                   <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
                     {item.categoryIcon ?? ''} {item.category}
                   </span>
-                  <p className="text-sm font-bold text-white line-clamp-2 leading-snug">{item.title}</p>
+                  <p className="text-sm font-medium text-white line-clamp-2 leading-snug">{item.title}</p>
                 </div>
               </Link>
             </motion.div>

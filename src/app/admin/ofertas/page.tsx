@@ -32,7 +32,7 @@ export default async function AdminOffersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Ofertas y promociones</h1>
+        <h1 className="text-2xl font-medium">Ofertas y promociones</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Gestiona las ofertas publicadas por los locales
         </p>

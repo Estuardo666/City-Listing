@@ -41,14 +41,14 @@ export default async function VenueAnalyticsPage({ params }: { params: Promise<{
               <Eye className="h-4 w-4" />
               <span className="text-xs font-medium">Visitas</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">{venueData.viewCount}</p>
+            <p className="mt-2 text-2xl font-medium text-foreground">{venueData.viewCount}</p>
           </div>
           <div className="rounded-2xl border border-border/60 bg-card p-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Star className="h-4 w-4" />
               <span className="text-xs font-medium">Rating</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">{venueData.avgRating?.toFixed(1) ?? '—'}</p>
+            <p className="mt-2 text-2xl font-medium text-foreground">{venueData.avgRating?.toFixed(1) ?? '—'}</p>
             <p className="text-xs text-muted-foreground">{venueData.reviewCount} reseñas</p>
           </div>
           <div className="rounded-2xl border border-border/60 bg-card p-4">
@@ -56,21 +56,21 @@ export default async function VenueAnalyticsPage({ params }: { params: Promise<{
               <Heart className="h-4 w-4" />
               <span className="text-xs font-medium">Favoritos</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">{venueData._count.favorites}</p>
+            <p className="mt-2 text-2xl font-medium text-foreground">{venueData._count.favorites}</p>
           </div>
           <div className="rounded-2xl border border-border/60 bg-card p-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <span className="text-xs font-medium">Reservas</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">{venueData._count.reservations}</p>
+            <p className="mt-2 text-2xl font-medium text-foreground">{venueData._count.reservations}</p>
           </div>
         </div>
 
         {/* Rating distribution */}
         {analytics.ratingDistribution.length > 0 && (
           <div className="rounded-2xl border border-border/50 bg-card p-5">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Distribución de ratings</h2>
+            <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-4">Distribución de ratings</h2>
             <div className="space-y-2">
               {[5, 4, 3, 2, 1].map((rating) => {
                 const entry = analytics.ratingDistribution.find((r) => r.rating === rating)
@@ -95,7 +95,7 @@ export default async function VenueAnalyticsPage({ params }: { params: Promise<{
         {/* Recent reviews */}
         {analytics.recentReviews.length > 0 && (
           <div className="rounded-2xl border border-border/50 bg-card p-5">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Últimas reseñas</h2>
+            <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-4">Últimas reseñas</h2>
             <div className="space-y-3">
               {analytics.recentReviews.filter((r) => r.venueId === venue.id).map((review) => (
                 <div key={review.id} className="flex gap-3 p-3 rounded-lg border">

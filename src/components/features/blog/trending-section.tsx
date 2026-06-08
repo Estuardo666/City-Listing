@@ -25,7 +25,7 @@ export function TrendingSection({ posts, period = 'week' }: TrendingSectionProps
         {posts.map((post, index) => (
           <div key={post.id} className="relative">
             {/* Trending number badge */}
-            <div className="absolute -left-2 -top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white shadow-lg">
+            <div className="absolute -left-2 -top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-sm font-medium text-white shadow-lg">
               {index + 1}
             </div>
             <BlogCard post={post} />

@@ -159,7 +159,7 @@ export function RouteForm({ venues }: RouteFormProps) {
           {stops.map((stop, index) => (
             <div key={index} className="grid grid-cols-1 gap-3 rounded-xl border border-border/50 p-4 sm:grid-cols-2">
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{index + 1}</span>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">{index + 1}</span>
                 <Select value={stop.venueId ?? 'custom'} onValueChange={(v) => updateStop(index, 'venueId', v === 'custom' ? '' : v)}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar local" /></SelectTrigger>
                   <SelectContent>

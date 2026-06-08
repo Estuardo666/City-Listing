@@ -57,7 +57,7 @@ function StatCard({
         <Icon className={`h-4 w-4 ${colorMap[variant]}`} />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-medium">{value}</div>
         {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
       </CardContent>
     </Card>
@@ -132,7 +132,7 @@ export function OsmImportsDashboard() {
             <MapPin className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.newPlacesDetected}</div>
+            <div className="text-2xl font-medium">{stats.newPlacesDetected}</div>
             <p className="text-xs text-muted-foreground mt-1">Lugares encontrados en total</p>
           </CardContent>
         </Card>
@@ -142,7 +142,7 @@ export function OsmImportsDashboard() {
             <Copy className="h-4 w-4 text-[hsl(var(--emphasis-1))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.duplicatesFound}</div>
+            <div className="text-2xl font-medium">{stats.duplicatesFound}</div>
             <p className="text-xs text-muted-foreground mt-1">Coincidencias detectadas</p>
           </CardContent>
         </Card>

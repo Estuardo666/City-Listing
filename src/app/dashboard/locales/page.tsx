@@ -42,15 +42,15 @@ export default async function DashboardLocalesPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-2xl border border-border/60 bg-card p-4">
             <p className="text-xs font-medium text-muted-foreground">Total</p>
-            <p className="mt-1.5 text-2xl font-bold text-foreground">{total}</p>
+            <p className="mt-1.5 text-2xl font-medium text-foreground">{total}</p>
           </div>
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
             <p className="text-xs font-medium text-emerald-700">Publicados</p>
-            <p className="mt-1.5 text-2xl font-bold text-emerald-900">{approved}</p>
+            <p className="mt-1.5 text-2xl font-medium text-emerald-900">{approved}</p>
           </div>
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-xs font-medium text-amber-700">En revisión</p>
-            <p className="mt-1.5 text-2xl font-bold text-amber-900">{pending}</p>
+            <p className="mt-1.5 text-2xl font-medium text-amber-900">{pending}</p>
           </div>
         </div>
 

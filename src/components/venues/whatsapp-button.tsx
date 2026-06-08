@@ -37,7 +37,7 @@ export function WhatsAppButton({
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#1da851] ${className}`}
+        className={`inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1da851] ${className}`}
         aria-label={label}
       >
         <MessageCircle className="h-4 w-4" />
@@ -51,7 +51,7 @@ export function WhatsAppButton({
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`flex items-center justify-center gap-3 rounded-xl bg-[#25D366] px-4 py-3 text-base font-bold text-white transition-colors hover:bg-[#1da851] ${className}`}
+      className={`flex items-center justify-center gap-3 rounded-xl bg-[#25D366] px-4 py-3 text-base font-medium text-white transition-colors hover:bg-[#1da851] ${className}`}
     >
       <MessageCircle className="h-5 w-5 shrink-0" />
       {label}

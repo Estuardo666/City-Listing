@@ -26,7 +26,7 @@ export default async function CollectionDetailPage({ params }: { params: Promise
           <div className="flex items-center gap-3 mb-2">
             <span className="text-4xl">{collection.icon ?? '📁'}</span>
             <div>
-              <h1 className="text-2xl font-bold sm:text-3xl">{collection.name}</h1>
+              <h1 className="text-2xl font-medium sm:text-3xl">{collection.name}</h1>
               {collection.description && <p className="text-sm text-muted-foreground mt-1">{collection.description}</p>}
             </div>
           </div>

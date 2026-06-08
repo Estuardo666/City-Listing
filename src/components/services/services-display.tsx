@@ -13,7 +13,7 @@ export function ServicesDisplay({ services, className = '' }: ServicesDisplayPro
 
   return (
     <div className={className}>
-      <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Servicios</h3>
+      <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-3">Servicios</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {activeServices.map((s) => (
           <div

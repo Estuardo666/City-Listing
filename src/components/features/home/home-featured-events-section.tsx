@@ -18,6 +18,9 @@ export async function HomeFeaturedEventsSection() {
     lat: event.lat ?? null,
     lng: event.lng ?? null,
     featured: event.featured,
+    price: event.price ?? null,
+    avgRating: event.avgRating ?? null,
+    reviewCount: event.reviewCount ?? 0,
     category: event.category,
   }))
   

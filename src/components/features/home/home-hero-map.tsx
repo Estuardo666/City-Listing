@@ -249,7 +249,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
           <motion.div layout className="hidden sm:flex flex-col gap-0.5 sm:gap-1">
             <div className="flex items-center gap-2 text-foreground">
               <Sparkles className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
+              <h2 className="text-xl font-medium tracking-tight sm:text-2xl">
                 Tu próximo plan está aquí
               </h2>
             </div>
@@ -310,7 +310,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
                       className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground dark:hover:bg-white/10"
                     >
                       <span>{suggestion.label}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                         {suggestion.type === 'venue' ? 'Local' : 'Evento'}
                       </span>
                     </button>
@@ -364,7 +364,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
                         key={step}
                         type="button"
                         onClick={() => setProximityRadius(step)}
-                        className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-bold shadow-sm backdrop-blur-md transition-all hover:scale-105 whitespace-nowrap ${
+                        className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-medium shadow-sm backdrop-blur-md transition-all hover:scale-105 whitespace-nowrap ${
                           proximityRadius === step
                             ? 'border-transparent bg-foreground text-background shadow-md'
                             : 'border-border/50 bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground dark:border-white/10 dark:bg-secondary dark:hover:bg-accent'
@@ -381,7 +381,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
               <button
                 type="button"
                 onClick={handleRequestLocation}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground shadow-sm transition-all hover:scale-105 hover:bg-primary/90 whitespace-nowrap"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground shadow-sm transition-all hover:scale-105 hover:bg-primary/90 whitespace-nowrap"
               >
                 {locationLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
                 Cerca de mí
@@ -414,7 +414,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
             <button
               type="button"
               onClick={handleRequestLocation}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground shadow-sm transition-all hover:scale-105 hover:bg-primary/90 whitespace-nowrap"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground shadow-sm transition-all hover:scale-105 hover:bg-primary/90 whitespace-nowrap"
             >
               {locationLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
               Cerca de mí
@@ -433,7 +433,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
                       key={step}
                       type="button"
                       onClick={() => setProximityRadius(step)}
-                      className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-bold shadow-sm backdrop-blur-md transition-all hover:scale-105 whitespace-nowrap ${
+                      className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-medium shadow-sm backdrop-blur-md transition-all hover:scale-105 whitespace-nowrap ${
                         proximityRadius === step
                           ? 'border-transparent bg-foreground text-background shadow-md'
                           : 'border-border/50 bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground dark:border-white/10 dark:bg-secondary dark:hover:bg-accent'
@@ -469,7 +469,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
             <button
               type="button"
               onClick={handleSearchSubmit}
-              className="font-bold text-primary transition-colors hover:text-primary/80 pt-1.5 ml-auto sm:ml-0"
+              className="font-medium text-primary transition-colors hover:text-primary/80 pt-1.5 ml-auto sm:ml-0"
             >
               Quiero descubrir ahora
             </button>

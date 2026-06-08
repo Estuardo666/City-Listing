@@ -40,7 +40,7 @@ export default async function FavoritesPage() {
 
         {venueFavorites.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-foreground">Locales ({venueFavorites.length})</h2>
+            <h2 className="text-lg font-medium text-foreground">Locales ({venueFavorites.length})</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {venueFavorites.map((f) => (
                 <VenueCard key={f.id} venue={f.venue!} />
@@ -51,7 +51,7 @@ export default async function FavoritesPage() {
 
         {eventFavorites.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-foreground">Eventos ({eventFavorites.length})</h2>
+            <h2 className="text-lg font-medium text-foreground">Eventos ({eventFavorites.length})</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {eventFavorites.map((f) => (
                 <EventCard key={f.id} event={f.event!} />

@@ -1,6 +1,11 @@
+'use client'
+
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, ImageIcon, MapPin, Repeat, Sparkles, Star } from 'lucide-react'
+import { CalendarDays, MapPin, Repeat, Sparkles, Star } from 'lucide-react'
+import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
+import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import { formatDateTime } from '@/lib/utils'
 import type { EventListItem } from '@/types/event'
 
@@ -19,6 +24,7 @@ function isValidHttpUrl(value: string): boolean {
 
 export function EventCard({ event }: EventCardProps) {
   const hasValidImage = Boolean(event.image && isValidHttpUrl(event.image))
+  const [imageError, setImageError] = useState(false)
 
   return (
     <Link
@@ -27,19 +33,23 @@ export function EventCard({ event }: EventCardProps) {
     >
       {/* Image */}
       <div className="relative h-44 w-full shrink-0 overflow-hidden bg-accent">
-        {hasValidImage ? (
+        {hasValidImage && !imageError ? (
           <Image
             src={event.image as string}
             alt={event.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-accent to-secondary">
-            <ImageIcon className="h-10 w-10 text-muted-foreground/25" />
-            <span className="text-xs text-muted-foreground/40">Sin imagen</span>
-          </div>
+          <CategoryGradientBg
+            categorySlug={event.category.slug}
+            name={event.title}
+            showInitials
+            className="h-full w-full"
+            initialsClassName="text-3xl"
+          />
         )}
         <div className="absolute right-3 top-3 flex flex-wrap gap-1.5">
           {event.featured && (
@@ -54,7 +64,7 @@ export function EventCard({ event }: EventCardProps) {
           )}
         </div>
         {event.price !== null && event.price !== undefined && (
-          <span className="absolute left-3 bottom-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-bold text-white backdrop-blur-sm">
+          <span className="absolute left-3 bottom-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
             {event.price === 0 ? 'Gratis' : `$${event.price.toFixed(2)}`}
           </span>
         )}
@@ -63,10 +73,10 @@ export function EventCard({ event }: EventCardProps) {
       {/* Content */}
       <div className="flex flex-1 flex-col p-5">
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
-          {event.category.icon ?? '📍'} {event.category.name}
+          {resolveIconEmoji(event.category.icon, 'event')} {event.category.name}
         </span>
 
-        <h3 className="mt-3 text-base font-semibold leading-snug text-foreground transition-colors duration-150 group-hover:text-primary">
+        <h3 className="mt-3 text-[1.38rem] font-medium leading-snug text-foreground transition-colors duration-150 group-hover:text-primary">
           {event.title}
         </h3>
 

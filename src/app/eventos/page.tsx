@@ -1,58 +1,69 @@
-import Link from 'next/link'
-import { ArrowRight, CalendarDays } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  EventEmptyState,
-  EventFiltersClient,
-  EventContent,
-  EventsMap,
-  EventsVenuesMap,
-  UpcomingEventNotifications,
-} from '@/components/features/events'
-import {
-  getEventCategories,
-  getEvents,
-  getEventsForMap,
-  getUpcomingEventNotifications,
-} from '@/lib/queries/events'
-import {
-  getVenuesForMap,
-} from '@/lib/queries/venues'
-import { eventListFiltersSchema } from '@/schemas/event.schema'
+import { CalendarDays, Star, Sparkles, Tag, Ticket, LayoutGrid } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
+import { getEvents } from '@/lib/queries/events'
+import { ExploreClient } from '@/components/features/explore/explore-client'
+import { ListingSection } from '@/components/features/listing/listing-section'
+import { ListingCta } from '@/components/features/listing/listing-cta'
+import { NearYouSection } from '@/components/features/listing/near-you-section'
+import type { ExploreEvent } from '@/types/explore'
+import type { EventListItem } from '@/types/event'
 
-function getParamValue(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) {
-    return value[0] ?? ''
-  }
-
-  return value ?? ''
+export const metadata = {
+  title: 'Eventos en Loja',
+  description: 'Descubre eventos verificados en Loja con mapa interactivo.',
 }
 
-type EventosPageProps = {
-  searchParams: Promise<{
-    q?: string | string[]
-    category?: string | string[]
-    featured?: string | string[]
-  }>
-}
+const FEATURED_TAKE = 6
+const FREE_TAKE = 6
+const TOP_RATED_TAKE = 6
+const ALL_TAKE = 12
 
-export default async function EventosPage({ searchParams }: EventosPageProps) {
-  const resolvedSearchParams = await searchParams
-
-  const parsedFilters = eventListFiltersSchema.parse({
-    q: getParamValue(resolvedSearchParams.q),
-    category: getParamValue(resolvedSearchParams.category),
-    featured: getParamValue(resolvedSearchParams.featured) || 'all',
-    status: 'APPROVED',
-  })
-
-  const [events, categories, mapEvents, mapVenues, upcomingNotifications] = await Promise.all([
-    getEvents(parsedFilters),
-    getEventCategories(),
-    getEventsForMap(),
-    getVenuesForMap(),
-    getUpcomingEventNotifications({ hoursAhead: 72, limit: 4 }),
+export default async function EventosPage() {
+  const [allApproved, featuredEvents, freeEvents, topRatedEvents, categories] = await Promise.all([
+    getEvents({ status: 'APPROVED' }, 60),
+    prisma.event.findMany({
+      where: { status: 'APPROVED', featured: true },
+      orderBy: [{ featured: 'desc' }, { startDate: 'asc' }],
+      take: FEATURED_TAKE,
+      select: {
+        id: true, title: true, slug: true, description: true, image: true,
+        startDate: true, endDate: true, location: true, address: true,
+        lat: true, lng: true, featured: true, price: true, isRecurring: true,
+        avgRating: true, reviewCount: true,
+        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+      },
+    }),
+    prisma.event.findMany({
+      where: { status: 'APPROVED', OR: [{ price: null }, { price: 0 }] },
+      orderBy: { startDate: 'asc' },
+      take: FREE_TAKE,
+      select: {
+        id: true, title: true, slug: true, description: true, image: true,
+        startDate: true, endDate: true, location: true, address: true,
+        lat: true, lng: true, featured: true, price: true, isRecurring: true,
+        avgRating: true, reviewCount: true,
+        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+      },
+    }),
+    prisma.event.findMany({
+      where: { status: 'APPROVED', avgRating: { gte: 4 } },
+      orderBy: [{ avgRating: 'desc' }, { reviewCount: 'desc' }],
+      take: TOP_RATED_TAKE,
+      select: {
+        id: true, title: true, slug: true, description: true, image: true,
+        startDate: true, endDate: true, location: true, address: true,
+        lat: true, lng: true, featured: true, price: true, isRecurring: true,
+        avgRating: true, reviewCount: true,
+        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+      },
+    }),
+    prisma.category.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, slug: true, icon: true },
+    }),
   ])
+
+  const allEvents = allApproved.slice(0, ALL_TAKE) as EventListItem[]
 
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -61,66 +72,100 @@ export default async function EventosPage({ searchParams }: EventosPageProps) {
     process.env.NEXT_PUBLIC_MAPBOX_STYLE ??
     'mapbox://styles/mapbox/streets-v12'
 
-  const hasFilters = Boolean(parsedFilters.q || parsedFilters.category || parsedFilters.featured === 'true')
+  const serializedEvents = allApproved.map((e) => ({
+    id: e.id,
+    title: e.title,
+    slug: e.slug,
+    description: e.description,
+    image: e.image,
+    startDate: e.startDate.toISOString(),
+    endDate: e.endDate?.toISOString() ?? null,
+    location: e.location,
+    address: e.address,
+    lat: e.lat ?? null,
+    lng: e.lng ?? null,
+    featured: e.featured,
+    price: (e as any).price ?? null,
+    avgRating: (e as any).avgRating ?? null,
+    reviewCount: (e as any).reviewCount ?? 0,
+    category: e.category,
+  })) as ExploreEvent[]
 
   return (
-    <div className="pb-16 pt-10 sm:pt-14">
-      <section className="section-shell space-y-7">
+    <div className="bg-background pt-14">
+      {/* Mapa */}
+      <div className="h-[70vh] w-full overflow-hidden">
+        <ExploreClient
+          initialVenues={[]}
+          initialEvents={serializedEvents}
+          categories={categories}
+          mapboxToken={mapboxToken}
+          mapStyle={mapStyle}
+          mode="events"
+        />
+      </div>
+
+      {/* Contenido debajo del mapa */}
+      <div className="mx-auto max-w-7xl space-y-16 px-4 py-12 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div className="rounded-2xl border border-border/50 bg-card p-6 sm:p-8">
-          <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-            <div className="space-y-3">
-              <span className="badge-coral">
-                <CalendarDays className="h-3 w-3" /> Agenda verificada
-              </span>
-              <h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-                Eventos en Loja
-              </h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Descubre conciertos, cultura y actividades recomendadas por la comunidad. Filtra por categoría y encuentra ubicaciones en el mapa.
-              </p>
-            </div>
-            <Button asChild className="press-scale h-10 shrink-0 rounded-xl px-5">
-              <Link href="/dashboard" className="inline-flex items-center gap-2">
-                Publicar evento
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        <EventFiltersClient categories={categories} />
-
-        {/* Count bar */}
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-secondary/40 px-4 py-2.5">
-          <p className="text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">{events.length}</span>{' '}
-            {events.length === 1 ? 'evento encontrado' : 'eventos encontrados'}
-          </p>
-          <span className="badge-emerald">
-            <CalendarDays className="h-3 w-3" /> Solo aprobados
+        <div className="space-y-3">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+            Agenda verificada
           </span>
+          <h1 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+            Eventos en Loja
+          </h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Conciertos, cultura, deportes y actividades recomendadas por la comunidad. Filtra por categoria y encuentra ubicaciones en el mapa.
+          </p>
         </div>
 
-        {/* Map + Upcoming */}
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.5fr_0.9fr]">
-          <EventsVenuesMap
-            events={mapEvents}
-            venues={mapVenues}
-            mapboxToken={mapboxToken}
-            mapStyle={mapStyle}
-            className="h-full"
-          />
-          <UpcomingEventNotifications
-            notifications={upcomingNotifications}
-            title="Próximas 72 horas"
-            emptyLabel="No hay eventos próximos en la agenda inmediata."
-          />
-        </div>
+        {/* Destacados */}
+        <ListingSection
+          title="Destacados"
+          icon={<Sparkles className="h-5 w-5" />}
+          preTitle="Seleccion editorial"
+          items={featuredEvents as EventListItem[]}
+          type="events"
+        />
 
-        <EventContent initialEvents={events} hasFilters={hasFilters} />
-      </section>
+        {/* Cerca de ti */}
+        <NearYouSection type="events" mapboxToken={mapboxToken} />
+
+        {/* Gratis */}
+        <ListingSection
+          title="Entrada libre"
+          icon={<Ticket className="h-5 w-5" />}
+          preTitle="Sin costo"
+          items={freeEvents as EventListItem[]}
+          type="events"
+        />
+
+        {/* Mejor reseñados */}
+        <ListingSection
+          title="Mejor reseñados"
+          icon={<Star className="h-5 w-5" />}
+          preTitle="Top valorados"
+          items={topRatedEvents as EventListItem[]}
+          type="events"
+        />
+
+        {/* Todos */}
+        <ListingSection
+          title="Todos los eventos"
+          icon={<LayoutGrid className="h-5 w-5" />}
+          items={allEvents}
+          type="events"
+          enableLoadMore
+          initialSkip={ALL_TAKE}
+          take={ALL_TAKE}
+          sort="recent"
+        />
+
+        {/* CTA */}
+        <ListingCta type="events" />
+      </div>
     </div>
   )
 }

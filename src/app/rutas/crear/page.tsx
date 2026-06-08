@@ -22,7 +22,7 @@ export default async function CreateRoutePage() {
     <div className="pb-20 pt-10 sm:pt-14">
       <section className="section-shell max-w-2xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Crear ruta turística</h1>
+          <h1 className="text-2xl font-medium">Crear ruta turística</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Diseña una ruta para que otros exploren Loja
           </p>

@@ -3,7 +3,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Globe, ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star } from 'lucide-react'
-import { CategoryIconFallback } from '@/components/ui/category-icon-fallback'
+import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
+import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import type { VenueListItem } from '@/types/venue'
 import { useState } from 'react'
 
@@ -13,6 +14,7 @@ type VenueCardProps = {
 
 export function VenueCard({ venue }: VenueCardProps) {
   const [imageError, setImageError] = useState(false)
+  const hasValidImage = Boolean(venue.image && venue.image.startsWith('http'))
 
   return (
     <Link
@@ -21,9 +23,9 @@ export function VenueCard({ venue }: VenueCardProps) {
     >
       {/* Image */}
       <div className="relative h-44 w-full shrink-0 overflow-hidden bg-accent">
-        {venue.image && !imageError ? (
+        {hasValidImage && !imageError ? (
           <Image
-            src={venue.image}
+            src={venue.image!}
             alt={venue.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -31,13 +33,13 @@ export function VenueCard({ venue }: VenueCardProps) {
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-accent to-secondary">
-            <CategoryIconFallback 
-              category={venue.category} 
-              size="lg"
-              className="opacity-60"
-            />
-          </div>
+          <CategoryGradientBg
+            categorySlug={venue.category.slug}
+            name={venue.name}
+            showInitials
+            className="h-full w-full"
+            initialsClassName="text-3xl"
+          />
         )}
         <div className="absolute right-3 top-3 flex flex-wrap gap-1.5">
           {venue.featured && (
@@ -52,7 +54,7 @@ export function VenueCard({ venue }: VenueCardProps) {
           )}
         </div>
         {venue.priceRange && (
-          <span className="absolute left-3 bottom-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-bold text-white backdrop-blur-sm">
+          <span className="absolute left-3 bottom-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
             {venue.priceRange}
           </span>
         )}
@@ -61,10 +63,10 @@ export function VenueCard({ venue }: VenueCardProps) {
       {/* Content */}
       <div className="flex flex-1 flex-col p-5">
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
-          {venue.category.icon ?? '🏬'} {venue.category.name}
+          {resolveIconEmoji(venue.category.icon, 'venue')} {venue.category.name}
         </span>
 
-        <h3 className="mt-3 text-base font-semibold leading-snug text-foreground transition-colors duration-150 group-hover:text-emerald">
+        <h3 className="mt-3 text-[1.38rem] font-medium leading-snug text-foreground transition-colors duration-150 group-hover:text-emerald">
           {venue.name}
         </h3>
 

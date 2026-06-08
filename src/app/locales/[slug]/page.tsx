@@ -7,11 +7,9 @@ import { prisma } from '@/lib/prisma'
 import { VenueDetail } from '@/components/features/venues'
 import { Button } from '@/components/ui/button'
 import { getVenueBySlug } from '@/lib/queries/venues'
-import { getVenueQuestions, getVenueMenu } from '@/lib/queries/features'
+import { getVenueMenu } from '@/lib/queries/features'
 import { FavoriteButton } from '@/components/features/favorites/favorite-button'
-import { CommentSection } from '@/components/features/comments/comment-section'
 import { incrementVenueViewAction } from '@/actions/views'
-import type { CommentWithUser } from '@/actions/comments'
 
 type VenueDetailPageProps = {
   params: Promise<{
@@ -28,28 +26,13 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
 
   if (!venue) notFound()
 
-  const prismaAny = prisma as unknown as {
-    comment: {
-      findMany: (args: unknown) => Promise<CommentWithUser[]>
-    }
-  }
-
-  const [isFavorite, comments, questions, menu] = await Promise.all([
+  const [isFavorite, menu] = await Promise.all([
     session?.user?.id
       ? prisma.favorite.findUnique({
           where: { userId_venueId: { userId: session.user.id, venueId: venue.id } },
           select: { id: true },
         }).then(Boolean)
       : Promise.resolve(false),
-    prismaAny.comment.findMany({
-      where: { venueId: venue.id },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true, content: true, parentId: true, createdAt: true,
-        user: { select: { id: true, name: true, image: true } },
-      },
-    }),
-    getVenueQuestions(venue.id),
     getVenueMenu(venue.id),
   ])
 
@@ -74,15 +57,7 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
         </div>
 
         {/* Main detail */}
-        <VenueDetail venue={venue} currentUserId={session?.user?.id} userRole={session?.user?.role} questions={questions} menu={menu} />
-
-        {/* Comments */}
-        <div className="rounded-2xl border border-border/50 bg-card p-6">
-          <CommentSection
-            initialComments={comments}
-            venueId={venue.id}
-          />
-        </div>
+        <VenueDetail venue={venue} currentUserId={session?.user?.id} userRole={session?.user?.role} menu={menu} />
       </section>
     </div>
   )

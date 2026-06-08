@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { ArrowRight, CalendarDays, MapPin } from 'lucide-react'
 import type { ExploreEvent } from '@/types/explore'
+import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 
 type HomeFeaturedEventsProps = {
   events: ExploreEvent[]
@@ -19,30 +21,36 @@ function formatDate(iso: string) {
 }
 
 function EventHeroCard({ event }: { event: ExploreEvent }) {
+  const [imageError, setImageError] = useState(false)
   return (
     <Link
       href={`/eventos/${event.slug}`}
       className="group relative flex h-full min-h-[280px] flex-col justify-end overflow-hidden rounded-2xl bg-card transition-all duration-300 hover:scale-[1.01]"
     >
-      {event.image ? (
+      {event.image && !imageError ? (
         <Image
           src={event.image}
           alt={event.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, 40vw"
+          onError={() => setImageError(true)}
         />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/30 to-primary/10 text-7xl">
-          🎭
-        </div>
+        <CategoryGradientBg
+          categorySlug={event.category.slug}
+          name={event.title}
+          showInitials
+          className="h-full w-full"
+          initialsClassName="text-4xl sm:text-6xl"
+        />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
       <div className="relative z-10 space-y-2 p-5">
         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
           {event.category.icon ?? '🎟️'} {event.category.name}
         </span>
-        <h3 className="text-2xl font-bold leading-tight text-white sm:text-3xl line-clamp-2">{event.title}</h3>
+        <h3 className="text-2xl font-medium leading-tight text-white sm:text-3xl line-clamp-2">{event.title}</h3>
         <div className="flex flex-wrap items-center gap-3 text-sm text-white/75">
           <span className="flex items-center gap-1.5">
             <CalendarDays className="h-4 w-4" />
@@ -59,30 +67,36 @@ function EventHeroCard({ event }: { event: ExploreEvent }) {
 }
 
 function EventMediumCard({ event }: { event: ExploreEvent }) {
+  const [imageError, setImageError] = useState(false)
   return (
     <Link
       href={`/eventos/${event.slug}`}
       className="group relative flex h-full min-h-[160px] flex-col justify-end overflow-hidden rounded-2xl bg-card transition-all duration-300 hover:scale-[1.01]"
     >
-      {event.image ? (
+      {event.image && !imageError ? (
         <Image
           src={event.image}
           alt={event.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, 30vw"
+          onError={() => setImageError(true)}
         />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent text-5xl">
-          {event.category.icon ?? '�️'}
-        </div>
+        <CategoryGradientBg
+          categorySlug={event.category.slug}
+          name={event.title}
+          showInitials
+          className="h-full w-full"
+          initialsClassName="text-4xl sm:text-6xl"
+        />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
       <div className="relative z-10 space-y-1 p-4">
-        <span className="text-xs font-bold uppercase tracking-widest text-white/60">
+        <span className="text-xs font-medium uppercase tracking-widest text-white/60">
           {event.category.name}
         </span>
-        <p className="text-base font-bold leading-snug text-white line-clamp-2">{event.title}</p>
+        <p className="text-base font-medium leading-snug text-white line-clamp-2">{event.title}</p>
         <div className="flex items-center gap-1 text-sm text-white/65">
           <CalendarDays className="h-3.5 w-3.5" />
           {formatDate(event.startDate)}
@@ -104,7 +118,7 @@ export function HomeFeaturedEvents({ events }: HomeFeaturedEventsProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🎉 Imperdibles</p>
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">Eventos destacados</h2>
+          <h2 className="text-3xl font-medium text-foreground sm:text-4xl">Eventos destacados</h2>
           <p className="text-sm text-muted-foreground sm:text-base">No te pierdas los eventos más importantes de Loja</p>
         </div>
         <Link

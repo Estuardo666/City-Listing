@@ -23,6 +23,13 @@ export async function HomePromoGridSection() {
     phone: venue.phone,
     website: venue.website,
     category: venue.category,
+    priceRange: venue.priceRange ?? null,
+    avgRating: venue.avgRating ?? null,
+    reviewCount: venue.reviewCount ?? 0,
+    verified: venue.verified ?? false,
+    promotions: [],
+    services: [],
+    businessHours: [],
   }))
   
   const formattedEvents: ExploreEvent[] = eventList.map((event) => ({
@@ -38,6 +45,9 @@ export async function HomePromoGridSection() {
     lat: event.lat ?? null,
     lng: event.lng ?? null,
     featured: event.featured,
+    price: event.price ?? null,
+    avgRating: event.avgRating ?? null,
+    reviewCount: event.reviewCount ?? 0,
     category: event.category,
   }))
   

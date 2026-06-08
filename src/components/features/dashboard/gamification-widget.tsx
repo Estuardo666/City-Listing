@@ -25,7 +25,7 @@ export function GamificationWidget({ user, className }: GamificationWidgetProps)
   return (
     <div className={cn('rounded-2xl border border-border/50 bg-card p-6', className)}>
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-foreground">
+        <h2 className="text-lg font-medium text-foreground">
           <Award className="inline h-5 w-5 mr-2 text-primary" />
           Tu Progreso
         </h2>
@@ -49,7 +49,7 @@ export function GamificationWidget({ user, className }: GamificationWidgetProps)
         </div>
         <div className="flex-1">
           <p className="text-xs text-muted-foreground">Nivel {user.reviewerLevel}</p>
-          <p className="text-base font-bold text-foreground">{levelInfo.name}</p>
+          <p className="text-base font-medium text-foreground">{levelInfo.name}</p>
           <p className="text-xs text-muted-foreground">{user.reputationScore} puntos</p>
         </div>
       </div>
@@ -73,17 +73,17 @@ export function GamificationWidget({ user, className }: GamificationWidgetProps)
       <div className="mt-4 grid grid-cols-3 gap-3">
         <div className="flex flex-col items-center rounded-xl bg-secondary/50 px-3 py-2">
           <Star className="h-4 w-4 text-amber-500 mb-1" />
-          <p className="text-sm font-bold text-foreground">{user.totalReviews}</p>
+          <p className="text-sm font-medium text-foreground">{user.totalReviews}</p>
           <p className="text-[10px] text-muted-foreground">Reseñas</p>
         </div>
         <div className="flex flex-col items-center rounded-xl bg-secondary/50 px-3 py-2">
           <MapPin className="h-4 w-4 text-rose-500 mb-1" />
-          <p className="text-sm font-bold text-foreground">{user.totalCheckIns}</p>
+          <p className="text-sm font-medium text-foreground">{user.totalCheckIns}</p>
           <p className="text-[10px] text-muted-foreground">Check-ins</p>
         </div>
         <div className="flex flex-col items-center rounded-xl bg-secondary/50 px-3 py-2">
           <Camera className="h-4 w-4 text-blue-500 mb-1" />
-          <p className="text-sm font-bold text-foreground">{user.totalPhotos}</p>
+          <p className="text-sm font-medium text-foreground">{user.totalPhotos}</p>
           <p className="text-[10px] text-muted-foreground">Fotos</p>
         </div>
       </div>

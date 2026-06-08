@@ -13,6 +13,13 @@ export type ExploreVenue = {
   featured: boolean
   phone: string | null
   website: string | null
+  priceRange: string | null
+  avgRating: number | null
+  reviewCount: number
+  verified: boolean
+  promotions?: { id: string; title: string; discount: string | null }[]
+  services?: { name: string }[]
+  businessHours?: { dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }[]
   category: {
     id: string
     name: string
@@ -35,6 +42,9 @@ export type ExploreEvent = {
   lat: number | null
   lng: number | null
   featured: boolean
+  price: number | null
+  avgRating: number | null
+  reviewCount: number
   category: {
     id: string
     name: string
@@ -53,6 +63,21 @@ export type ExploreFilters = {
   type: 'all' | 'venues' | 'events'
   category: string
   featured: boolean
+  // Universal
+  minRating: number | null
+  openNow: boolean
+  verified: boolean
+  hasPromotions: boolean
+  hasUpcomingEvents: boolean
+  // Venue (gastronomic)
+  priceRange: string | null
+  services: string[]
+  foodTypes: string[]
+  // Event
+  eventDatePreset: string | null
+  eventPrice: 'free' | 'paid' | null
+  eventMaxPrice: number | null
+  eventType: string | null
 }
 
 export type ExploreMapMarker = {
@@ -78,4 +103,4 @@ export type UserLocation = {
   lng: number
 }
 
-export const PROXIMITY_STEPS = [500, 1000, 2000, 3000, 5000] // meters
+export const PROXIMITY_STEPS = [100, 500, 1000, 2000, 3000, 5000] // meters

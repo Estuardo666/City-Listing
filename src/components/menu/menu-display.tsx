@@ -24,11 +24,11 @@ export function MenuDisplay({ menu }: MenuDisplayProps) {
 
   return (
     <div className="rounded-2xl border border-border/50 bg-card p-5">
-      <h2 className="text-lg font-bold text-foreground mb-4">🍽️ Menú</h2>
+      <h2 className="text-lg font-medium text-foreground mb-4">🍽️ Menú</h2>
       <div className="space-y-6">
         {menu.map((cat) => (
           <div key={cat.id}>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">{cat.name}</h3>
+            <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-3">{cat.name}</h3>
             <div className="space-y-3">
               {cat.items.filter((i) => i.isAvailable).map((item) => (
                 <div key={item.id} className="flex items-start justify-between gap-3">

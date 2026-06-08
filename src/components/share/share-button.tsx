@@ -68,10 +68,10 @@ export function ShareButton({ url, title, description, className = '' }: ShareBu
   ]
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={ref} className={`relative flex ${className}`}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 chip-14 font-semibold text-foreground transition-colors hover:bg-accent"
       >
         <Share2 className="h-4 w-4" /> Compartir
       </button>

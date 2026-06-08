@@ -31,7 +31,7 @@ export function RouteDetail({ route }: RouteDetailProps) {
             <Badge variant="outline">{route.difficulty}</Badge>
           )}
         </div>
-        <h1 className="text-2xl font-bold">{route.title}</h1>
+        <h1 className="text-2xl font-medium">{route.title}</h1>
         <p className="text-muted-foreground mt-2">{route.description}</p>
       </div>
 
@@ -71,7 +71,7 @@ export function RouteDetail({ route }: RouteDetailProps) {
           {sortedStops.map((stop, index) => (
             <div key={stop.id} className="flex gap-4">
               <div className="flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
                   {index + 1}
                 </div>
                 {index < sortedStops.length - 1 && (

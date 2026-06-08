@@ -25,7 +25,7 @@ export default async function RoutesPage() {
       <section className="section-shell space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold sm:text-3xl">Rutas turísticas</h1>
+            <h1 className="text-2xl font-medium sm:text-3xl">Rutas turísticas</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Explora Loja a través de nuestras rutas temáticas
             </p>

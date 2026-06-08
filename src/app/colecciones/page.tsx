@@ -13,7 +13,7 @@ export default async function CollectionsExplorePage() {
     <div className="pb-20 pt-10 sm:pt-14">
       <section className="section-shell space-y-8">
         <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Colecciones</h1>
+          <h1 className="text-2xl font-medium sm:text-3xl">Colecciones</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Listas curadas por la comunidad de Loja
           </p>

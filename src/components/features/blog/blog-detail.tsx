@@ -37,7 +37,7 @@ export function BlogDetail({ post }: BlogDetailProps) {
       </span>
 
       {/* Title */}
-      <h1 className="mt-4 text-3xl font-bold leading-tight text-foreground sm:text-4xl">
+      <h1 className="mt-4 text-3xl font-medium leading-tight text-foreground sm:text-4xl">
         {post.title}
       </h1>
 

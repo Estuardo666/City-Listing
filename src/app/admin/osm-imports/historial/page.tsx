@@ -18,7 +18,7 @@ export default async function HistorialPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Historial de Importaciones</h1>
+        <h1 className="text-3xl font-medium">Historial de Importaciones</h1>
         <p className="text-muted-foreground mt-2">
           Consulta el historial completo de importaciones realizadas
         </p>

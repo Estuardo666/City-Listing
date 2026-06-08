@@ -3,12 +3,14 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  CalendarDays, Edit, ExternalLink, Globe,
-  ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star, UserCircle2, DollarSign, Clock
+  CalendarDays, Edit, ExternalLink, Globe, Info, Link2, LogIn,
+  ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star, Tag, Ticket, UserCircle2, DollarSign, Clock, Map
 } from 'lucide-react'
 import { VenuesMap } from '@/components/features/venues/venues-map'
 import { VenueShareButton } from '@/components/features/venues/venue-share-button'
 import { CategoryIconFallback } from '@/components/ui/category-icon-fallback'
+import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
+import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import { MediaGallery } from '@/components/media/media-gallery'
 import { OperatingHoursDisplay } from '@/components/operating-hours/operating-hours-display'
 import { BusinessHoursDisplay } from '@/components/business-hours/business-hours-display'
@@ -19,7 +21,6 @@ import { ReviewList } from '@/components/review/review-list'
 import { PromotionCard } from '@/components/promotion/promotion-card'
 import { ReservationForm } from '@/components/reservation/reservation-form'
 import { ShareButton } from '@/components/share/share-button'
-import { QuestionSection } from '@/components/qa/question-section'
 import { CheckInButton } from '@/components/checkin/checkin-button'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
 import { MessageVenueButton } from '@/components/messaging/message-venue-button'
@@ -28,17 +29,6 @@ import { formatDateTime } from '@/lib/utils'
 import type { VenueWithRelations } from '@/types/venue'
 import { useState } from 'react'
 
-type QuestionItem = {
-  id: string
-  content: string
-  answer: string | null
-  answerBy: string | null
-  answeredAt: Date | null
-  status: string
-  createdAt: Date
-  user: { id: string; name: string | null; image: string | null }
-}
-
 type MenuItem = { id: string; name: string; description: string | null; price: number | null; image: string | null; isAvailable: boolean; isFeatured: boolean }
 type MenuCategory = { id: string; name: string; items: MenuItem[] }
 
@@ -46,11 +36,10 @@ type VenueDetailProps = {
   venue: VenueWithRelations
   currentUserId?: string
   userRole?: string
-  questions?: QuestionItem[]
   menu?: MenuCategory[]
 }
 
-export function VenueDetail({ venue, currentUserId, userRole, questions = [], menu = [] }: VenueDetailProps) {
+export function VenueDetail({ venue, currentUserId, userRole, menu = [] }: VenueDetailProps) {
   const canEdit = currentUserId && (userRole === 'ADMIN' || currentUserId === venue.userId)
   const [imageError, setImageError] = useState(false)
   
@@ -85,20 +74,20 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-accent">
-            <CategoryIconFallback 
-              category={venue.category} 
-              size="lg"
-              className="opacity-40"
-            />
-          </div>
+          <CategoryGradientBg
+            categorySlug={venue.category.slug}
+            name={venue.name}
+            showInitials
+            className="h-full w-full"
+            initialsClassName="text-6xl sm:text-8xl"
+          />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
         {/* Badges */}
         <div className="absolute left-5 top-5 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
-            {venue.category.icon ?? '🏬'} {venue.category.name}
+            {resolveIconEmoji(venue.category.icon, 'venue')} {venue.category.name}
           </span>
           {venue.verified && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300 backdrop-blur-md">
@@ -111,7 +100,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
             </span>
           )}
           {venue.priceRange && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-bold text-emerald-300 backdrop-blur-md">
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-medium text-emerald-300 backdrop-blur-md">
               <DollarSign className="h-3.5 w-3.5" /> {venue.priceRange}
             </span>
           )}
@@ -119,7 +108,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
 
         {/* Title over hero bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-          <h1 className="text-2xl font-bold leading-tight text-white drop-shadow-sm sm:text-4xl">
+          <h1 className="font-medium leading-tight text-white drop-shadow-sm" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.7rem)' }}>
             {venue.name}
           </h1>
           <p className="mt-2 line-clamp-2 text-sm text-white/75 sm:text-base">
@@ -167,7 +156,9 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
           {/* Quick meta pills */}
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
-              <MapPin className="h-4 w-4 shrink-0 text-rose-500" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <MapPin className="h-4 w-4 text-primary" />
+              </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Dirección</p>
                 <a
@@ -182,7 +173,9 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
             </div>
             {venue.phone && (
               <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
-                <Phone className="h-4 w-4 shrink-0 text-primary" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Phone className="h-4 w-4 text-primary" />
+                </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Teléfono</p>
                   <p className="text-sm font-semibold text-foreground">{venue.phone}</p>
@@ -191,7 +184,9 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
             )}
             {venue.website && (
               <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
-                <Globe className="h-4 w-4 shrink-0 text-primary" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Globe className="h-4 w-4 text-primary" />
+                </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Web</p>
                   <a
@@ -210,7 +205,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
           {/* Content */}
           {venue.content && (
             <div className="rounded-2xl border border-border/50 bg-card p-6">
-              <h2 className="text-lg font-bold text-foreground">Sobre este local</h2>
+              <h2 className="text-lg font-medium text-foreground">Sobre este local</h2>
               <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {venue.content}
               </p>
@@ -238,7 +233,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
           {/* Promotions */}
           {hasPromotions && (
             <div className="rounded-2xl border border-border/50 bg-card p-5">
-              <h2 className="text-lg font-bold text-foreground">🏷️ Ofertas activas</h2>
+              <h2 className="text-lg font-medium text-foreground flex items-center gap-2"><Tag className="h-5 w-5 text-primary" /> Ofertas activas</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {venue.promotions.map((promo) => (
                   <PromotionCard key={promo.id} promotion={promo} />
@@ -250,7 +245,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
           {/* Upcoming events as cards */}
           {venue.events.length > 0 && (
             <div className="rounded-2xl border border-border/50 bg-card p-5">
-              <h2 className="text-lg font-bold text-foreground">🎉 Próximos eventos aquí</h2>
+              <h2 className="text-lg font-medium text-foreground flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> Próximos eventos aquí</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {venue.events.map((event) => (
                   <Link
@@ -259,7 +254,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
                     className="group flex gap-3 rounded-xl border border-border/50 bg-background p-3 transition-all hover:border-primary/30 hover:bg-accent/40"
                   >
                     <div className="flex min-w-0 flex-col justify-center gap-1">
-                      <p className="text-sm font-bold text-foreground line-clamp-1">{event.title}</p>
+                      <p className="text-sm font-medium text-foreground line-clamp-1">{event.title}</p>
                       <p className="flex items-center gap-1 text-xs text-muted-foreground" suppressHydrationWarning>
                         <CalendarDays className="h-3 w-3 shrink-0" />
                         {formatDateTime(event.startDate)}
@@ -273,13 +268,31 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
 
           {/* Reviews */}
           <div className="rounded-2xl border border-border/50 bg-card p-5">
-            <h2 className="text-lg font-bold text-foreground">
-              ⭐ Reseñas {hasReviews && `(${venue.reviews.length})`}
+            <h2 className="text-lg font-medium text-foreground flex items-center gap-2">
+              <Star className="h-5 w-5 text-primary" /> Reseñas {hasReviews && `(${venue.reviews.length})`}
             </h2>
-            {currentUserId && currentUserId !== venue.userId && (
-              <div className="mt-4 border-b border-border/50 pb-4">
-                <h3 className="text-sm font-medium mb-3">Deja tu reseña</h3>
-                <ReviewForm entityType="venue" entityId={venue.id} />
+            {currentUserId ? (
+              currentUserId !== venue.userId && (
+                <div className="mt-4 border-b border-border/50 pb-4">
+                  <h3 className="text-sm font-medium mb-3">Deja tu reseña</h3>
+                  <ReviewForm entityType="venue" entityId={venue.id} />
+                </div>
+              )
+            ) : (
+              <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <LogIn className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Inicia sesión para dejar una reseña</p>
+                  <p className="text-xs text-muted-foreground">Necesitas estar conectado para poder reseñar.</p>
+                </div>
+                <Link
+                  href="/api/auth/signin"
+                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  Entrar
+                </Link>
               </div>
             )}
             <div className="mt-4">
@@ -291,17 +304,6 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
             </div>
           </div>
 
-          {/* Q&A */}
-          {questions.length > 0 && (
-            <QuestionSection
-              entityType="venue"
-              entityId={venue.id}
-              questions={questions}
-              currentUserId={currentUserId}
-              entityOwnerId={venue.userId}
-            />
-          )}
-
           {/* Menu */}
           {menu.length > 0 && <MenuDisplayV2 menu={menu} />}
 
@@ -309,7 +311,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
           {venue.lat !== null && venue.lng !== null && (
             <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
               <div className="border-b border-border/50 px-5 py-4">
-                <h2 className="text-lg font-bold text-foreground">📍 Ubicación en el mapa</h2>
+                <h2 className="text-lg font-medium text-foreground flex items-center gap-2"><Map className="h-5 w-5 text-primary" /> Ubicación en el mapa</h2>
               </div>
               <VenuesMap
                 venues={[{
@@ -337,7 +339,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
             {canEdit && (
               <Link
                 href={`/locales/${venue.slug}/editar`}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
               >
                 <Edit className="h-4 w-4" /> Editar
               </Link>
@@ -346,11 +348,11 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
               href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
               target="_blank"
               rel="noreferrer"
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
             >
               <ExternalLink className="h-4 w-4" /> Cómo llegar
             </a>
-            <ShareButton url={`/locales/${venue.slug}`} title={venue.name} />
+            <ShareButton url={`/locales/${venue.slug}`} title={venue.name} className="flex-1" />
           </div>
 
           {/* WhatsApp CTA */}
@@ -374,7 +376,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
           {/* Reservation */}
           {acceptsReservations && (
             <div className="rounded-2xl border border-border/50 bg-card p-5">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Reservar</h3>
+              <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-3">Reservar</h3>
               <ReservationForm venueId={venue.id} />
             </div>
           )}
@@ -382,7 +384,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
           {/* Check-in */}
           {venue.lat !== null && venue.lng !== null && currentUserId && (
             <div className="rounded-2xl border border-border/50 bg-card p-5">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Check-in</h3>
+              <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-3">Check-in</h3>
               <CheckInButton
                 venueId={venue.id}
                 venueName={venue.name}
@@ -394,11 +396,11 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
 
           {/* Info card */}
           <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Información</h3>
+            <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Información</h3>
             <div className="space-y-3">
 
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40 text-rose-500">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <MapPin className="h-4 w-4" />
                 </span>
                 <div>
@@ -447,7 +449,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
 
               {venue.priceRange && (
                 <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <DollarSign className="h-4 w-4" />
                   </span>
                   <div>
@@ -458,7 +460,7 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
               )}
 
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <UserCircle2 className="h-4 w-4" />
                 </span>
                 <div>
@@ -476,10 +478,10 @@ export function VenueDetail({ venue, currentUserId, userRole, questions = [], me
             href={`/explorar?q=${encodeURIComponent(venue.category.name)}`}
             className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:bg-accent"
           >
-            <span className="text-3xl">{venue.category.icon ?? '🏬'}</span>
+            <span className="text-3xl">{resolveIconEmoji(venue.category.icon, 'venue')}</span>
             <div>
               <p className="text-xs text-muted-foreground">Categoría</p>
-              <p className="text-sm font-bold text-foreground">{venue.category.name}</p>
+              <p className="text-sm font-medium text-foreground">{venue.category.name}</p>
             </div>
           </Link>
         </aside>

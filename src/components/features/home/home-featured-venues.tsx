@@ -3,11 +3,60 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { useState } from 'react'
 import { ArrowRight, MapPin, Star } from 'lucide-react'
+import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import type { ExploreVenue } from '@/types/explore'
 
 type HomeFeaturedVenuesProps = {
   venues: ExploreVenue[]
+}
+
+function FeaturedVenueCard({ venue }: { venue: ExploreVenue }) {
+  const [imageError, setImageError] = useState(false)
+  return (
+    <Link
+      href={`/locales/${venue.slug}`}
+      className="group flex gap-4 rounded-3xl border border-border/50 bg-card p-5 transition-all duration-300 hover:border-primary/30 hover:bg-accent/40 hover:shadow-lg"
+    >
+      <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-accent">
+        {venue.image && !imageError ? (
+          <Image
+            src={venue.image}
+            alt={venue.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+            sizes="112px"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <CategoryGradientBg
+            categorySlug={venue.category.slug}
+            name={venue.name}
+            showInitials
+            className="h-full w-full"
+            initialsClassName="text-3xl sm:text-4xl"
+          />
+        )}
+      </div>
+      <div className="flex min-w-0 flex-col justify-center gap-2">
+        <div className="flex items-center gap-2">
+          <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+            Destacado
+          </span>
+        </div>
+        <p className="text-sm font-medium text-foreground line-clamp-1">{venue.name}</p>
+        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+          {venue.description}
+        </p>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="line-clamp-1">{venue.address ?? venue.location}</span>
+        </div>
+      </div>
+    </Link>
+  )
 }
 
 export function HomeFeaturedVenues({ venues }: HomeFeaturedVenuesProps) {
@@ -20,7 +69,7 @@ export function HomeFeaturedVenues({ venues }: HomeFeaturedVenuesProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">⭐ Top picks</p>
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">Locales destacados</h2>
+          <h2 className="text-3xl font-medium text-foreground sm:text-4xl">Locales destacados</h2>
           <p className="text-sm text-muted-foreground sm:text-base">Los mejores lugares recomendados por la comunidad</p>
         </div>
         <Link
@@ -40,43 +89,7 @@ export function HomeFeaturedVenues({ venues }: HomeFeaturedVenuesProps) {
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: i * 0.08 }}
           >
-            <Link
-              href={`/locales/${venue.slug}`}
-              className="group flex gap-4 rounded-3xl border border-border/50 bg-card p-5 transition-all duration-300 hover:border-primary/30 hover:bg-accent/40 hover:shadow-lg"
-            >
-              <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-accent">
-                {venue.image ? (
-                  <Image
-                    src={venue.image}
-                    alt={venue.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                    sizes="112px"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-5xl">
-                    {venue.category.icon ?? '🏬'}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex min-w-0 flex-col justify-center gap-2">
-                <div className="flex items-center gap-2">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-                    Destacado
-                  </span>
-                </div>
-                <p className="text-sm font-bold text-foreground line-clamp-1">{venue.name}</p>
-                <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                  {venue.description}
-                </p>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  <span className="line-clamp-1">{venue.address ?? venue.location}</span>
-                </div>
-              </div>
-            </Link>
+            <FeaturedVenueCard venue={venue} />
           </motion.div>
         ))}
       </div>

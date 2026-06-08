@@ -166,25 +166,25 @@ export function AdminReviewModeration({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <div className="rounded-xl border border-border/50 bg-card px-4 py-3 text-sm">
               <p className="font-semibold text-muted-foreground">Total</p>
-              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-2xl font-medium">{stats.total}</p>
             </div>
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <p className="font-semibold">Pendientes</p>
-              <p className="text-2xl font-bold">{stats.pending}</p>
+              <p className="text-2xl font-medium">{stats.pending}</p>
             </div>
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               <p className="font-semibold">Aprobadas</p>
-              <p className="text-2xl font-bold">{stats.approved}</p>
+              <p className="text-2xl font-medium">{stats.approved}</p>
             </div>
             <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
               <p className="font-semibold">Rechazadas</p>
-              <p className="text-2xl font-bold">{stats.rejected}</p>
+              <p className="text-2xl font-medium">{stats.rejected}</p>
             </div>
             <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900">
               <p className="font-semibold flex items-center gap-1">
                 <Flag className="h-3.5 w-3.5" /> Spam/Flag
               </p>
-              <p className="text-2xl font-bold">{stats.flagged}</p>
+              <p className="text-2xl font-medium">{stats.flagged}</p>
             </div>
           </div>
         </CardHeader>

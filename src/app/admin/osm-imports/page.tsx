@@ -18,7 +18,7 @@ export default async function OsmImportsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Importaciones OSM</h1>
+        <h1 className="text-3xl font-medium">Importaciones OSM</h1>
         <p className="text-muted-foreground mt-2">
           Gestiona las importaciones de lugares desde OpenStreetMap
         </p>

@@ -107,6 +107,59 @@ function getCategoryEmoji(categoryKey: string): string {
   return emojiMap[categoryKey] ?? '📍'
 }
 
+const ICON_NAME_TO_EMOJI: Record<string, string> = {
+  beer: '🍺', cerveza: '🍺',
+  fish: '🐟', pescado: '🐟',
+  food: '🍽️', comida: '🍽️',
+  coffee: '☕', cafe: '☕',
+  music: '🎵', musica: '🎵',
+  hotel: '🛏️', hostal: '🛏️',
+  health: '🏥', salud: '🏥', farmacia: '💊', clinica: '🏥',
+  shop: '🛍️', tienda: '🛍️', market: '🛍️',
+  gym: '💪', deporte: '⚽', sports: '⚽',
+  art: '🎨', arte: '🎨', cultura: '🎨',
+  bar: '🍻', pub: '🍻', night: '🌙',
+  restaurant: '🍽️', rest: '🍽️',
+  park: '🌳', parque: '🌳',
+  school: '🏫', escuela: '🏫', colegio: '🏫',
+  bank: '🏦', banco: '🏦',
+  gas: '⛽', gasolinera: '⛽',
+  beauty: '💅', belleza: '💅',
+  pet: '🐾', mascota: '🐾',
+  car: '🚗', auto: '🚗', taller: '🔧',
+  tech: '💻', tecnologia: '💻',
+  book: '📚', libro: '📚', libreria: '📚',
+  clothes: '👕', ropa: '👕',
+  pizza: '🍕',
+  sushi: '🍣',
+  burger: '🍔', hamburguesa: '🍔',
+  ice: '🍦', helado: '🍦',
+  cake: '🎂', pastel: '🎂', panaderia: '🥐',
+  flower: '🌸', flores: '🌸',
+  gym2: '🏋️',
+  yoga: '🧘',
+  spa: '🧖',
+  cinema: '🎬', cine: '🎬',
+  theater: '🎭', teatro: '🎭',
+  dance: '💃', baile: '💃',
+  karaoke: '🎤',
+  game: '🎮', juegos: '🎮',
+  travel: '✈️', viajes: '✈️',
+  dentist: '🦷', dental: '🦷',
+  eye: '👁️', optica: '👁️',
+  vet: '🐾', veterinaria: '🐾',
+}
+
+export function resolveIconEmoji(icon: string | null, type: 'venue' | 'event'): string {
+  if (!icon) return type === 'venue' ? '🏬' : '📍'
+  const trimmed = icon.trim()
+  if (!trimmed) return type === 'venue' ? '🏬' : '📍'
+  // If it looks like an emoji (short, non-ASCII), return as-is
+  if (trimmed.length <= 4 && /\p{Emoji}/u.test(trimmed)) return trimmed
+  // Map known icon names
+  return ICON_NAME_TO_EMOJI[trimmed.toLowerCase()] ?? (type === 'venue' ? '🏬' : '📍')
+}
+
 // ── Cluster helpers ────────────────────────────────────────────────────────────
 
 type MarkerGroup = {
@@ -191,7 +244,7 @@ const PinButton = memo(function PinButton({ marker, isActive, delay, renderLat, 
       aria-label={marker.name}
     >
       <span className="text-base leading-none">
-        {marker.categoryIcon ?? (marker.type === 'venue' ? '🏬' : '📍')}
+        {resolveIconEmoji(marker.categoryIcon, marker.type)}
       </span>
 
       <AnimatePresence>
@@ -261,7 +314,7 @@ const ClusterButton = memo(function ClusterButton({ group, delay, onClickCluster
         scale:   { type: 'spring', stiffness: 520, damping: 28, delay },
       }}
       className={cn(
-        'relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg',
+        'relative flex h-10 w-10 items-center justify-center rounded-full border-2 text-xs font-medium shadow-lg',
         dominant === 'venue'
           ? 'border-emerald bg-emerald text-white'
           : 'border-coral bg-coral text-white'
@@ -1153,7 +1206,7 @@ export function ExploreMapPanel({
                 {/* Type badge */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '999px', padding: '3px 9px', fontSize: '11px', fontWeight: 600, background: activeMarker.type === 'venue' ? 'hsl(158 64% 38% / 0.12)' : 'hsl(14 90% 55% / 0.12)', color: activeMarker.type === 'venue' ? 'hsl(158 64% 32%)' : 'hsl(14 90% 45%)', border: `1px solid ${activeMarker.type === 'venue' ? 'hsl(158 64% 38% / 0.25)' : 'hsl(14 90% 55% / 0.25)'}` }}>
-                    <span style={{ fontSize: '13px', lineHeight: 1 }}>{activeMarker.categoryIcon ?? (activeMarker.type === 'venue' ? '🏬' : '📍')}</span>
+                    <span style={{ fontSize: '13px', lineHeight: 1 }}>{resolveIconEmoji(activeMarker.categoryIcon, activeMarker.type)}</span>
                     {activeMarker.type === 'venue' ? 'Local' : 'Evento'}
                   </span>
                 </div>

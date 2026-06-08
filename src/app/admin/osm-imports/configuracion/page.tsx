@@ -18,7 +18,7 @@ export default async function ConfiguracionPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Configuración OSM</h1>
+        <h1 className="text-3xl font-medium">Configuración OSM</h1>
         <p className="text-muted-foreground mt-2">
           Configura los parámetros de conexión con Overpass API
         </p>

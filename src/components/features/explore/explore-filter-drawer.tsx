@@ -27,6 +27,8 @@ type ExploreFilterDrawerProps = {
   onClearLocation: () => void
   onProximityChange: (meters: number) => void
   locationLoading?: boolean
+  mode?: 'all' | 'venues' | 'events'
+  showProximity?: boolean
 }
 
 export function ExploreFilterDrawer({
@@ -43,6 +45,8 @@ export function ExploreFilterDrawer({
   onClearLocation,
   onProximityChange,
   locationLoading = false,
+  mode = 'all',
+  showProximity = true,
 }: ExploreFilterDrawerProps) {
   const dragControls = useDragControls()
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -141,6 +145,8 @@ export function ExploreFilterDrawer({
                 onClearLocation={onClearLocation}
                 onProximityChange={onProximityChange}
                 locationLoading={locationLoading}
+                mode={mode}
+                showProximity={showProximity}
               />
             </div>
           </motion.div>

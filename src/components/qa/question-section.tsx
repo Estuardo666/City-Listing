@@ -87,7 +87,7 @@ export function QuestionSection({ entityType, entityId, questions, currentUserId
   return (
     <div className="rounded-2xl border border-border/50 bg-card p-5">
       <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full">
-        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+        <h2 className="text-lg font-medium text-foreground flex items-center gap-2">
           <MessageCircle className="h-5 w-5" />
           Preguntas y respuestas {items.length > 0 && `(${items.length})`}
         </h2>

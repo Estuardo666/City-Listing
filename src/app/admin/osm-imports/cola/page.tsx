@@ -18,7 +18,7 @@ export default async function ColaPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Cola de Importación</h1>
+        <h1 className="text-3xl font-medium">Cola de Importación</h1>
         <p className="text-muted-foreground mt-2">
           Monitorea el progreso de los trabajos de importación
         </p>

@@ -42,7 +42,7 @@ export function UserStatsCard({ user, badges = [], className }: UserStatsCardPro
         </div>
         <div className="flex-1">
           <p className="text-xs text-muted-foreground">Nivel {user.reviewerLevel}</p>
-          <p className="text-lg font-bold text-foreground">{levelInfo.name}</p>
+          <p className="text-lg font-medium text-foreground">{levelInfo.name}</p>
           <p className="text-xs text-muted-foreground">
             {user.reputationScore} puntos
             {levelInfo.nextLevel && ` · ${levelInfo.pointsToNext} para ${levelInfo.nextLevelName}`}
@@ -71,28 +71,28 @@ export function UserStatsCard({ user, badges = [], className }: UserStatsCardPro
         <div className="flex items-center gap-2 rounded-xl bg-secondary/50 px-3 py-2">
           <Star className="h-4 w-4 text-amber-500" />
           <div>
-            <p className="text-sm font-bold text-foreground">{user.totalReviews}</p>
+            <p className="text-sm font-medium text-foreground">{user.totalReviews}</p>
             <p className="text-[10px] text-muted-foreground">Reseñas</p>
           </div>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-secondary/50 px-3 py-2">
           <MapPin className="h-4 w-4 text-rose-500" />
           <div>
-            <p className="text-sm font-bold text-foreground">{user.totalCheckIns}</p>
+            <p className="text-sm font-medium text-foreground">{user.totalCheckIns}</p>
             <p className="text-[10px] text-muted-foreground">Check-ins</p>
           </div>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-secondary/50 px-3 py-2">
           <Camera className="h-4 w-4 text-blue-500" />
           <div>
-            <p className="text-sm font-bold text-foreground">{user.totalPhotos}</p>
+            <p className="text-sm font-medium text-foreground">{user.totalPhotos}</p>
             <p className="text-[10px] text-muted-foreground">Fotos</p>
           </div>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-secondary/50 px-3 py-2">
           <ThumbsUp className="h-4 w-4 text-green-500" />
           <div>
-            <p className="text-sm font-bold text-foreground">{user.totalHelpfulVotes}</p>
+            <p className="text-sm font-medium text-foreground">{user.totalHelpfulVotes}</p>
             <p className="text-[10px] text-muted-foreground">Votos útiles</p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export function UserStatsCard({ user, badges = [], className }: UserStatsCardPro
       {/* Badges */}
       {badges.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-sm font-bold text-foreground mb-3">
+          <h3 className="text-sm font-medium text-foreground mb-3">
             <Award className="inline h-4 w-4 mr-1" />
             Insignias ({badges.length})
           </h3>
@@ -122,7 +122,7 @@ export function UserStatsCard({ user, badges = [], className }: UserStatsCardPro
 
       {/* Niveles disponibles */}
       <div className="mt-6">
-        <h3 className="text-sm font-bold text-foreground mb-3">Niveles</h3>
+        <h3 className="text-sm font-medium text-foreground mb-3">Niveles</h3>
         <div className="space-y-2">
           {LEVELS.map((level) => (
             <div

@@ -3,11 +3,54 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { useState } from 'react'
 import { ArrowRight, MapPin } from 'lucide-react'
+import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import type { ExploreVenue } from '@/types/explore'
 
 type HomeLatestVenuesProps = {
   venues: ExploreVenue[]
+}
+
+function LatestVenueCard({ venue }: { venue: ExploreVenue }) {
+  const [imageError, setImageError] = useState(false)
+  return (
+    <Link
+      href={`/locales/${venue.slug}`}
+      className="group flex flex-col overflow-hidden rounded-3xl border border-border/50 bg-card transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:scale-[1.02]"
+    >
+      <div className="relative h-40 w-full overflow-hidden bg-accent">
+        {venue.image && !imageError ? (
+          <Image
+            src={venue.image}
+            alt={venue.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+            sizes="(max-width: 640px) 224px, (max-width: 768px) 50vw, 25vw"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <CategoryGradientBg
+            categorySlug={venue.category.slug}
+            name={venue.name}
+            showInitials
+            className="h-full w-full"
+            initialsClassName="text-3xl sm:text-4xl"
+          />
+        )}
+        <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+          {venue.category.icon ?? ''} {venue.category.name}
+        </span>
+      </div>
+      <div className="flex flex-col gap-2 p-4">
+        <p className="text-sm font-semibold text-foreground line-clamp-1">{venue.name}</p>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="line-clamp-1">{venue.address ?? venue.location}</span>
+        </div>
+      </div>
+    </Link>
+  )
 }
 
 export function HomeLatestVenues({ venues }: HomeLatestVenuesProps) {
@@ -19,7 +62,7 @@ export function HomeLatestVenues({ venues }: HomeLatestVenuesProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">🆕 Recién llegados</p>
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">Últimos locales agregados</h2>
+          <h2 className="text-3xl font-medium text-foreground sm:text-4xl">Últimos locales agregados</h2>
           <p className="text-sm text-muted-foreground sm:text-base">Descubre los nuevos lugares que se han unido a Loja</p>
         </div>
         <Link
@@ -42,36 +85,7 @@ export function HomeLatestVenues({ venues }: HomeLatestVenuesProps) {
               transition={{ duration: 0.4, delay: i * 0.06 }}
               className="w-56 shrink-0 sm:w-auto"
             >
-              <Link
-                href={`/locales/${venue.slug}`}
-                className="group flex flex-col overflow-hidden rounded-3xl border border-border/50 bg-card transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:scale-[1.02]"
-              >
-                <div className="relative h-40 w-full overflow-hidden bg-accent">
-                  {venue.image ? (
-                    <Image
-                      src={venue.image}
-                      alt={venue.name}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      sizes="(max-width: 640px) 224px, (max-width: 768px) 50vw, 25vw"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-5xl">
-                      {venue.category.icon ?? '🏬'}
-                    </div>
-                  )}
-                  <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
-                    {venue.category.icon ?? ''} {venue.category.name}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-2 p-4">
-                  <p className="text-sm font-semibold text-foreground line-clamp-1">{venue.name}</p>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span className="line-clamp-1">{venue.address ?? venue.location}</span>
-                  </div>
-                </div>
-              </Link>
+              <LatestVenueCard venue={venue} />
             </motion.div>
           ))}
         </div>

@@ -17,7 +17,7 @@ export async function HomeBlogSection() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">📖 Inspírate</p>
-          <h2 className="mt-1 text-2xl font-bold text-foreground sm:text-3xl">Guías para salir mejor</h2>
+          <h2 className="mt-1 text-2xl font-medium text-foreground sm:text-3xl">Guías para salir mejor</h2>
         </div>
         <Button asChild variant="outline" className="h-11 rounded-xl">
           <Link href="/blog">

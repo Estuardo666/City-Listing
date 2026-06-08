@@ -28,7 +28,7 @@ export default async function ExplorarPage() {
     process.env.NEXT_PUBLIC_MAPBOX_STYLE ??
     'mapbox://styles/mapbox/streets-v12'
 
-  const serializedVenues: ExploreVenue[] = venueList.map((v) => ({
+  const serializedVenues = venueList.map((v) => ({
     id: v.id,
     name: v.name,
     slug: v.slug,
@@ -41,10 +41,17 @@ export default async function ExplorarPage() {
     featured: v.featured,
     phone: v.phone,
     website: v.website,
+    priceRange: (v as any).priceRange ?? null,
+    avgRating: (v as any).avgRating ?? null,
+    reviewCount: (v as any).reviewCount ?? 0,
+    verified: (v as any).verified ?? false,
+    promotions: [],
+    services: [],
+    businessHours: [],
     category: v.category,
-  }))
+  })) as ExploreVenue[]
 
-  const serializedEvents: ExploreEvent[] = eventList.map((e) => ({
+  const serializedEvents = eventList.map((e) => ({
     id: e.id,
     title: e.title,
     slug: e.slug,
@@ -57,8 +64,11 @@ export default async function ExplorarPage() {
     lat: e.lat ?? null,
     lng: e.lng ?? null,
     featured: e.featured,
+    price: (e as any).price ?? null,
+    avgRating: (e as any).avgRating ?? null,
+    reviewCount: (e as any).reviewCount ?? 0,
     category: e.category,
-  }))
+  })) as ExploreEvent[]
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-background pt-14">

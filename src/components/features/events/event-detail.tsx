@@ -1,8 +1,11 @@
+'use client'
+
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  Building2, CalendarDays, Clock3, DollarSign, Edit, ExternalLink,
-  ImageIcon, MapPin, Repeat, ShieldCheck, Sparkles, Star, UserCircle2
+  Building2, CalendarDays, Clock3, DollarSign, Edit, ExternalLink, Info, LogIn,
+  ImageIcon, MapPin, Map, Repeat, ShieldCheck, Sparkles, Star, UserCircle2
 } from 'lucide-react'
 import { EventsMap } from '@/components/features/events/events-map'
 import { MediaGallery } from '@/components/media/media-gallery'
@@ -10,26 +13,15 @@ import { ReviewForm } from '@/components/review/review-form'
 import { ReviewList } from '@/components/review/review-list'
 import { ShareButton } from '@/components/share/share-button'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
-import { QuestionSection } from '@/components/qa/question-section'
+import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
+import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import { formatDateTime } from '@/lib/utils'
 import type { EventWithRelations } from '@/types/event'
-
-type QuestionItem = {
-  id: string
-  content: string
-  answer: string | null
-  answerBy: string | null
-  answeredAt: Date | null
-  status: string
-  createdAt: Date
-  user: { id: string; name: string | null; image: string | null }
-}
 
 type EventDetailProps = {
   event: EventWithRelations
   currentUserId?: string
   userRole?: string
-  questions?: QuestionItem[]
 }
 
 const RECURRENCE_LABELS: Record<string, string> = {
@@ -39,8 +31,9 @@ const RECURRENCE_LABELS: Record<string, string> = {
   YEARLY: 'Anual',
 }
 
-export function EventDetail({ event, currentUserId, userRole, questions = [] }: EventDetailProps) {
+export function EventDetail({ event, currentUserId, userRole }: EventDetailProps) {
   const canEdit = currentUserId && (userRole === 'ADMIN' || currentUserId === event.userId)
+  const [imageError, setImageError] = useState(false)
   const mapQuery = encodeURIComponent(event.address ?? event.location)
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -58,7 +51,7 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
 
       {/* ── Hero full-bleed ── */}
       <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px] mb-6">
-        {event.image ? (
+        {event.image && !imageError ? (
           <Image
             src={event.image}
             alt={event.title}
@@ -66,18 +59,23 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
             className="object-cover"
             priority
             sizes="(max-width: 768px) 100vw, 90vw"
+            onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary/20 to-accent">
-            <ImageIcon className="h-20 w-20 text-muted-foreground/20" />
-          </div>
+          <CategoryGradientBg
+            categorySlug={event.category.slug}
+            name={event.title}
+            showInitials
+            className="h-full w-full"
+            initialsClassName="text-6xl sm:text-8xl"
+          />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
         {/* Badges over hero */}
         <div className="absolute left-5 top-5 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
-            {event.category.icon ?? '🎟️'} {event.category.name}
+            {resolveIconEmoji(event.category.icon, 'event')} {event.category.name}
           </span>
           {event.featured && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
@@ -93,7 +91,7 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
 
         {/* Title over hero bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-          <h1 className="text-2xl font-bold leading-tight text-white drop-shadow-sm sm:text-4xl">
+          <h1 className="font-medium leading-tight text-white drop-shadow-sm" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.7rem)' }}>
             {event.title}
           </h1>
           <p className="mt-2 line-clamp-2 text-sm text-white/75 sm:text-base">
@@ -141,7 +139,9 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
           {/* Quick meta row */}
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
-              <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <CalendarDays className="h-4 w-4 text-primary" />
+              </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Inicio</p>
                 <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.startDate)}</p>
@@ -149,7 +149,9 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
             </div>
             {event.endDate && (
               <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
-                <Clock3 className="h-4 w-4 shrink-0 text-primary" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Clock3 className="h-4 w-4 text-primary" />
+                </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Fin</p>
                   <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.endDate)}</p>
@@ -157,7 +159,9 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
               </div>
             )}
             <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
-              <MapPin className="h-4 w-4 shrink-0 text-rose-500" />
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <MapPin className="h-4 w-4 text-primary" />
+              </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Lugar</p>
                 <a
@@ -172,7 +176,9 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
             </div>
             {event.price !== null && (
               <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
-                <DollarSign className="h-4 w-4 shrink-0 text-emerald-600" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Precio</p>
                   <p className="text-sm font-semibold text-foreground">
@@ -186,7 +192,7 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
           {/* Content body */}
           {event.content && (
             <div className="rounded-2xl border border-border/50 bg-card p-6">
-              <h2 className="text-lg font-bold text-foreground">Detalles del evento</h2>
+              <h2 className="text-lg font-medium text-foreground">Detalles del evento</h2>
               <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {event.content}
               </p>
@@ -196,7 +202,7 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
           {/* Recurrence info */}
           {hasRecurrence && event.recurrenceRule && (
             <div className="rounded-2xl border border-border/50 bg-card p-5">
-              <h2 className="text-lg font-bold text-foreground">🔁 Evento recurrente</h2>
+              <h2 className="text-lg font-medium text-foreground flex items-center gap-2"><Repeat className="h-5 w-5 text-primary" /> Evento recurrente</h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 Se repite {RECURRENCE_LABELS[event.recurrenceRule.frequency]?.toLowerCase() ?? event.recurrenceRule.frequency}
                 {event.recurrenceRule.interval > 1 && ` cada ${event.recurrenceRule.interval} ${event.recurrenceRule.frequency === 'WEEKLY' ? 'semanas' : 'meses'}`}
@@ -206,13 +212,31 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
 
           {/* Reviews */}
           <div className="rounded-2xl border border-border/50 bg-card p-5">
-            <h2 className="text-lg font-bold text-foreground">
-              ⭐ Reseñas {hasReviews && `(${event.reviews.length})`}
+            <h2 className="text-lg font-medium text-foreground flex items-center gap-2">
+              <Star className="h-5 w-5 text-primary" /> Reseñas {hasReviews && `(${event.reviews.length})`}
             </h2>
-            {currentUserId && currentUserId !== event.userId && (
-              <div className="mt-4 border-b border-border/50 pb-4">
-                <h3 className="text-sm font-medium mb-3">Deja tu reseña</h3>
-                <ReviewForm entityType="event" entityId={event.id} />
+            {currentUserId ? (
+              currentUserId !== event.userId && (
+                <div className="mt-4 border-b border-border/50 pb-4">
+                  <h3 className="text-sm font-medium mb-3">Deja tu reseña</h3>
+                  <ReviewForm entityType="event" entityId={event.id} />
+                </div>
+              )
+            ) : (
+              <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <LogIn className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Inicia sesión para dejar una reseña</p>
+                  <p className="text-xs text-muted-foreground">Necesitas estar conectado para poder reseñar.</p>
+                </div>
+                <Link
+                  href="/api/auth/signin"
+                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  Entrar
+                </Link>
               </div>
             )}
             <div className="mt-4">
@@ -224,22 +248,11 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
             </div>
           </div>
 
-          {/* Q&A */}
-          {questions.length > 0 && (
-            <QuestionSection
-              entityType="event"
-              entityId={event.id}
-              questions={questions}
-              currentUserId={currentUserId}
-              entityOwnerId={event.userId}
-            />
-          )}
-
           {/* Map */}
           {event.lat !== null && event.lng !== null && (
             <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
               <div className="border-b border-border/50 px-5 py-4">
-                <h2 className="text-lg font-bold text-foreground">📍 Ubicación en el mapa</h2>
+                <h2 className="text-lg font-medium text-foreground flex items-center gap-2"><Map className="h-5 w-5 text-primary" /> Ubicación en el mapa</h2>
               </div>
               <EventsMap
                 events={[{
@@ -268,7 +281,7 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
             {canEdit && (
               <Link
                 href={`/eventos/${event.slug}/editar`}
-                className="flex min-w-[140px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+                className="flex min-w-[140px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
               >
                 <Edit className="h-4 w-4" /> Editar
               </Link>
@@ -277,11 +290,11 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
               href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
               target="_blank"
               rel="noreferrer"
-              className="flex min-w-[140px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+              className="flex min-w-[140px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
             >
               <ExternalLink className="h-4 w-4" /> Cómo llegar
             </a>
-            <ShareButton url={`/eventos/${event.slug}`} title={event.title} />
+            <ShareButton url={`/eventos/${event.slug}`} title={event.title} className="flex-1 min-w-[140px]" />
           </div>
 
           {/* WhatsApp CTA */}
@@ -294,7 +307,7 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
 
           {/* Info card */}
           <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Información</h3>
+            <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Información</h3>
 
             <div className="space-y-3">
               <div className="flex items-start gap-3">
@@ -351,7 +364,7 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <UserCircle2 className="h-4 w-4" />
                 </span>
                 <div>
@@ -364,14 +377,14 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
 
               {event.venue && (
                 <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <Building2 className="h-4 w-4" />
                   </span>
                   <div>
                     <p className="text-xs text-muted-foreground">Local asociado</p>
                     <Link
                       href={`/locales/${event.venue.slug}`}
-                      className="text-sm font-semibold text-emerald-600 hover:text-emerald-500"
+                      className="text-sm font-semibold text-primary hover:text-primary/80"
                     >
                       {event.venue.name}
                     </Link>
@@ -386,10 +399,10 @@ export function EventDetail({ event, currentUserId, userRole, questions = [] }: 
             href={`/explorar?q=${encodeURIComponent(event.category.name)}`}
             className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:bg-accent"
           >
-            <span className="text-3xl">{event.category.icon ?? '🎟️'}</span>
+            <span className="text-3xl">{resolveIconEmoji(event.category.icon, 'event')}</span>
             <div>
               <p className="text-xs text-muted-foreground">Categoría</p>
-              <p className="text-sm font-bold text-foreground">{event.category.name}</p>
+              <p className="text-sm font-medium text-foreground">{event.category.name}</p>
             </div>
           </Link>
         </aside>

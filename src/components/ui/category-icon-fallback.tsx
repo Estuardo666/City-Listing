@@ -25,7 +25,7 @@ export function CategoryIconFallback({
         ${sizeClasses[size]} ${className}
       `}
     >
-      <span className="font-bold">
+      <span className="font-medium">
         {category.icon || '🏬'}
       </span>
     </div>

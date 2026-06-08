@@ -104,7 +104,7 @@ export default function HomePage() {
                 <Compass className="h-3.5 w-3.5" />
                 Para negocios y organizadores
               </span>
-              <h3 className="max-w-2xl text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              <h3 className="max-w-2xl text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
                 ¿Tienes un local o evento? Loja te está buscando. 📣
               </h3>
               <p className="max-w-xl text-base text-muted-foreground">

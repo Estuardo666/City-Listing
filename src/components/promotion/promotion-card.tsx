@@ -39,7 +39,7 @@ export function PromotionCard({ promotion }: PromotionCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div>
             {promotion.discount && (
-              <Badge variant="secondary" className="mb-2 text-xs font-bold">
+              <Badge variant="secondary" className="mb-2 text-xs font-medium">
                 {promotion.discount}
               </Badge>
             )}

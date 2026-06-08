@@ -50,7 +50,7 @@ export function DoorStickerTemplate({
       {/* Contenido principal */}
       <div className="flex flex-col items-center px-8 py-6">
         {/* Nombre del venue */}
-        <h2 className="text-center text-lg font-bold text-gray-900 line-clamp-2">
+        <h2 className="text-center text-lg font-medium text-gray-900 line-clamp-2">
           {venueName}
         </h2>
 
@@ -80,7 +80,7 @@ export function DoorStickerTemplate({
 
       {/* Footer */}
       <div className="absolute bottom-0 left-0 right-0 bg-indigo-50 px-8 py-3 text-center">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">
+        <p className="text-[10px] font-medium uppercase tracking-widest text-indigo-400">
           Escanea y descubre
         </p>
       </div>

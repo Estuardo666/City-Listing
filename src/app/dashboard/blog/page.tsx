@@ -51,28 +51,28 @@ export default async function DashboardBlogPage() {
               <FileText className="h-4 w-4" />
               <span className="text-xs font-medium">Total</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">{total}</p>
+            <p className="mt-2 text-2xl font-medium text-foreground">{total}</p>
           </div>
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
             <div className="flex items-center gap-2 text-emerald-700">
               <CheckCircle2 className="h-4 w-4" />
               <span className="text-xs font-medium">Publicados</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-emerald-900">{approved}</p>
+            <p className="mt-2 text-2xl font-medium text-emerald-900">{approved}</p>
           </div>
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <div className="flex items-center gap-2 text-amber-700">
               <Clock className="h-4 w-4" />
               <span className="text-xs font-medium">En revisión</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-amber-900">{pending}</p>
+            <p className="mt-2 text-2xl font-medium text-amber-900">{pending}</p>
           </div>
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
             <div className="flex items-center gap-2 text-rose-700">
               <XCircle className="h-4 w-4" />
               <span className="text-xs font-medium">Rechazados</span>
             </div>
-            <p className="mt-2 text-2xl font-bold text-rose-900">{rejected}</p>
+            <p className="mt-2 text-2xl font-medium text-rose-900">{rejected}</p>
           </div>
         </div>
 
