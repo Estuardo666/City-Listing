@@ -35,6 +35,22 @@ function buildSlug(name: string): string {
     .slice(0, 80)
 }
 
+async function generateUniqueSlug(name: string): Promise<string> {
+  const baseSlug = buildSlug(name)
+  let candidate = baseSlug
+  let suffix = 1
+
+  while (true) {
+    const existing = await prisma.venue.findUnique({
+      where: { slug: candidate },
+      select: { id: true },
+    })
+    if (!existing) return candidate
+    suffix++
+    candidate = `${baseSlug}-${suffix}`
+  }
+}
+
 class GooglePlacesImporter {
   async searchPlaces(
     query: string,
@@ -234,12 +250,12 @@ class GooglePlacesImporter {
       }
     }
 
-    const slug = `${buildSlug(place.name)}-${Date.now().toString(36).slice(-4)}`
+    const slug = await generateUniqueSlug(place.name)
     const venue = await prisma.venue.create({
       data: {
         name: place.name,
         slug,
-        description: `Importado desde Google Places: ${place.name}`,
+        description: '',
         location: place.address || `${place.lat}, ${place.lng}`,
         lat: place.lat,
         lng: place.lng,

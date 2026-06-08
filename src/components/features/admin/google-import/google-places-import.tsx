@@ -194,6 +194,9 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
             })),
             categoryId,
             duplicateAction,
+            address: geoResult?.formattedAddress || '',
+            categories: selectedCategories,
+            radius,
           }),
         })
 

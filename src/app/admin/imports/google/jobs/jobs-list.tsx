@@ -136,8 +136,8 @@ export function JobsList() {
                     <td className="px-3 py-2 text-muted-foreground">
                       {new Date(job.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-3 py-2">
-                      {job.city}, {job.province}
+                    <td className="px-3 py-2 max-w-[250px] truncate">
+                      {[job.city, job.province, job.country].filter(Boolean).join(', ') || '-'}
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
                       {job.radius >= 1000 ? `${job.radius / 1000}km` : `${job.radius}m`}

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -15,6 +16,29 @@ type VenueDetailPageProps = {
   params: Promise<{
     slug: string
   }>
+}
+
+export async function generateMetadata({ params }: VenueDetailPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const venue = await getVenueBySlug(slug)
+
+  if (!venue) {
+    return { title: 'Local no encontrado' }
+  }
+
+  const category = venue.category?.name || 'Local'
+  const cleanAddress = (venue.address || '')
+    .replace(/,?\s*Loja\s*,?\s*Ecuador\s*$/i, '')
+    .replace(/,?\s*Ecuador\s*$/i, '')
+    .replace(/,?\s*Loja\s*$/i, '')
+    .trim()
+  const phonePart = venue.phone ? `, Teléfono ${venue.phone}` : ''
+  const addressPart = cleanAddress ? ` lo encuentras en ${cleanAddress}` : ''
+
+  return {
+    title: `${venue.name} en Loja | Dirección y teléfono`,
+    description: `${category} ${venue.name} en Loja,${addressPart}${phonePart}. Descubre más en Vive Loja.`,
+  }
 }
 
 export default async function VenueDetailPage({ params }: VenueDetailPageProps) {
