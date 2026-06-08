@@ -9,19 +9,19 @@ export function generateUberLink({
   pickupLatitude,
   pickupLongitude,
 }: TransportLocationParams & UberPickupParams): string {
-  const params = new URLSearchParams()
-
-  params.set('action', 'setPickup')
-  params.set('dropoff[latitude]', latitude.toString())
-  params.set('dropoff[longitude]', longitude.toString())
-  params.set('dropoff[nickname]', name)
+  const params = [
+    `action=setPickup`,
+    `dropoff[latitude]=${latitude}`,
+    `dropoff[longitude]=${longitude}`,
+    `dropoff[nickname]=${encodeURIComponent(name)}`,
+  ]
 
   if (pickupLatitude !== undefined && pickupLongitude !== undefined) {
-    params.set('pickup[latitude]', pickupLatitude.toString())
-    params.set('pickup[longitude]', pickupLongitude.toString())
+    params.push(`pickup[latitude]=${pickupLatitude}`)
+    params.push(`pickup[longitude]=${pickupLongitude}`)
   }
 
-  return `${UBER_BASE_URL}?${params.toString()}`
+  return `${UBER_BASE_URL}?${params.join('&')}`
 }
 
 export const UBER_BRAND_COLOR = '#000000'
