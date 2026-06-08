@@ -21,6 +21,7 @@ import { ShareButton } from '@/components/share/share-button'
 import { CheckInButton } from '@/components/checkin/checkin-button'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
 import { MessageVenueButton } from '@/components/messaging/message-venue-button'
+import { AddToCollectionButton } from '@/components/collections/add-to-collection-button'
 import { UberIcon } from '@/components/ui/uber-icon'
 import { generateUberLink } from '@/lib/transport/uber-link'
 import { formatDateTime } from '@/lib/utils'
@@ -31,14 +32,17 @@ import { useState } from 'react'
 type MenuItem = { id: string; name: string; description: string | null; price: number | null; image: string | null; isAvailable: boolean; isFeatured: boolean }
 type MenuCategory = { id: string; name: string; items: MenuItem[] }
 
+type UserCollection = { id: string; name: string; icon: string | null; _count: { items: number } }
+
 type VenueDetailProps = {
   venue: VenueWithRelations
   currentUserId?: string
   userRole?: string
   menu?: MenuCategory[]
+  userCollections?: UserCollection[]
 }
 
-export function VenueDetail({ venue, currentUserId, userRole, menu = [] }: VenueDetailProps) {
+export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCollections = [] }: VenueDetailProps) {
   const canEdit = currentUserId && (userRole === 'ADMIN' || currentUserId === venue.userId)
   const [imageError, setImageError] = useState(false)
   
@@ -330,6 +334,15 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [] }: Venue
             </a>
             <ShareButton url={`/locales/${venue.slug}`} title={venue.name} className="flex-1" />
           </div>
+
+          {/* Add to Collection */}
+          {currentUserId && userCollections.length > 0 && (
+            <AddToCollectionButton
+              collections={userCollections}
+              entityId={venue.id}
+              entityType="venueId"
+            />
+          )}
 
           {/* WhatsApp CTA */}
           {venue.phone && (

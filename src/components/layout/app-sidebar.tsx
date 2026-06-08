@@ -28,6 +28,7 @@ import {
   Image,
   Building2,
   Mail,
+  FolderTree,
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -68,6 +69,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/resenas', label: 'Moderar Reseñas', icon: MessageSquare, adminOnly: true },
   { href: '/admin/reclamos', label: 'Reclamos', icon: ClipboardList, adminOnly: true },
   { href: '/admin/ofertas', label: 'Ofertas', icon: Tag, adminOnly: true },
+  { href: '/admin/categorias', label: 'Categorías', icon: FolderTree, adminOnly: true },
   { href: '/admin/osm-imports', label: 'Importaciones OSM', icon: Globe, adminOnly: true },
 ]
 

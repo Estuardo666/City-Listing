@@ -48,7 +48,6 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/png" href="/viveloja.png" />
-        <link rel="sitemap" href="/sitemap.xml" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(() => {

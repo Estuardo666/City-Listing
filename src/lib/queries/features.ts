@@ -114,6 +114,43 @@ export async function getCollectionBySlug(slug: string) {
   })
 }
 
+export async function getCollectionById(id: string, userId: string) {
+  return prisma.collection.findFirst({
+    where: { id, userId },
+    include: {
+      user: { select: { id: true, name: true, image: true } },
+      items: {
+        orderBy: { order: 'asc' },
+        include: {
+          venue: {
+            select: {
+              id: true, name: true, slug: true, image: true, location: true, address: true,
+              priceRange: true, avgRating: true, reviewCount: true, verified: true, badge: true,
+              featured: true, status: true, description: true, lat: true, lng: true, phone: true, website: true,
+              category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+            },
+          },
+          event: {
+            select: {
+              id: true, title: true, slug: true, image: true, startDate: true, location: true, address: true,
+              featured: true, status: true, price: true, isRecurring: true, avgRating: true, reviewCount: true,
+              venueId: true, description: true, endDate: true, lat: true, lng: true,
+              category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+              venue: { select: { id: true, name: true, slug: true } },
+            },
+          },
+          post: {
+            select: { id: true, title: true, slug: true, image: true, excerpt: true },
+          },
+          route: {
+            select: { id: true, title: true, slug: true, image: true, type: true, duration: true, difficulty: true, status: true, featured: true, description: true },
+          },
+        },
+      },
+    },
+  })
+}
+
 export async function getCategoryTree(type: string) {
   return prisma.category.findMany({
     where: { type, parentId: null },

@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { getUserFavorites } from '@/lib/queries/trending'
 import { VenueCard } from '@/components/features/venues/venue-card'
 import { EventCard } from '@/components/features/events/event-card'
+import { BlogCard } from '@/components/features/blog/blog-card'
+import { RouteCard } from '@/components/route/route-card'
 import { Heart } from 'lucide-react'
 
 export const metadata = { title: 'Mis Favoritos — Vive Loja' }
@@ -16,6 +18,8 @@ export default async function FavoritesPage() {
 
   const venueFavorites = favorites.filter((f) => f.venueId && f.venue)
   const eventFavorites = favorites.filter((f) => f.eventId && f.event)
+  const postFavorites = favorites.filter((f) => f.postId && f.post)
+  const routeFavorites = favorites.filter((f) => f.routeId && f.route)
 
   return (
     <div className="pb-16 pt-8">
@@ -55,6 +59,28 @@ export default async function FavoritesPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {eventFavorites.map((f) => (
                 <EventCard key={f.id} event={f.event!} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {postFavorites.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-medium text-foreground">Artículos ({postFavorites.length})</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {postFavorites.map((f) => (
+                <BlogCard key={f.id} post={f.post! as any} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {routeFavorites.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-medium text-foreground">Rutas ({routeFavorites.length})</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {routeFavorites.map((f) => (
+                <RouteCard key={f.id} route={f.route! as any} />
               ))}
             </div>
           </div>

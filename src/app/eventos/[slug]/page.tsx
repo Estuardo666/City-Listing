@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button'
 import { EventDetail } from '@/components/features/events'
 import { EventRelated } from '@/components/features/events/event-related'
 import { getEventBySlug, getEvents } from '@/lib/queries/events'
+import { getUserCollections } from '@/lib/queries/features'
 import { FavoriteButton } from '@/components/features/favorites/favorite-button'
+import { AddToCollectionButton } from '@/components/collections/add-to-collection-button'
 import { incrementEventViewAction } from '@/actions/views'
 
 type EventDetailPageProps = {
@@ -26,17 +28,21 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   if (!event) notFound()
 
-  const relatedEvents = await getEvents(
-    { status: 'APPROVED', category: event.category.slug },
-    5
-  ).then((list) => list.filter((e) => e.id !== event.id).slice(0, 4))
-
-  const isFavorite = await (session?.user?.id
-    ? prisma.favorite.findUnique({
-        where: { userId_eventId: { userId: session.user.id, eventId: event.id } },
-        select: { id: true },
-      }).then(Boolean)
-    : Promise.resolve(false))
+  const [relatedEvents, isFavorite, collections] = await Promise.all([
+    getEvents(
+      { status: 'APPROVED', category: event.category.slug },
+      5
+    ).then((list) => list.filter((e) => e.id !== event.id).slice(0, 4)),
+    session?.user?.id
+      ? prisma.favorite.findUnique({
+          where: { userId_eventId: { userId: session.user.id, eventId: event.id } },
+          select: { id: true },
+        }).then(Boolean)
+      : Promise.resolve(false),
+    session?.user?.id
+      ? getUserCollections(session.user.id)
+      : Promise.resolve([]),
+  ])
 
   incrementEventViewAction(event.id)
 
@@ -55,7 +61,16 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
               Volver a eventos
             </Link>
           </Button>
-          <FavoriteButton eventId={event.id} initialIsFavorite={isFavorite} />
+          <div className="flex items-center gap-2">
+            {session?.user?.id && collections.length > 0 && (
+              <AddToCollectionButton
+                collections={collections.map((c) => ({ id: c.id, name: c.name, icon: c.icon, _count: c._count }))}
+                entityId={event.id}
+                entityType="eventId"
+              />
+            )}
+            <FavoriteButton eventId={event.id} initialIsFavorite={isFavorite} />
+          </div>
         </div>
 
         {/* Main detail */}

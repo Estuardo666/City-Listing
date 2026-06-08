@@ -6,6 +6,7 @@ import { VenueCard } from '@/components/features/venues/venue-card'
 import { EventCard } from '@/components/features/events/event-card'
 import type { VenueListItem } from '@/types/venue'
 import type { EventListItem } from '@/types/event'
+import type { VenueBadgeType } from '@/lib/rankings'
 
 type ListingSectionProps = {
   title: string
@@ -20,6 +21,7 @@ type ListingSectionProps = {
   featured?: boolean
   minRating?: number
   hasPromotions?: boolean
+  venueBadges?: Record<string, VenueBadgeType[]>
 }
 
 export function ListingSection({
@@ -35,6 +37,7 @@ export function ListingSection({
   featured,
   minRating,
   hasPromotions,
+  venueBadges,
 }: ListingSectionProps) {
   const [items, setItems] = useState<VenueListItem[] | EventListItem[]>(initialItems)
   const [skip, setSkip] = useState(initialSkip)
@@ -87,7 +90,9 @@ export function ListingSection({
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         {type === 'venues'
-          ? (items as VenueListItem[]).map((v) => <VenueCard key={v.id} venue={v} />)
+          ? (items as VenueListItem[]).map((v) => (
+              <VenueCard key={v.id} venue={v} badges={venueBadges?.[v.id]} />
+            ))
           : (items as EventListItem[]).map((e) => <EventCard key={e.id} event={e} />)}
       </div>
 

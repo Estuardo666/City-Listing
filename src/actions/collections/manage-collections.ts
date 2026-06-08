@@ -120,3 +120,55 @@ export async function removeFromCollectionAction(itemId: string): Promise<Action
     return { success: false, error: 'No se pudo eliminar.' }
   }
 }
+
+export async function updateCollectionAction(id: string, input: unknown): Promise<ActionResponse<Collection>> {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) return { success: false, error: 'No autorizado.' }
+
+    const collection = await prisma.collection.findUnique({ where: { id }, select: { userId: true } })
+    if (!collection) return { success: false, error: 'Colección no encontrada.' }
+    if (session.user.role !== 'ADMIN' && collection.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+
+    const parsed = collectionSchema.safeParse(input)
+    if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
+
+    const updated = await prisma.collection.update({
+      where: { id },
+      data: parsed.data,
+    })
+
+    revalidatePath('/dashboard/colecciones')
+    revalidatePath(`/dashboard/colecciones/${id}`)
+    return { success: true, data: updated }
+  } catch {
+    return { success: false, error: 'No se pudo actualizar la colección.' }
+  }
+}
+
+export async function reorderCollectionItemsAction(
+  collectionId: string,
+  items: { id: string; order: number }[]
+): Promise<ActionResponse<void>> {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) return { success: false, error: 'No autorizado.' }
+
+    const collection = await prisma.collection.findUnique({ where: { id: collectionId }, select: { userId: true } })
+    if (!collection || collection.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+
+    await prisma.$transaction(
+      items.map((item) =>
+        prisma.collectionItem.update({
+          where: { id: item.id },
+          data: { order: item.order },
+        })
+      )
+    )
+
+    revalidatePath(`/dashboard/colecciones/${collectionId}`)
+    return { success: true }
+  } catch {
+    return { success: false, error: 'No se pudo reordenar.' }
+  }
+}

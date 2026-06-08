@@ -5,14 +5,17 @@ import Link from 'next/link'
 import { Globe, ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star } from 'lucide-react'
 import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
+import { VenueBadges } from '@/components/features/rankings/venue-badge'
+import type { VenueBadgeType } from '@/lib/rankings'
 import type { VenueListItem } from '@/types/venue'
 import { useState } from 'react'
 
 type VenueCardProps = {
   venue: VenueListItem
+  badges?: VenueBadgeType[]
 }
 
-export function VenueCard({ venue }: VenueCardProps) {
+export function VenueCard({ venue, badges }: VenueCardProps) {
   const [imageError, setImageError] = useState(false)
   const hasValidImage = Boolean(venue.image && venue.image.startsWith('http'))
 
@@ -65,6 +68,12 @@ export function VenueCard({ venue }: VenueCardProps) {
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
           {resolveIconEmoji(venue.category.icon, 'venue')} {venue.category.name}
         </span>
+
+        {badges && badges.length > 0 && (
+          <div className="mt-2">
+            <VenueBadges badges={badges} />
+          </div>
+        )}
 
         <h3 className="mt-3 text-[1.38rem] font-medium leading-snug text-foreground transition-colors duration-150 group-hover:text-emerald">
           {venue.name}
