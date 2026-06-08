@@ -340,6 +340,9 @@ export async function getVenueBySlug(slug: string): Promise<VenueWithRelations |
               reviewerLevel: true,
             },
           },
+          photos: {
+            orderBy: { order: 'asc' },
+          },
         },
         orderBy: { createdAt: 'desc' },
       },

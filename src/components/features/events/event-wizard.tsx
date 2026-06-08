@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Wizard, type WizardStep } from '@/components/wizard'
 import { WizardTooltip } from '@/components/wizard'
 import { createEventAction } from '@/actions/events'
-import { eventSchema, type EventInput } from '@/schemas/event.schema'
+import { type EventInput } from '@/schemas/event.schema'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,7 +19,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { MediaUrlInputSimple } from '@/components/features/media/media-url-input-simple'
-import { Calendar, MapPin, Info, Package } from 'lucide-react'
+import {
+  Calendar, MapPin, Info, Package, Tag, FileText, ImageIcon,
+  DollarSign, Clock, Star,
+} from 'lucide-react'
 import dynamic from 'next/dynamic'
 import type { EventCategory } from '@/types/event'
 import type { VenueSelectOption } from '@/types/venue'
@@ -139,11 +142,7 @@ export function EventWizard({ categories, venues }: EventWizardProps) {
       icon: <Info className="h-5 w-5" />,
       isValid: isStep1Valid,
       content: (
-        <StepEventInfo
-          data={data}
-          categories={categories}
-          onChange={updateField}
-        />
+        <StepEventInfo data={data} categories={categories} onChange={updateField} />
       ),
     },
     {
@@ -153,25 +152,17 @@ export function EventWizard({ categories, venues }: EventWizardProps) {
       icon: <MapPin className="h-5 w-5" />,
       isValid: isStep2Valid,
       content: (
-        <StepEventLocation
-          data={data}
-          venues={venues}
-          onChange={updateField}
-        />
+        <StepEventLocation data={data} venues={venues} onChange={updateField} />
       ),
     },
     {
       id: 'summary',
       title: 'Resumen',
-      description: 'Revisa la información antes de enviar',
+      description: 'Así se verá tu evento',
       icon: <Package className="h-5 w-5" />,
       isValid: true,
       content: (
-        <StepEventSummary
-          data={data}
-          categories={categories}
-          venues={venues}
-        />
+        <StepEventSummary data={data} categories={categories} venues={venues} />
       ),
     },
   ], [data, categories, venues, isStep1Valid, isStep2Valid, updateField])
@@ -186,6 +177,8 @@ export function EventWizard({ categories, venues }: EventWizardProps) {
   )
 }
 
+/* ─────────────────── STEP 1: INFO ─────────────────── */
+
 function StepEventInfo({
   data,
   categories,
@@ -197,10 +190,12 @@ function StepEventInfo({
 }) {
   return (
     <div className="space-y-6">
+      {/* Título - grande y jerárquico */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Label htmlFor="title">Título del evento *</Label>
-          <WizardTooltip content="Un título claro y atractivo que describa tu evento. Aparecerá en las tarjetas de búsqueda y en la página de detalle." />
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Label htmlFor="title" className="text-base font-semibold">Título del evento *</Label>
+          <WizardTooltip content="Título claro y atractivo para tu evento." />
         </div>
         <Input
           id="title"
@@ -208,16 +203,19 @@ function StepEventInfo({
           value={data.title}
           onChange={(e) => onChange('title', e.target.value)}
           maxLength={120}
+          className="h-12 text-lg font-semibold"
         />
         {data.title.length > 0 && data.title.length < 3 && (
-          <p className="text-xs text-destructive">El título debe tener al menos 3 caracteres</p>
+          <p className="text-xs text-destructive">Mínimo 3 caracteres</p>
         )}
       </div>
 
+      {/* Categoría */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
+          <Tag className="h-4 w-4 text-muted-foreground" />
           <Label htmlFor="category">Categoría *</Label>
-          <WizardTooltip content="Selecciona la categoría que mejor describe tu evento. Esto ayuda a los usuarios a encontrarlo." />
+          <WizardTooltip content="Categoría que describe tu evento." />
         </div>
         <Select value={data.categoryId} onValueChange={(v) => onChange('categoryId', v)}>
           <SelectTrigger>
@@ -233,44 +231,56 @@ function StepEventInfo({
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="description">Descripción *</Label>
-          <WizardTooltip content="Describe tu evento: qué actividades habrá, quiénes participan, qué incluye, etc. Máximo 1000 caracteres." />
+      {/* Descripción + Contenido en 1 fila */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="description">Descripción *</Label>
+            <WizardTooltip content="Describe tu evento: actividades, participantes, etc. Máx 1000 caracteres." />
+          </div>
+          <Textarea
+            id="description"
+            placeholder="Describe tu evento en detalle..."
+            value={data.description}
+            onChange={(e) => onChange('description', e.target.value)}
+            maxLength={1000}
+            rows={4}
+          />
+          <p className="text-xs text-muted-foreground">{data.description.length}/1000</p>
+          {data.description.length > 0 && data.description.length < 10 && (
+            <p className="text-xs text-destructive">Mínimo 10 caracteres</p>
+          )}
         </div>
-        <Textarea
-          id="description"
-          placeholder="Describe tu evento en detalle..."
-          value={data.description}
-          onChange={(e) => onChange('description', e.target.value)}
-          maxLength={1000}
-          rows={4}
-        />
-        <p className="text-xs text-muted-foreground">{data.description.length}/1000 caracteres</p>
-        {data.description.length > 0 && data.description.length < 10 && (
-          <p className="text-xs text-destructive">La descripción debe tener al menos 10 caracteres</p>
-        )}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="content">Contenido detallado</Label>
+            <WizardTooltip content="Programa, artistas, reglas, etc." />
+          </div>
+          <Textarea
+            id="content"
+            placeholder="Programa, artistas participantes..."
+            value={data.content}
+            onChange={(e) => onChange('content', e.target.value)}
+            rows={4}
+          />
+        </div>
       </div>
 
+      {/* Imagen con preview */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Label htmlFor="content">Contenido detallado (opcional)</Label>
-          <WizardTooltip content="Información adicional: programa, artistas, reglas, etc. Aparecerá en la página de detalle del evento." />
-        </div>
-        <Textarea
-          id="content"
-          placeholder="Programa, artistas participantes, reglas..."
-          value={data.content}
-          onChange={(e) => onChange('content', e.target.value)}
-          rows={5}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
           <Label>Imagen destacada</Label>
-          <WizardTooltip content="URL de la imagen de tu evento. Esta imagen aparecerá en las tarjetas y en la parte superior de la página del evento." />
+          <WizardTooltip content="Imagen principal del evento." />
         </div>
+        {data.image && data.image.startsWith('http') && (
+          <div className="relative h-40 w-full overflow-hidden rounded-xl border border-border/50">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={data.image} alt="Vista previa" className="h-full w-full object-cover" />
+          </div>
+        )}
         <MediaUrlInputSimple
           value={data.image}
           onChange={(v) => onChange('image', v)}
@@ -280,6 +290,8 @@ function StepEventInfo({
     </div>
   )
 }
+
+/* ─────────────────── STEP 2: FECHA + LUGAR + PRECIO ─────────────────── */
 
 function StepEventLocation({
   data,
@@ -292,54 +304,45 @@ function StepEventLocation({
 }) {
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-muted-foreground" />
-          <h3 className="text-sm font-semibold">Fecha y hora</h3>
+      {/* Fechas en 1 fila */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="startDate">Inicio *</Label>
+          </div>
+          <Input
+            id="startDate"
+            type="datetime-local"
+            value={data.startDate}
+            onChange={(e) => onChange('startDate', e.target.value)}
+          />
         </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="startDate">Fecha y hora de inicio *</Label>
-              <WizardTooltip content="Selecciona cuándo comienza tu evento." />
-            </div>
-            <Input
-              id="startDate"
-              type="datetime-local"
-              value={data.startDate}
-              onChange={(e) => onChange('startDate', e.target.value)}
-            />
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="endDate">Fin (opcional)</Label>
+            <WizardTooltip content="Deja vacío si es de un solo día." />
           </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="endDate">Fecha y hora de fin (opcional)</Label>
-              <WizardTooltip content="Si tu evento tiene una fecha de finalización definida. Deja vacío si es un evento de un solo día." />
-            </div>
-            <Input
-              id="endDate"
-              type="datetime-local"
-              value={data.endDate}
-              onChange={(e) => onChange('endDate', e.target.value)}
-            />
-            {data.endDate && data.startDate && new Date(data.endDate) < new Date(data.startDate) && (
-              <p className="text-xs text-destructive">La fecha de fin no puede ser anterior al inicio</p>
-            )}
-          </div>
+          <Input
+            id="endDate"
+            type="datetime-local"
+            value={data.endDate}
+            onChange={(e) => onChange('endDate', e.target.value)}
+          />
+          {data.endDate && data.startDate && new Date(data.endDate) < new Date(data.startDate) && (
+            <p className="text-xs text-destructive">La fecha de fin no puede ser anterior</p>
+          )}
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-muted-foreground" />
-          <h3 className="text-sm font-semibold">Lugar</h3>
-        </div>
-
+      {/* Ubicación + Dirección en 1 fila */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Label htmlFor="location">Ubicación / Zona *</Label>
-            <WizardTooltip content="El barrio, parque o zona donde se realiza el evento. Ej: Centro histórico de Loja" />
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="location">Ubicación *</Label>
+            <WizardTooltip content="Zona o lugar del evento." />
           </div>
           <Input
             id="location"
@@ -348,31 +351,34 @@ function StepEventLocation({
             onChange={(e) => onChange('location', e.target.value)}
           />
           {data.location.length > 0 && data.location.length < 3 && (
-            <p className="text-xs text-destructive">Debe tener al menos 3 caracteres</p>
+            <p className="text-xs text-destructive">Mínimo 3 caracteres</p>
           )}
         </div>
-
         <div className="space-y-2">
           <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
             <Label htmlFor="address">Dirección exacta</Label>
-            <WizardTooltip content="La dirección completa del evento para que los asistentes lleguen fácilmente." />
           </div>
           <Input
             id="address"
-            placeholder="Ej: Avenida 18 de Noviembre, Loja"
+            placeholder="Ej: Avenida 18 de Noviembre"
             value={data.address}
             onChange={(e) => onChange('address', e.target.value)}
           />
         </div>
+      </div>
 
+      {/* Local + Precio en 1 fila */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Label htmlFor="venueId">Local asociado (opcional)</Label>
-            <WizardTooltip content="Si el evento se realiza en un local registrado, selecciónalo para mostrar información adicional del lugar." />
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="venueId">Local asociado</Label>
+            <WizardTooltip content="Relaciona con un local registrado." />
           </div>
           <Select value={data.venueId || 'none'} onValueChange={(v) => onChange('venueId', v === 'none' ? '' : v)}>
             <SelectTrigger>
-              <SelectValue placeholder="Selecciona un local" />
+              <SelectValue placeholder="Sin local" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Sin local asociado</SelectItem>
@@ -384,49 +390,51 @@ function StepEventLocation({
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Label>Ubicación en el mapa</Label>
-            <WizardTooltip content="Haz clic en el mapa para marcar la ubicación exacta del evento." />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="price">Precio de entrada</Label>
+            <WizardTooltip content="Vacío = gratuito." />
           </div>
-          <LocationPickerMap
-            lat={data.lat}
-            lng={data.lng}
-            onChange={(lat, lng) => {
-              onChange('lat', lat)
-              onChange('lng', lng)
-            }}
-            onClear={() => {
-              onChange('lat', null)
-              onChange('lng', null)
-            }}
-            mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''}
-            className="h-64 rounded-lg"
+          <Input
+            id="price"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="0.00 (gratis)"
+            value={data.price}
+            onChange={(e) => onChange('price', e.target.value)}
           />
         </div>
       </div>
 
+      {/* Mapa */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Label htmlFor="price">Precio de entrada (opcional)</Label>
-          <WizardTooltip content="Si tu evento tiene un costo de entrada, ingrésalo aquí. Deja vacío si es gratuito." />
+          <MapPin className="h-4 w-4 text-muted-foreground" />
+          <Label>Ubicación en el mapa</Label>
+          <WizardTooltip content="Haz clic para marcar la ubicación exacta." />
         </div>
-        <Input
-          id="price"
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder="Ej: 15.00 (dejar vacío si es gratis)"
-          value={data.price}
-          onChange={(e) => onChange('price', e.target.value)}
-          className="max-w-xs"
+        <LocationPickerMap
+          lat={data.lat}
+          lng={data.lng}
+          onChange={(lat, lng) => {
+            onChange('lat', lat)
+            onChange('lng', lng)
+          }}
+          onClear={() => {
+            onChange('lat', null)
+            onChange('lng', null)
+          }}
+          mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''}
+          className="h-64 rounded-lg"
         />
-        <p className="text-xs text-muted-foreground">Deja vacío si el evento es gratuito</p>
       </div>
     </div>
   )
 }
+
+/* ─────────────────── STEP 3: RESUMEN (preview) ─────────────────── */
 
 function StepEventSummary({
   data,
@@ -441,12 +449,11 @@ function StepEventSummary({
   const venue = venues.find((v) => v.id === data.venueId)
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return '-'
+    if (!dateStr) return ''
     try {
       return new Date(dateStr).toLocaleString('es-EC', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
+        weekday: 'short',
+        month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
@@ -457,48 +464,120 @@ function StepEventSummary({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 p-4">
-        <p className="text-sm text-emerald-800 dark:text-emerald-200">
+    <div className="space-y-4">
+      {/* Alerta */}
+      <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 p-3">
+        <p className="text-sm text-amber-900 dark:text-amber-100 font-medium">
           Revisa la información antes de crear el evento.
         </p>
       </div>
 
-      <SummarySection title="Información del Evento">
-        <SummaryItem label="Título" value={data.title} />
-        <SummaryItem label="Categoría" value={category ? `${category.icon} ${category.name}` : '-'} />
-        <SummaryItem label="Descripción" value={data.description} />
-        {data.content && <SummaryItem label="Contenido" value={data.content} />}
-        {data.image && <SummaryItem label="Imagen" value="Configurada ✓" />}
-      </SummarySection>
+      {/* Preview: simulación de card de evento */}
+      <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+        {/* Hero image */}
+        <div className="relative h-44 w-full overflow-hidden bg-accent">
+          {data.image && data.image.startsWith('http') ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={data.image} alt={data.title} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-100 to-pink-50 dark:from-purple-950 dark:to-pink-950">
+              <Calendar className="h-12 w-12 text-purple-300 dark:text-purple-700" />
+            </div>
+          )}
+          {/* Price badge */}
+          {data.price && parseFloat(data.price) > 0 && (
+            <span className="absolute left-3 bottom-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+              ${parseFloat(data.price).toFixed(2)}
+            </span>
+          )}
+          <span className="absolute right-3 top-3 rounded-full bg-emerald-500/90 px-2.5 py-1 text-xs font-semibold text-white">
+            Próximamente
+          </span>
+        </div>
 
-      <SummarySection title="Fecha y Lugar">
-        <SummaryItem label="Inicio" value={formatDate(data.startDate)} />
-        {data.endDate && <SummaryItem label="Fin" value={formatDate(data.endDate)} />}
-        <SummaryItem label="Ubicación" value={data.location} />
-        {data.address && <SummaryItem label="Dirección" value={data.address} />}
-        {venue && <SummaryItem label="Local" value={venue.name} />}
-        {data.lat && data.lng && <SummaryItem label="Mapa" value={`${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}`} />}
-        <SummaryItem label="Precio" value={data.price ? `$${parseFloat(data.price).toFixed(2)}` : 'Gratuito'} />
-      </SummarySection>
-    </div>
-  )
-}
+        {/* Content */}
+        <div className="p-5 space-y-3">
+          {/* Category + Date */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {category && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
+                {category.icon} {category.name}
+              </span>
+            )}
+            {data.startDate && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                {formatDate(data.startDate)}
+              </span>
+            )}
+          </div>
 
-function SummarySection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <div className="rounded-lg border border-border/50 bg-card p-4">{children}</div>
-    </div>
-  )
-}
+          {/* Title */}
+          <h3 className="text-[1.35rem] font-semibold leading-snug text-foreground">
+            {data.title || 'Nombre del evento'}
+          </h3>
 
-function SummaryItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start gap-2 py-1">
-      <span className="text-xs font-medium text-muted-foreground w-24 shrink-0">{label}</span>
-      <span className="text-sm">{value}</span>
+          {/* Rating placeholder */}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star key={star} className="h-3 w-3 text-muted-foreground/30" />
+              ))}
+            </div>
+            <span>Sin reseñas</span>
+          </div>
+
+          {/* Location */}
+          <div className="flex items-start gap-1.5 text-sm text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span>{data.location || 'Ubicación no definida'}</span>
+            {venue && <span className="text-xs text-muted-foreground/70">({venue.name})</span>}
+          </div>
+
+          {/* Description */}
+          {data.description && (
+            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+              {data.description}
+            </p>
+          )}
+
+          {/* Details */}
+          <div className="rounded-lg border border-border/40 p-3 space-y-1.5">
+            {data.startDate && (
+              <div className="flex items-center gap-2 text-xs">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Inicio:</span>
+                <span className="text-muted-foreground">{formatDate(data.startDate)}</span>
+              </div>
+            )}
+            {data.endDate && (
+              <div className="flex items-center gap-2 text-xs">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Fin:</span>
+                <span className="text-muted-foreground">{formatDate(data.endDate)}</span>
+              </div>
+            )}
+            {data.price && parseFloat(data.price) > 0 ? (
+              <div className="flex items-center gap-2 text-xs">
+                <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Precio:</span>
+                <span className="text-muted-foreground">${parseFloat(data.price).toFixed(2)}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs">
+                <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="font-medium text-emerald-600">Entrada gratuita</span>
+              </div>
+            )}
+            {data.address && (
+              <div className="flex items-center gap-2 text-xs">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">{data.address}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

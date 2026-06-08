@@ -345,6 +345,9 @@ export async function getEventBySlug(slug: string): Promise<EventWithRelations |
               image: true,
             },
           },
+          photos: {
+            orderBy: { order: 'asc' },
+          },
         },
         orderBy: { createdAt: 'desc' },
       },

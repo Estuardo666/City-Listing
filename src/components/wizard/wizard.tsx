@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, type ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 import { WizardProgress } from './wizard-progress'
 import { WizardNavigation } from './wizard-navigation'
 
@@ -61,7 +62,7 @@ export function Wizard({ steps, onComplete, isSubmitting = false, submitLabel = 
   }, [currentStep, completedSteps, goToStep])
 
   return (
-    <div className={className}>
+    <div className={cn('mx-auto w-full max-w-full lg:max-w-[60%]', className)}>
       <WizardProgress
         steps={steps}
         currentStep={currentStep}
@@ -71,7 +72,7 @@ export function Wizard({ steps, onComplete, isSubmitting = false, submitLabel = 
 
       <div className="mt-8">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-foreground">{currentStepData.title}</h2>
+          <h2 className="text-2xl font-bold text-foreground">{currentStepData.title}</h2>
           {currentStepData.description && (
             <p className="mt-1 text-sm text-muted-foreground">{currentStepData.description}</p>
           )}
