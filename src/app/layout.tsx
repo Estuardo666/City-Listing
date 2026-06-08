@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import localFont from 'next/font/local'
+import { Geist } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
@@ -10,13 +10,8 @@ import { PageTransition } from '@/components/layout/page-transition'
 import { ScrollLockFix } from '@/components/ui/scroll-lock-fix'
 import { LazyGlobals } from '@/components/providers/lazy-globals'
 
-const googleSans = localFont({
-  src: [
-    { path: '../assets/fonts/google-sans/GoogleSans-Regular.woff2', weight: '400', style: 'normal' },
-    { path: '../assets/fonts/google-sans/GoogleSans-Medium.woff2', weight: '500', style: 'normal' },
-    { path: '../assets/fonts/google-sans/GoogleSans-Bold.woff2', weight: '700', style: 'normal' },
-    { path: '../assets/fonts/google-sans/GoogleSans-Italic.woff2', weight: '400', style: 'italic' },
-  ],
+const geist = Geist({
+  subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
 })
@@ -70,7 +65,7 @@ document.addEventListener('touchend', function(e) {
           }}
         />
       </head>
-      <body className={`${googleSans.variable} font-sans antialiased`}>
+      <body className={`${geist.variable} font-sans antialiased`}>
         <ScrollLockFix />
         <MapboxWorkerSetup />
         <QueryProvider>

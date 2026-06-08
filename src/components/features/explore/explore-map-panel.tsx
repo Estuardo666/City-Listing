@@ -1195,7 +1195,7 @@ export function ExploreMapPanel({
                 exit={{ opacity: 0, y: 6, scale: 0.92, filter: 'blur(2px)' }}
                 transition={{ type: 'spring', stiffness: 500, damping: 32, mass: 0.8 }}
                 style={{
-                  fontFamily: "'Google Sans', system-ui, -apple-system, sans-serif",
+                  fontFamily: "'Geist', system-ui, -apple-system, sans-serif",
                   borderRadius: '20px',
                   border: `1.5px solid ${activeMarker.type === 'venue' ? 'hsl(158 64% 38% / 0.35)' : 'hsl(14 90% 55% / 0.35)'}`,
                   background: 'hsl(var(--card))',
