@@ -188,10 +188,10 @@ export function UserVenuesList() {
                     <div className="flex h-full w-full items-center justify-center">
                       <CategoryIconFallback 
                         category={{
-                          id: venue.category.name,
-                          name: venue.category.name,
-                          slug: venue.category.name.toLowerCase().replace(/\s+/g, '-'),
-                          icon: venue.category.icon,
+                          id: venue.venueCategories[0]?.category.name ?? '',
+                          name: venue.venueCategories[0]?.category.name ?? '',
+                          slug: (venue.venueCategories[0]?.category.name ?? '').toLowerCase().replace(/\s+/g, '-'),
+                          icon: venue.venueCategories[0]?.category.icon ?? null,
                           color: null
                         }} 
                         size="sm"
@@ -209,7 +209,7 @@ export function UserVenuesList() {
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    <span>{venue.category.icon ?? '🏪'} {venue.category.name}</span>
+                    <span>{venue.venueCategories[0]?.category.icon ?? '🏪'} {venue.venueCategories[0]?.category.name ?? ''}</span>
                     {venue.address && (
                       <span className="inline-flex items-center gap-1">
                         <MapPin className="h-3 w-3" />

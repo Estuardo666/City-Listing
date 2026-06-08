@@ -22,7 +22,7 @@ export async function HomePromoGridSection() {
     featured: venue.featured,
     phone: venue.phone,
     website: venue.website,
-    category: venue.category,
+    categories: venue.venueCategories.map(vc => vc.category),
     priceRange: venue.priceRange ?? null,
     avgRating: venue.avgRating ?? null,
     reviewCount: venue.reviewCount ?? 0,
@@ -48,7 +48,7 @@ export async function HomePromoGridSection() {
     price: event.price ?? null,
     avgRating: event.avgRating ?? null,
     reviewCount: event.reviewCount ?? 0,
-    category: event.category,
+    categories: event.eventCategories.map(ec => ec.category),
   }))
   
   return <HomePromoGrid venues={formattedVenues} events={formattedEvents} />

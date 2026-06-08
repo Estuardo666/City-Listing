@@ -38,7 +38,7 @@ function EventHeroCard({ event }: { event: ExploreEvent }) {
         />
       ) : (
         <CategoryGradientBg
-          categorySlug={event.category.slug}
+          categorySlug={event.categories[0]?.slug ?? ''}
           name={event.title}
           showInitials
           className="h-full w-full"
@@ -48,7 +48,7 @@ function EventHeroCard({ event }: { event: ExploreEvent }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
       <div className="relative z-10 space-y-2 p-5">
         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
-          {event.category.icon ?? '🎟️'} {event.category.name}
+          {event.categories[0]?.icon ?? '🎟️'} {event.categories[0]?.name ?? ''}
         </span>
         <h3 className="text-2xl font-medium leading-tight text-white sm:text-3xl line-clamp-2">{event.title}</h3>
         <div className="flex flex-wrap items-center gap-3 text-sm text-white/75">
@@ -84,7 +84,7 @@ function EventMediumCard({ event }: { event: ExploreEvent }) {
         />
       ) : (
         <CategoryGradientBg
-          categorySlug={event.category.slug}
+          categorySlug={event.categories[0]?.slug ?? ''}
           name={event.title}
           showInitials
           className="h-full w-full"
@@ -94,7 +94,7 @@ function EventMediumCard({ event }: { event: ExploreEvent }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
       <div className="relative z-10 space-y-1 p-4">
         <span className="text-xs font-medium uppercase tracking-widest text-white/60">
-          {event.category.name}
+          {event.categories[0]?.name ?? ''}
         </span>
         <p className="text-base font-medium leading-snug text-white line-clamp-2">{event.title}</p>
         <div className="flex items-center gap-1 text-sm text-white/65">

@@ -44,13 +44,17 @@ const eventListSelect = Prisma.validator<Prisma.EventSelect>()({
       slug: true,
     },
   },
-  category: {
+  eventCategories: {
     select: {
-      id: true,
-      name: true,
-      slug: true,
-      color: true,
-      icon: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          color: true,
+          icon: true,
+        },
+      },
     },
   },
 })
@@ -65,10 +69,14 @@ const userEventListSelect = Prisma.validator<Prisma.EventSelect>()({
   location: true,
   address: true,
   createdAt: true,
-  category: {
+  eventCategories: {
     select: {
-      name: true,
-      icon: true,
+      category: {
+        select: {
+          name: true,
+          icon: true,
+        },
+      },
     },
   },
 })
@@ -95,11 +103,15 @@ const eventAdminListSelect = Prisma.validator<Prisma.EventSelect>()({
       slug: true,
     },
   },
-  category: {
+  eventCategories: {
     select: {
-      id: true,
-      name: true,
-      slug: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
     },
   },
   user: {
@@ -120,9 +132,13 @@ const eventMapSelect = Prisma.validator<Prisma.EventSelect>()({
   address: true,
   lat: true,
   lng: true,
-  category: {
+  eventCategories: {
     select: {
-      name: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
     },
   },
 })
@@ -134,14 +150,18 @@ const upcomingEventNotificationSelect = Prisma.validator<Prisma.EventSelect>()({
   startDate: true,
   location: true,
   address: true,
-  category: {
+  eventCategories: {
     select: {
-      name: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
     },
   },
 })
 
-export async function getEventCategories(): Promise<EventCategory[]> {
+export async function getEventCategories() {
   return prisma.category.findMany({
     where: {
       type: 'EVENT',
@@ -226,8 +246,12 @@ export async function getEvents(
   }
 
   if (filters.category) {
-    where.category = {
-      slug: filters.category,
+    where.eventCategories = {
+      some: {
+        category: {
+          slug: filters.category,
+        },
+      },
     }
   }
 
@@ -324,7 +348,8 @@ export async function getEventBySlug(slug: string): Promise<EventWithRelations |
       status: 'APPROVED',
     },
     include: {
-      category: true,
+      eventCategories: { include: { category: true } },
+      eventSubcategories: { include: { subcategory: true } },
       user: {
         select: {
           id: true,

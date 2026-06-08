@@ -52,19 +52,19 @@ export async function updateEventAction(
       }
     }
 
-    // Validate category
-    const category = await prisma.category.findFirst({
+    // Validate categories
+    const categories = await prisma.category.findMany({
       where: {
-        id: parsed.data.categoryId,
+        id: { in: parsed.data.categoryIds },
         type: 'EVENT',
       },
       select: { id: true },
     })
 
-    if (!category) {
+    if (categories.length !== parsed.data.categoryIds.length) {
       return {
         success: false,
-        error: 'La categoría seleccionada no es válida para eventos.',
+        error: 'Una o más categorías seleccionadas no son válidas para eventos.',
       }
     }
 
@@ -86,47 +86,60 @@ export async function updateEventAction(
       }
     }
 
-    const updated = await prisma.event.update({
-      where: { id: eventId },
-      data: {
-        title: parsed.data.title,
-        description: parsed.data.description,
-        content: parsed.data.content,
-        image: parsed.data.image,
-        startDate: parsed.data.startDate,
-        endDate: parsed.data.endDate,
-        price: parsed.data.price,
-        location: parsed.data.location,
-        address: parsed.data.address,
-        lat: parsed.data.lat,
-        lng: parsed.data.lng,
-        featured: parsed.data.featured,
-        categoryId: category.id,
-        venueId: parsed.data.venueId,
-      },
-      include: {
-        category: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.eventCategory.deleteMany({
+        where: { eventId },
+      })
+
+      await tx.eventCategory.createMany({
+        data: categories.map((cat) => ({
+          eventId,
+          categoryId: cat.id,
+        })),
+      })
+
+      return tx.event.update({
+        where: { id: eventId },
+        data: {
+          title: parsed.data.title,
+          description: parsed.data.description,
+          content: parsed.data.content,
+          image: parsed.data.image,
+          startDate: parsed.data.startDate,
+          endDate: parsed.data.endDate,
+          price: parsed.data.price,
+          location: parsed.data.location,
+          address: parsed.data.address,
+          lat: parsed.data.lat,
+          lng: parsed.data.lng,
+          featured: parsed.data.featured,
+          venueId: parsed.data.venueId,
         },
-        venue: parsed.data.venueId ? {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
+        include: {
+          eventCategories: { include: { category: true } },
+          eventSubcategories: { include: { subcategory: true } },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
-        } : false,
-        media: { orderBy: { order: 'asc' } },
-        reviews: {
-          include: { user: { select: { id: true, name: true, image: true } } },
-          orderBy: { createdAt: 'desc' },
+          venue: parsed.data.venueId ? {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          } : false,
+          media: { orderBy: { order: 'asc' } },
+          reviews: {
+            include: { user: { select: { id: true, name: true, image: true } } },
+            orderBy: { createdAt: 'desc' },
+          },
+          recurrenceRule: true,
         },
-        recurrenceRule: true,
-      },
+      })
     })
 
     revalidatePath('/eventos')

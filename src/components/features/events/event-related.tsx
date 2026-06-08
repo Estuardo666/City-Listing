@@ -40,7 +40,7 @@ function RelatedEventCard({ event }: { event: EventListItem }) {
           />
         ) : (
           <CategoryGradientBg
-            categorySlug={event.category.slug}
+            categorySlug={event.eventCategories[0]?.category.slug}
             name={event.title}
             showInitials
             className="h-full w-full"
@@ -48,7 +48,7 @@ function RelatedEventCard({ event }: { event: EventListItem }) {
           />
         )}
         <span className="absolute left-2.5 top-2.5 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
-          {resolveIconEmoji(event.category.icon, 'event')} {event.category.name}
+          {resolveIconEmoji(event.eventCategories[0]?.category.icon, 'event')} {event.eventCategories[0]?.category.name}
         </span>
       </div>
       <div className="flex flex-col gap-1.5 p-3.5">

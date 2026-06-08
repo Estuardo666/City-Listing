@@ -16,7 +16,6 @@ export default async function AdminCategoriesPage() {
   const categories = await prisma.category.findMany({
     where: {
       type: 'VENUE',
-      parentId: null,
     },
     orderBy: { name: 'asc' },
     select: {
@@ -29,9 +28,13 @@ export default async function AdminCategoriesPage() {
       introText: true,
       icon: true,
       color: true,
+      subcategories: {
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, slug: true, icon: true, color: true },
+      },
       _count: {
         select: {
-          venues: { where: { status: 'APPROVED' } },
+          venueCategories: { where: { venue: { status: 'APPROVED' } } },
         },
       },
     },
@@ -70,7 +73,7 @@ export default async function AdminCategoriesPage() {
               introText: category.introText,
               icon: category.icon,
               color: category.color,
-              venueCount: category._count.venues,
+              venueCount: category._count.venueCategories,
             }}
           />
         ))}

@@ -135,7 +135,11 @@ export async function getRankedVenues(
   const venues = await prisma.venue.findMany({
     where: {
       status: 'APPROVED',
-      category: { slug: { in: categorySlugs } },
+      venueCategories: {
+        some: {
+          category: { slug: { in: categorySlugs } },
+        },
+      },
       reviewCount: { gte: MIN_REVIEWS_FOR_RANKING },
     },
     select: {
@@ -150,13 +154,17 @@ export async function getRankedVenues(
       featured: true,
       address: true,
       phone: true,
-      category: {
+      venueCategories: {
         select: {
-          id: true,
-          name: true,
-          slug: true,
-          color: true,
-          icon: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              color: true,
+              icon: true,
+            },
+          },
         },
       },
       reviews: {
@@ -183,7 +191,7 @@ export async function getRankedVenues(
     recentReviewCount: v.reviews.length,
     favoriteCount: v.favorites.length,
     checkInCount: v.checkIns.length,
-    category: v.category,
+    category: v.venueCategories[0]?.category ?? { id: '', name: '', slug: '', color: null, icon: null },
   }))
 
   const maxReviewCount = Math.max(...rawVenues.map((v) => v.reviewCount), 1)
@@ -223,7 +231,11 @@ export async function getBestRatedVenue(categorySlugs: string[]) {
   return prisma.venue.findFirst({
     where: {
       status: 'APPROVED',
-      category: { slug: { in: categorySlugs } },
+      venueCategories: {
+        some: {
+          category: { slug: { in: categorySlugs } },
+        },
+      },
       reviewCount: { gte: MIN_REVIEWS_FOR_RANKING },
     },
     orderBy: [{ avgRating: 'desc' }, { reviewCount: 'desc' }],
@@ -238,7 +250,11 @@ export async function getTrendingVenues(categorySlugs: string[], take = 3) {
   const venues = await prisma.venue.findMany({
     where: {
       status: 'APPROVED',
-      category: { slug: { in: categorySlugs } },
+      venueCategories: {
+        some: {
+          category: { slug: { in: categorySlugs } },
+        },
+      },
     },
     select: {
       id: true,

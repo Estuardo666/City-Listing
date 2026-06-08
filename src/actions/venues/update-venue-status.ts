@@ -39,7 +39,7 @@ export async function updateVenueStatusAction(
         status: parsed.data.status,
       },
       include: {
-        category: true,
+        venueCategories: { include: { category: true } },
         user: {
           select: {
             id: true,
@@ -100,7 +100,7 @@ export async function updateVenueStatusAction(
 
     return {
       success: true,
-      data: updated,
+      data: updated as unknown as VenueWithRelations,
     }
   } catch {
     return {

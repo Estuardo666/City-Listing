@@ -30,7 +30,7 @@ export default async function LocalesPage() {
         location: true, address: true, lat: true, lng: true, featured: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.venue.findMany({
@@ -45,7 +45,7 @@ export default async function LocalesPage() {
         location: true, address: true, lat: true, lng: true, featured: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.venue.findMany({
@@ -57,7 +57,7 @@ export default async function LocalesPage() {
         location: true, address: true, lat: true, lng: true, featured: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.category.findMany({
@@ -95,7 +95,7 @@ export default async function LocalesPage() {
     promotions: [],
     services: [],
     businessHours: [],
-    category: v.category,
+    categories: v.venueCategories.map((vc: any) => vc.category),
   })) as ExploreVenue[]
 
   return (

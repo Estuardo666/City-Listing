@@ -218,7 +218,7 @@ export function ExploreFiltersPanel({
   showProximity = true,
 }: ExploreFiltersProps) {
   const hasActiveFilters =
-    filters.q !== '' || filters.category !== '' || filters.featured ||
+    filters.q !== '' || filters.categories.length > 0 || filters.featured ||
     filters.type !== 'all' || proximityRadius !== null ||
     filters.minRating !== null || filters.openNow || filters.verified ||
     filters.hasPromotions || filters.hasUpcomingEvents ||
@@ -228,7 +228,7 @@ export function ExploreFiltersPanel({
 
   const typeBadge = filters.type !== 'all' ? 1 : 0
   const featuredBadge = filters.featured ? 1 : 0
-  const categoryBadge = filters.category !== '' ? 1 : 0
+  const categoryBadge = filters.categories.length
   const ratingBadge = filters.minRating !== null ? 1 : 0
   const venueFiltersBadge =
     (filters.openNow ? 1 : 0) + (filters.verified ? 1 : 0) +
@@ -243,7 +243,7 @@ export function ExploreFiltersPanel({
   const showTypeSelector = mode === 'all'
   const showVenueFilters = mode === 'venues' || (mode === 'all' && filters.type !== 'events')
   const showEventFilters = mode === 'events' || (mode === 'all' && filters.type !== 'venues')
-  const isGastronomic = !filters.category || GASTRONOMIC_CATEGORY_SLUGS.includes(filters.category)
+  const isGastronomic = filters.categories.length === 0 || filters.categories.some(c => GASTRONOMIC_CATEGORY_SLUGS.includes(c))
 
   return (
     <div className={cn('flex h-full flex-col', isDrawer ? 'gap-0' : 'gap-1')}>
@@ -558,8 +558,8 @@ export function ExploreFiltersPanel({
           >
             <CategorySearcher
               categories={categories}
-              selectedCategory={filters.category}
-              onCategoryChange={(category) => onChange({ category })}
+              selectedCategories={filters.categories}
+              onCategoriesChange={(categories) => onChange({ categories })}
             />
           </AccordionSection>
         )}

@@ -93,7 +93,7 @@ export async function getCollectionBySlug(slug: string) {
               id: true, name: true, slug: true, image: true, location: true, address: true,
               priceRange: true, avgRating: true, reviewCount: true, verified: true, badge: true,
               featured: true, status: true, description: true, lat: true, lng: true, phone: true, website: true,
-              category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+              venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
             },
           },
           event: {
@@ -101,7 +101,7 @@ export async function getCollectionBySlug(slug: string) {
               id: true, title: true, slug: true, image: true, startDate: true, location: true, address: true,
               featured: true, status: true, price: true, isRecurring: true, avgRating: true, reviewCount: true,
               venueId: true, description: true, endDate: true, lat: true, lng: true,
-              category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+              eventCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
               venue: { select: { id: true, name: true, slug: true } },
             },
           },
@@ -127,7 +127,7 @@ export async function getCollectionById(id: string, userId: string) {
               id: true, name: true, slug: true, image: true, location: true, address: true,
               priceRange: true, avgRating: true, reviewCount: true, verified: true, badge: true,
               featured: true, status: true, description: true, lat: true, lng: true, phone: true, website: true,
-              category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+              venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
             },
           },
           event: {
@@ -135,7 +135,7 @@ export async function getCollectionById(id: string, userId: string) {
               id: true, title: true, slug: true, image: true, startDate: true, location: true, address: true,
               featured: true, status: true, price: true, isRecurring: true, avgRating: true, reviewCount: true,
               venueId: true, description: true, endDate: true, lat: true, lng: true,
-              category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+              eventCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
               venue: { select: { id: true, name: true, slug: true } },
             },
           },
@@ -153,8 +153,8 @@ export async function getCollectionById(id: string, userId: string) {
 
 export async function getCategoryTree(type: string) {
   return prisma.category.findMany({
-    where: { type, parentId: null },
-    include: { children: { orderBy: { name: 'asc' } } },
+    where: { type },
+    include: { subcategories: { orderBy: { name: 'asc' } } },
     orderBy: { name: 'asc' },
   })
 }

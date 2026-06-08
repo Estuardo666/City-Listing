@@ -77,7 +77,7 @@ export default async function CategoryPage({ params }: PageProps) {
     introText,
   } = getCategorySeoData(category)
 
-  const categoryFilter = { category: { slug: { in: childSlugs } } }
+  const categoryFilter = { venueCategories: { some: { category: { slug: { in: childSlugs } } } } }
 
   const [
     allApproved,
@@ -98,7 +98,7 @@ export default async function CategoryPage({ params }: PageProps) {
         location: true, address: true, lat: true, lng: true, featured: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.venue.findMany({
@@ -110,7 +110,7 @@ export default async function CategoryPage({ params }: PageProps) {
         location: true, address: true, lat: true, lng: true, featured: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.venue.findMany({
@@ -126,7 +126,7 @@ export default async function CategoryPage({ params }: PageProps) {
         location: true, address: true, lat: true, lng: true, featured: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.venue.findMany({
@@ -138,19 +138,25 @@ export default async function CategoryPage({ params }: PageProps) {
         location: true, address: true, lat: true, lng: true, featured: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.category.findMany({
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, slug: true, icon: true },
+      select: {
+        id: true, name: true, slug: true, icon: true,
+        subcategories: {
+          orderBy: { name: 'asc' },
+          select: { id: true, name: true, slug: true, icon: true },
+        },
+      },
     }),
     getRankedVenues(childSlugs, RANKING_TAKE),
     prisma.event.findMany({
       where: {
         status: 'APPROVED',
         startDate: { gte: new Date() },
-        venue: { category: { slug: { in: childSlugs } } },
+        venue: { venueCategories: { some: { category: { slug: { in: childSlugs } } } } },
       },
       orderBy: { startDate: 'asc' },
       take: RELATED_EVENTS_TAKE,
@@ -159,7 +165,7 @@ export default async function CategoryPage({ params }: PageProps) {
         startDate: true, endDate: true, location: true, address: true,
         lat: true, lng: true, featured: true, price: true, isRecurring: true,
         avgRating: true, reviewCount: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        eventCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     getParentVenueCategories(),
@@ -192,7 +198,7 @@ export default async function CategoryPage({ params }: PageProps) {
     promotions: [],
     services: [],
     businessHours: [],
-    category: v.category,
+    categories: [v.venueCategories[0]?.category].filter(Boolean),
   })) as ExploreVenue[]
 
   const allVenues = allApproved.slice(0, ALL_TAKE) as VenueListItem[]

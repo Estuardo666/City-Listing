@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
           { description: { contains: q, mode: 'insensitive' } },
           { location: { contains: q, mode: 'insensitive' } },
           { address: { contains: q, mode: 'insensitive' } },
-          { category: { name: { contains: q, mode: 'insensitive' } } },
+          { venueCategories: { some: { category: { name: { contains: q, mode: 'insensitive' } } } } },
         ],
       }),
-      ...(category && { category: { slug: category } }),
+      ...(category && { venueCategories: { some: { category: { slug: category } } } }),
       ...(featured && { featured: true }),
       ...(minRating !== null && { avgRating: { gte: minRating } }),
       ...(hasPromotions && {
@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
         reviewCount: true,
         verified: true,
         badge: true,
-        category: {
-          select: { id: true, name: true, slug: true, color: true, icon: true },
+        venueCategories: {
+          select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } },
         },
       },
     })

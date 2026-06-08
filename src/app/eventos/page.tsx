@@ -30,7 +30,7 @@ export default async function EventosPage() {
         startDate: true, endDate: true, location: true, address: true,
         lat: true, lng: true, featured: true, price: true, isRecurring: true,
         avgRating: true, reviewCount: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        eventCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.event.findMany({
@@ -42,7 +42,7 @@ export default async function EventosPage() {
         startDate: true, endDate: true, location: true, address: true,
         lat: true, lng: true, featured: true, price: true, isRecurring: true,
         avgRating: true, reviewCount: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        eventCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.event.findMany({
@@ -54,7 +54,7 @@ export default async function EventosPage() {
         startDate: true, endDate: true, location: true, address: true,
         lat: true, lng: true, featured: true, price: true, isRecurring: true,
         avgRating: true, reviewCount: true,
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        eventCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
     }),
     prisma.category.findMany({
@@ -88,7 +88,7 @@ export default async function EventosPage() {
     price: (e as any).price ?? null,
     avgRating: (e as any).avgRating ?? null,
     reviewCount: (e as any).reviewCount ?? 0,
-    category: e.category,
+    categories: (e as any).eventCategories?.map((ec: any) => ec.category) ?? [],
   })) as ExploreEvent[]
 
   return (

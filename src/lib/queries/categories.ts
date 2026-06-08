@@ -20,7 +20,6 @@ export async function getParentVenueCategories() {
   return prisma.category.findMany({
     where: {
       type: 'VENUE',
-      parentId: null,
       slug: { notIn: CATEGORY_SLUGS_TO_SKIP },
     },
     orderBy: { name: 'asc' },
@@ -36,8 +35,8 @@ export async function getParentVenueCategories() {
       color: true,
       _count: {
         select: {
-          venues: { where: { status: 'APPROVED' } },
-          children: true,
+          venueCategories: { where: { venue: { status: 'APPROVED' } } },
+          subcategories: true,
         },
       },
     },
@@ -51,7 +50,7 @@ export async function getCategoryBySlug(slug: string) {
       type: 'VENUE',
     },
     include: {
-      children: {
+      subcategories: {
         orderBy: { name: 'asc' },
         select: {
           id: true,
@@ -59,14 +58,11 @@ export async function getCategoryBySlug(slug: string) {
           slug: true,
           icon: true,
           color: true,
-          _count: {
-            select: { venues: { where: { status: 'APPROVED' } } },
-          },
         },
       },
       _count: {
         select: {
-          venues: { where: { status: 'APPROVED' } },
+          venueCategories: { where: { venue: { status: 'APPROVED' } } },
         },
       },
     },
@@ -77,7 +73,6 @@ export async function getCategorySlugsForStaticParams() {
   const categories = await prisma.category.findMany({
     where: {
       type: 'VENUE',
-      parentId: null,
       slug: { notIn: CATEGORY_SLUGS_TO_SKIP },
     },
     select: { slug: true },
@@ -109,7 +104,6 @@ export async function getAllVenueCategorySlugsForSitemap() {
   const categories = await prisma.category.findMany({
     where: {
       type: 'VENUE',
-      parentId: null,
       slug: { notIn: CATEGORY_SLUGS_TO_SKIP },
     },
     select: { slug: true, updatedAt: true },
@@ -122,10 +116,10 @@ export async function getCategoryWithChildrenSlugs(slug: string): Promise<string
     where: { slug, type: 'VENUE' },
     select: {
       id: true,
-      children: { select: { slug: true } },
+      subcategories: { select: { slug: true } },
     },
   })
 
   if (!category) return []
-  return [slug, ...category.children.map((c) => c.slug)]
+  return [slug, ...category.subcategories.map((s) => s.slug)]
 }

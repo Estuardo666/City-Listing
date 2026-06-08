@@ -33,7 +33,7 @@ interface LocationHoursSectionProps {
     address: string | null
     lat: number | null
     lng: number | null
-    category: { name: string }
+    venueCategories: { category: { name: string } }[]
   }
   businessHours: VenueBusinessHours[]
   operatingHours: OperatingHoursLegacy | null
@@ -131,7 +131,7 @@ export function LocationHoursSection({
                 address: venue.address,
                 lat: venue.lat,
                 lng: venue.lng,
-                category: { name: venue.category.name },
+                venueCategories: venue.venueCategories,
               }] as VenueMapItem[]}
               mapboxToken={mapboxToken}
               mapStyle={mapStyle}

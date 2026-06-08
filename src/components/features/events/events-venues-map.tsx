@@ -131,7 +131,7 @@ export function EventsVenuesMap({ events, venues, mapboxToken, mapStyle, classNa
             >
               <div className="space-y-2 p-1">
                 <p className="text-sm font-semibold text-foreground">{selectedEvent.title}</p>
-                <p className="text-xs text-muted-foreground">{selectedEvent.category.name}</p>
+                <p className="text-xs text-muted-foreground">{selectedEvent.eventCategories[0]?.category.name}</p>
                 <p className="inline-flex items-center gap-1 text-xs text-muted-foreground" suppressHydrationWarning>
                   <CalendarDays className="h-3.5 w-3.5" />
                   {formatDateTime(selectedEvent.startDate)}
@@ -159,7 +159,7 @@ export function EventsVenuesMap({ events, venues, mapboxToken, mapStyle, classNa
             >
               <div className="space-y-2 p-1">
                 <p className="text-sm font-semibold text-foreground">{selectedVenue.name}</p>
-                <p className="text-xs text-muted-foreground">{selectedVenue.category.name}</p>
+                <p className="text-xs text-muted-foreground">{selectedVenue.venueCategories[0]?.category.name}</p>
                 <p className="text-xs text-muted-foreground">{selectedVenue.address ?? selectedVenue.location}</p>
                 <Button asChild className="h-8 px-3 text-xs">
                   <Link href={`/locales/${selectedVenue.slug}`}>Ver local</Link>

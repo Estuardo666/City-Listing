@@ -28,12 +28,16 @@ interface OsmPreviewTableProps {
   places: PlaceWithStatus[]
   importId: string | null
   coordinates: { lat: number; lon: number } | null
+  categories?: { id: string; name: string }[]
 }
 
-export function OsmPreviewTable({ places, importId }: OsmPreviewTableProps) {
+export function OsmPreviewTable({ places, importId, categories = [] }: OsmPreviewTableProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isImporting, setIsImporting] = useState(false)
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set())
+  const [categoryIds, setCategoryIds] = useState<string[]>(
+    categories.length > 0 ? [categories[0].id] : []
+  )
   const [page, setPage] = useState(1)
   const perPage = 20
   const totalPages = Math.ceil(places.length / perPage)
@@ -67,7 +71,7 @@ export function OsmPreviewTable({ places, importId }: OsmPreviewTableProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           places: placeList,
-          categoryId: '',
+          categoryIds,
           importId,
           options: { skipDuplicates: true, updateExisting: false, batchSize: 20 },
         }),
@@ -110,6 +114,27 @@ export function OsmPreviewTable({ places, importId }: OsmPreviewTableProps) {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-1 mr-2">
+                {categories.map((cat) => {
+                  const isSelected = categoryIds.includes(cat.id)
+                  return (
+                    <Button
+                      key={cat.id}
+                      variant={isSelected ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setCategoryIds((prev) =>
+                          isSelected ? prev.filter((id) => id !== cat.id) : [...prev, cat.id]
+                        )
+                      }}
+                    >
+                      {cat.name}
+                    </Button>
+                  )
+                })}
+              </div>
+            )}
             <Button variant="outline" size="sm" onClick={toggleAll}>
               {paged.filter((p) => !p.isDuplicate).every((p) => selected.has(p.id))
                 ? 'Deseleccionar página'

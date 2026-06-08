@@ -31,7 +31,7 @@ export default async function DashboardCreateEventPage() {
             </p>
           </div>
 
-          <EventWizard categories={categories} venues={venues} />
+          <EventWizard categories={categories.map(c => ({ category: c }))} venues={venues} />
         </div>
       </section>
     </div>

@@ -60,7 +60,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
   const hasPromotions = venue.promotions.length > 0
   const hasProducts = venue.products.length > 0
   const acceptsReservations = venue.reservationSettings?.acceptsReservations ?? false
-  const isGastronomic = GASTRONOMIC_CATEGORY_SLUGS.includes(venue.category.slug)
+  const isGastronomic = venue.venueCategories.some((vc) => GASTRONOMIC_CATEGORY_SLUGS.includes(vc.category.slug))
 
   return (
     <article className="space-y-0">
@@ -79,7 +79,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
           />
         ) : (
           <CategoryGradientBg
-            categorySlug={venue.category.slug}
+            categorySlug={venue.venueCategories[0]?.category.slug ?? ''}
             name={venue.name}
             showInitials
             className="h-full w-full"
@@ -91,7 +91,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
         {/* Badges */}
         <div className="absolute left-5 top-5 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
-            {resolveIconEmoji(venue.category.icon, 'venue')} {venue.category.name}
+            {resolveIconEmoji(venue.venueCategories[0]?.category.icon, 'venue')} {venue.venueCategories[0]?.category.name}
           </span>
           {venue.verified && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300 backdrop-blur-md">
@@ -478,13 +478,13 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
 
           {/* Category pill */}
           <Link
-            href={`/explorar?q=${encodeURIComponent(venue.category.name)}`}
+            href={`/explorar?q=${encodeURIComponent(venue.venueCategories[0]?.category.name ?? '')}`}
             className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:bg-accent"
           >
-            <span className="text-3xl">{resolveIconEmoji(venue.category.icon, 'venue')}</span>
+            <span className="text-3xl">{resolveIconEmoji(venue.venueCategories[0]?.category.icon, 'venue')}</span>
             <div>
               <p className="text-xs text-muted-foreground">Categoría</p>
-              <p className="text-sm font-medium text-foreground">{venue.category.name}</p>
+              <p className="text-sm font-medium text-foreground">{venue.venueCategories[0]?.category.name}</p>
             </div>
           </Link>
         </aside>

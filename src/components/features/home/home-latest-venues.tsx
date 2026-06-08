@@ -31,7 +31,7 @@ function LatestVenueCard({ venue }: { venue: ExploreVenue }) {
           />
         ) : (
           <CategoryGradientBg
-            categorySlug={venue.category.slug}
+            categorySlug={venue.categories[0]?.slug ?? ''}
             name={venue.name}
             showInitials
             className="h-full w-full"
@@ -39,7 +39,7 @@ function LatestVenueCard({ venue }: { venue: ExploreVenue }) {
           />
         )}
         <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
-          {venue.category.icon ?? ''} {venue.category.name}
+          {venue.categories[0]?.icon ?? ''} {venue.categories[0]?.name ?? ''}
         </span>
       </div>
       <div className="flex flex-col gap-2 p-4">

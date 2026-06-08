@@ -45,9 +45,13 @@ export async function getUpcomingEventNotificationsForUser(
       startDate: true,
       location: true,
       address: true,
-      category: {
+      eventCategories: {
         select: {
-          name: true,
+          category: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },

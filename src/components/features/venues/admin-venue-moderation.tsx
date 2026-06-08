@@ -152,7 +152,7 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
                     <User2 className="h-3.5 w-3.5" />
                     {venue.user.name ?? venue.user.email ?? 'Sin autor'}
                   </p>
-                  <p className="text-muted-foreground">Categoría: {venue.category.name}</p>
+                  <p className="text-muted-foreground">Categoría: {venue.venueCategories[0]?.category.name}</p>
                   <p className="inline-flex items-center gap-2">
                     <Building2 className="h-3.5 w-3.5" />
                     {venue._count.events} eventos asociados

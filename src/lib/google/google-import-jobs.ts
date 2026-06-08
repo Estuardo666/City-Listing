@@ -29,7 +29,7 @@ class GoogleImportJobs {
   async processJob(
     jobId: string,
     places: GooglePlaceNormalized[],
-    categoryId: string,
+    categoryIds: string[],
     userId: string,
     duplicateAction: 'skip' | 'update'
   ) {
@@ -54,7 +54,7 @@ class GoogleImportJobs {
 
       for (const place of batch) {
         try {
-          const result = await googlePlacesImporter.savePlace(place, categoryId, userId, duplicateAction)
+          const result = await googlePlacesImporter.savePlace(place, categoryIds, userId, duplicateAction)
 
           if (result.action === 'created') {
             imported++

@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { places, categoryId, duplicateAction, country, province, city, categories, radius } =
+    const { places, categoryIds, duplicateAction, country, province, city, categories, radius } =
       validated.data
 
     const job = await googleImportJobs.createJob({
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     })
 
     googleImportJobs
-      .processJob(job.id, places, categoryId, session.user.id, duplicateAction)
+      .processJob(job.id, places, categoryIds, session.user.id, duplicateAction)
       .catch((err) => {
         console.error('Job processing error:', err)
       })

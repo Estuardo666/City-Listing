@@ -18,13 +18,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { MediaUrlInput } from '@/components/features/media/media-url-input'
 import { VenueFormTextSections } from '@/components/features/venues/venue-form-text-sections'
 import type { VenueWithRelations } from '@/types/venue'
@@ -57,7 +50,7 @@ export function VenueEditForm({ venue, categories }: VenueEditFormProps) {
       address: venue.address,
       lat: venue.lat,
       lng: venue.lng,
-      categoryId: venue.category.id,
+      categoryIds: venue.venueCategories.map((vc) => vc.category.id),
       featured: venue.featured,
     },
   })
@@ -101,24 +94,34 @@ export function VenueEditForm({ venue, categories }: VenueEditFormProps) {
 
           <FormField
             control={form.control}
-            name="categoryId"
+            name="categoryIds"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Categoría</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una categoría" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormLabel>Categorías</FormLabel>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((category) => {
+                    const active = field.value.includes(category.id)
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => {
+                          const next = active
+                            ? field.value.filter((id: string) => id !== category.id)
+                            : [...field.value, category.id]
+                          field.onChange(next)
+                        }}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                          active
+                            ? 'border-emerald-600 bg-emerald-600 text-white'
+                            : 'border-border bg-card text-foreground hover:bg-muted/50 hover:border-foreground/20'
+                        }`}
+                      >
+                        <span className="text-xs">{category.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
                 <FormMessage />
               </FormItem>
             )}

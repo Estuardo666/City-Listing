@@ -56,7 +56,7 @@ export function VenueForm({ categories, initialData }: VenueFormProps) {
       address: initialData?.address ?? null,
       lat: initialData?.lat ?? null,
       lng: initialData?.lng ?? null,
-      categoryId: initialData?.categoryId ?? '',
+      categoryIds: initialData?.categoryIds ?? [],
       featured: initialData?.featured ?? false,
       priceRange: initialData?.priceRange ?? null,
     },
@@ -101,24 +101,34 @@ export function VenueForm({ categories, initialData }: VenueFormProps) {
 
           <FormField
             control={form.control}
-            name="categoryId"
+            name="categoryIds"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Categoría</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una categoría" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormLabel>Categorías</FormLabel>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((category) => {
+                    const active = field.value.includes(category.id)
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => {
+                          const next = active
+                            ? field.value.filter((id: string) => id !== category.id)
+                            : [...field.value, category.id]
+                          field.onChange(next)
+                        }}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                          active
+                            ? 'border-emerald-600 bg-emerald-600 text-white'
+                            : 'border-border bg-card text-foreground hover:bg-muted/50 hover:border-foreground/20'
+                        }`}
+                      >
+                        <span className="text-xs">{category.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
                 <FormMessage />
               </FormItem>
             )}

@@ -38,9 +38,13 @@ export default async function VenueBranchesPage({
         parentId: venue.id,
       },
       include: {
-        category: {
+        venueCategories: {
           select: {
-            name: true,
+            category: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
         _count: {

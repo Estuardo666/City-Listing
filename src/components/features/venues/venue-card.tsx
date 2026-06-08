@@ -37,7 +37,7 @@ export function VenueCard({ venue, badges }: VenueCardProps) {
           />
         ) : (
           <CategoryGradientBg
-            categorySlug={venue.category.slug}
+            categorySlug={venue.venueCategories[0]?.category.slug ?? ''}
             name={venue.name}
             showInitials
             className="h-full w-full"
@@ -66,7 +66,7 @@ export function VenueCard({ venue, badges }: VenueCardProps) {
       {/* Content */}
       <div className="flex flex-1 flex-col p-5">
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
-          {resolveIconEmoji(venue.category.icon, 'venue')} {venue.category.name}
+          {resolveIconEmoji(venue.venueCategories[0]?.category.icon, 'venue')} {venue.venueCategories[0]?.category.name}
         </span>
 
         {badges && badges.length > 0 && (

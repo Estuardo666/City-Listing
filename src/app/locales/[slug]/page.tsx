@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: VenueDetailPageProps): Promis
     return { title: 'Local no encontrado' }
   }
 
-  const category = venue.category?.name || 'Local'
+  const category = venue.venueCategories[0]?.category?.name || 'Local'
   const cleanAddress = (venue.address || '')
     .replace(/,?\s*Loja\s*,?\s*Ecuador\s*$/i, '')
     .replace(/,?\s*Ecuador\s*$/i, '')

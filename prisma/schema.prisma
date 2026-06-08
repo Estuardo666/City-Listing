@@ -132,7 +132,7 @@ model VerificationToken {
 
 model Category {
   id             String   @id @default(cuid())
-  name           String   @unique
+  name           String
   slug           String   @unique
   description    String?
   seoTitle       String?
@@ -141,15 +141,95 @@ model Category {
   icon           String?
   color          String?
   type           String
-  parentId       String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryTree")
-  events   Event[]
-  venues   Venue[]
-  posts    Post[]
+  subcategories      Subcategory[]
+  venueCategories    VenueCategory[]
+  eventCategories    EventCategory[]
+  posts              Post[]
+
+  @@unique([name, type])
+}
+
+model Subcategory {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String?
+  icon           String?
+  color          String?
+  categoryId     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  category           Category            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  venueSubcategories VenueSubcategory[]
+  eventSubcategories EventSubcategory[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+}
+
+model GooglePlaceTypeMapping {
+  id               String   @id @default(cuid())
+  googleType       String   @unique
+  categorySlugs    String[]
+  subcategorySlugs String[]
+  confidence       Int      @default(100)
+  approved         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([googleType])
+}
+
+model VenueCategory {
+  venueId    String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  venue    Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([venueId, categoryId])
+  @@index([categoryId])
+}
+
+model VenueSubcategory {
+  venueId       String
+  subcategoryId String
+  createdAt     DateTime @default(now())
+
+  venue       Venue       @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  subcategory Subcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+
+  @@id([venueId, subcategoryId])
+  @@index([subcategoryId])
+}
+
+model EventCategory {
+  eventId    String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, categoryId])
+  @@index([categoryId])
+}
+
+model EventSubcategory {
+  eventId       String
+  subcategoryId String
+  createdAt     DateTime @default(now())
+
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  subcategory Subcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, subcategoryId])
+  @@index([subcategoryId])
 }
 
 model Event {
@@ -178,8 +258,6 @@ model Event {
 
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
   venueId    String?
   venue      Venue?   @relation(fields: [venueId], references: [id], onDelete: SetNull)
   eventNotifications EventNotification[]
@@ -191,10 +269,11 @@ model Event {
   reservations   Reservation[]
   collections    CollectionItem[]
   questions      Question[]
+  eventCategories    EventCategory[]
+  eventSubcategories EventSubcategory[]
 
   @@index([status])
   @@index([startDate])
-  @@index([categoryId])
   @@index([venueId])
   @@index([viewCount])
 }
@@ -232,8 +311,6 @@ model Venue {
 
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
   events     Event[]
   favorites  Favorite[]
   comments   Comment[]
@@ -253,6 +330,8 @@ model Venue {
   collections    CollectionItem[]
   businessHours  VenueBusinessHours[]
   services       VenueService[]
+  venueCategories    VenueCategory[]
+  venueSubcategories VenueSubcategory[]
   
   parentId      String?
   parent        Venue?    @relation("VenueBranches", fields: [parentId], references: [id], onDelete: SetNull)
@@ -264,7 +343,6 @@ model Venue {
   branchReviews Review[]  @relation("BranchReviews")
 
   @@index([status])
-  @@index([categoryId])
   @@index([googlePlaceId])
   @@index([osmId])
   @@index([avgRating])

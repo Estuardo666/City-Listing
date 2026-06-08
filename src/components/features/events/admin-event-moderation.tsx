@@ -155,7 +155,7 @@ export function AdminEventModeration({ events, selectedStatus }: AdminEventModer
                     <User2 className="h-3.5 w-3.5" />
                     {event.user.name ?? event.user.email ?? 'Sin autor'}
                   </p>
-                  <p className="text-muted-foreground">Categoría: {event.category.name}</p>
+                  <p className="text-muted-foreground">Categoría: {event.eventCategories[0]?.category.name}</p>
                 </div>
               </CardHeader>
 

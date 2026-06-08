@@ -24,7 +24,8 @@ export type OsmConfigInput = z.infer<typeof OsmConfigSchema>
 
 export const OsmBulkImportSchema = z.object({
   places: z.array(z.any()).min(1, 'No hay lugares seleccionados'),
-  categoryId: z.string().min(1, 'La categoría es requerida'),
+  categoryIds: z.array(z.string()).min(1, 'La categoría es requerida'),
+  subcategoryIds: z.array(z.string()).optional(),
   importId: z.string().optional(),
   options: z.object({
     skipDuplicates: z.boolean().default(true),

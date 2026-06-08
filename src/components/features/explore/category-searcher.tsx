@@ -14,12 +14,12 @@ type Category = {
 
 type CategorySearcherProps = {
   categories: Category[]
-  selectedCategory: string
-  onCategoryChange: (category: string) => void
+  selectedCategories: string[]
+  onCategoriesChange: (slugs: string[]) => void
   className?: string
 }
 
-export function CategorySearcher({ categories, selectedCategory, onCategoryChange, className }: CategorySearcherProps) {
+export function CategorySearcher({ categories, selectedCategories, onCategoriesChange, className }: CategorySearcherProps) {
   const [searchTerm, setSearchTerm] = useState('')
 
   const filteredCategories = useMemo(() => {
@@ -30,14 +30,18 @@ export function CategorySearcher({ categories, selectedCategory, onCategoryChang
     )
   }, [categories, searchTerm])
 
-  const selectedCategoryData = categories.find((cat) => cat.slug === selectedCategory)
+  const selectedCategoryData = categories.filter((cat) => selectedCategories.includes(cat.slug))
 
   const handleSelect = (slug: string) => {
-    onCategoryChange(slug === selectedCategory ? '' : slug)
+    onCategoriesChange(
+      selectedCategories.includes(slug)
+        ? selectedCategories.filter((s) => s !== slug)
+        : [...selectedCategories, slug]
+    )
   }
 
   const handleClear = () => {
-    onCategoryChange('')
+    onCategoriesChange([])
     setSearchTerm('')
   }
 
@@ -64,18 +68,30 @@ export function CategorySearcher({ categories, selectedCategory, onCategoryChang
         )}
       </div>
 
-      {/* Selected category display */}
-      {selectedCategoryData && (
-        <div className="mt-2 flex shrink-0 items-center justify-between rounded-lg border border-primary/30 bg-primary px-3 py-2">
-          <span className="flex items-center gap-2 text-sm font-medium text-white">
-            {selectedCategoryData.name}
-          </span>
+      {/* Selected categories display */}
+      {selectedCategoryData.length > 0 && (
+        <div className="mt-2 flex shrink-0 flex-wrap gap-1">
+          {selectedCategoryData.map((cat) => (
+            <div key={cat.id} className="flex items-center gap-1 rounded-lg border border-primary/30 bg-primary px-2.5 py-1.5">
+              <span className="text-sm font-medium text-white">
+                {cat.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleSelect(cat.slug)}
+                className="flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </div>
+          ))}
           <button
             type="button"
             onClick={handleClear}
-            className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
+            className="flex items-center gap-1 rounded-lg border border-border/60 px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-accent"
           >
             <X className="h-3 w-3" />
+            Limpiar
           </button>
         </div>
       )}
@@ -83,10 +99,10 @@ export function CategorySearcher({ categories, selectedCategory, onCategoryChang
       {/* "Todas" button — always visible */}
       <button
         type="button"
-        onClick={() => handleSelect('')}
+        onClick={() => onCategoriesChange([])}
         className={cn(
           'mt-2 w-full shrink-0 rounded-lg border px-2.5 py-1.5 font-medium transition-all chip-14',
-          selectedCategory === ''
+          selectedCategories.length === 0
             ? 'border-primary/30 bg-primary text-white'
             : 'border-border/60 bg-background text-muted-foreground hover:border-primary/30 hover:text-primary'
         )}
@@ -105,7 +121,7 @@ export function CategorySearcher({ categories, selectedCategory, onCategoryChang
               onClick={() => handleSelect(category.slug)}
               className={cn(
                 'rounded-lg border font-medium transition-all whitespace-nowrap chip-14',
-                selectedCategory === category.slug
+                selectedCategories.includes(category.slug)
                   ? 'border-primary bg-primary text-white'
                   : 'border-border/60 bg-secondary/40 text-foreground hover:border-primary/40 hover:bg-primary/8 hover:text-primary'
               )}

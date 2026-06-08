@@ -62,7 +62,7 @@ type ExploreSearchResponse = {
 const DEFAULT_FILTERS: ExploreFilters = {
   q: '',
   type: 'all',
-  category: '',
+  categories: [],
   featured: false,
   minRating: null,
   openNow: false,
@@ -95,8 +95,7 @@ function buildMarkers(items: ExploreItem[]): ExploreMapMarker[] {
       lng: i.lng as number,
       name: i._type === 'venue' ? i.name : i.title,
       slug: i.slug,
-      category: i.category.name,
-      categoryIcon: i.category.icon,
+      categories: i.categories,
     }))
 }
 
@@ -105,7 +104,7 @@ function countActiveFilters(filters: ExploreFilters): number {
   let count = 0
   if (filters.type !== 'all') count++
   if (filters.featured) count++
-  if (filters.category !== '') count++
+  if (filters.categories.length > 0) count++
   if (filters.q !== '') count++
   if (filters.minRating !== null) count++
   if (filters.openNow) count++
@@ -238,12 +237,12 @@ export function ExploreClient({
       const params = new URLSearchParams({
         q: f.q,
         type: f.type,
-        category: f.category,
         featured: String(f.featured),
         take: String(SEARCH_TAKE),
         venueSkip: '0',
         eventSkip: '0',
       })
+      if (f.categories.length > 0) params.set('categories', f.categories.join(','))
       if (f.minRating !== null) params.set('minRating', String(f.minRating))
       if (f.openNow) params.set('openNow', 'true')
       if (f.verified) params.set('verified', 'true')
@@ -294,12 +293,12 @@ export function ExploreClient({
       const params = new URLSearchParams({
         q: filters.q,
         type: filters.type,
-        category: filters.category,
         featured: String(filters.featured),
         take: String(SEARCH_TAKE),
         venueSkip: String(pagination.nextVenueSkip),
         eventSkip: String(pagination.nextEventSkip),
       })
+      if (filters.categories.length > 0) params.set('categories', filters.categories.join(','))
       if (filters.minRating !== null) params.set('minRating', String(filters.minRating))
       if (filters.openNow) params.set('openNow', 'true')
       if (filters.verified) params.set('verified', 'true')

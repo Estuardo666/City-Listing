@@ -21,7 +21,7 @@ export async function HomeFeaturedEventsSection() {
     price: event.price ?? null,
     avgRating: event.avgRating ?? null,
     reviewCount: event.reviewCount ?? 0,
-    category: event.category,
+    categories: event.eventCategories.map((ec) => ec.category),
   }))
   
   return <HomeFeaturedEvents events={formattedEvents} />

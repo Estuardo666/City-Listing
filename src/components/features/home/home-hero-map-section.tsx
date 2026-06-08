@@ -22,7 +22,7 @@ async function getHeroData(limit: number) {
     featured: venue.featured,
     phone: venue.phone,
     website: venue.website,
-    category: venue.category,
+    categories: venue.venueCategories.map(vc => vc.category),
     priceRange: venue.priceRange ?? null,
     avgRating: venue.avgRating ?? null,
     reviewCount: venue.reviewCount ?? 0,
@@ -49,7 +49,7 @@ async function getHeroData(limit: number) {
     price: event.price ?? null,
     avgRating: event.avgRating ?? null,
     reviewCount: event.reviewCount ?? 0,
-    category: event.category,
+    categories: event.eventCategories.map(ec => ec.category),
     _type: 'event' as const,
   }))
 

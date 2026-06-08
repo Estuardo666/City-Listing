@@ -20,13 +20,13 @@ export type ExploreVenue = {
   promotions?: { id: string; title: string; discount: string | null }[]
   services?: { name: string }[]
   businessHours?: { dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }[]
-  category: {
+  categories: {
     id: string
     name: string
     slug: string
     color: string | null
     icon: string | null
-  }
+  }[]
 }
 
 export type ExploreEvent = {
@@ -45,13 +45,13 @@ export type ExploreEvent = {
   price: number | null
   avgRating: number | null
   reviewCount: number
-  category: {
+  categories: {
     id: string
     name: string
     slug: string
     color: string | null
     icon: string | null
-  }
+  }[]
 }
 
 export type ExploreItem =
@@ -61,7 +61,7 @@ export type ExploreItem =
 export type ExploreFilters = {
   q: string
   type: 'all' | 'venues' | 'events'
-  category: string
+  categories: string[]
   featured: boolean
   // Universal
   minRating: number | null
@@ -87,8 +87,7 @@ export type ExploreMapMarker = {
   lng: number
   name: string
   slug: string
-  category: string
-  categoryIcon: string | null
+  categories: { id: string; name: string; slug: string; color: string | null; icon: string | null }[]
 }
 
 export type MapBounds = {

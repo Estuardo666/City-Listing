@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
           { description: { contains: q, mode: 'insensitive' } },
           { location: { contains: q, mode: 'insensitive' } },
           { address: { contains: q, mode: 'insensitive' } },
-          { category: { name: { contains: q, mode: 'insensitive' } } },
+          { eventCategories: { some: { category: { name: { contains: q, mode: 'insensitive' } } } } },
         ],
       }),
-      ...(category && { category: { slug: category } }),
+      ...(category && { eventCategories: { some: { category: { slug: category } } } }),
       ...(featured && { featured: true }),
       ...(minRating !== null && { avgRating: { gte: minRating } }),
       ...(isFree && {
@@ -72,8 +72,8 @@ export async function GET(request: NextRequest) {
         isRecurring: true,
         avgRating: true,
         reviewCount: true,
-        category: {
-          select: { id: true, name: true, slug: true, color: true, icon: true },
+        eventCategories: {
+          select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } },
         },
       },
     })

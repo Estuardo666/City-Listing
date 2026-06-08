@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Datos inválidos', details: parsed.error.errors }, { status: 400 })
     }
 
-    const { places, categoryId, importId, options } = parsed.data
+    const { places, categoryIds, importId, options } = parsed.data
 
     if (importId) {
       await prisma.osmImport.update({
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const result = await importService.bulkImport(
       places as OsmPlace[],
-      categoryId,
+      categoryIds,
       session.user.id,
       options,
       importId,

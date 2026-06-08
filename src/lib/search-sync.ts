@@ -10,11 +10,11 @@ export async function syncAllDataToSearch() {
     const [events, venues, posts] = await Promise.all([
       prisma.event.findMany({
         where: { status: 'APPROVED' },
-        include: { category: true }
+        include: { eventCategories: { include: { category: true } } }
       }),
       prisma.venue.findMany({
         where: { status: 'APPROVED' },
-        include: { category: true }
+        include: { venueCategories: { include: { category: true } } }
       }),
       prisma.post.findMany({
         where: { status: 'APPROVED' },
@@ -30,7 +30,7 @@ export async function syncAllDataToSearch() {
         title: event.title,
         description: event.description || '',
         location: event.location,
-        category: event.category.name,
+        category: event.eventCategories[0]?.category.name ?? '',
         data: {
           id: event.id,
           title: event.title,
@@ -38,7 +38,7 @@ export async function syncAllDataToSearch() {
           image: event.image,
           startDate: event.startDate,
           location: event.location,
-          category: event.category
+          category: event.eventCategories[0]?.category ?? null
         }
       })),
       ...venues.map(venue => ({
@@ -47,14 +47,14 @@ export async function syncAllDataToSearch() {
         title: venue.name,
         description: venue.description || '',
         location: venue.location,
-        category: venue.category.name,
+        category: venue.venueCategories[0]?.category.name ?? '',
         data: {
           id: venue.id,
           name: venue.name,
           slug: venue.slug,
           image: venue.image,
           location: venue.location,
-          category: venue.category
+          category: venue.venueCategories[0]?.category ?? null
         }
       })),
       ...posts.map(post => ({
@@ -99,7 +99,7 @@ export async function syncAllDataToSearch() {
 export async function syncEventsToSearch() {
   const events = await prisma.event.findMany({
     where: { status: 'APPROVED' },
-    include: { category: true }
+    include: { eventCategories: { include: { category: true } } }
   })
 
   const docs = events.map(event => ({
@@ -108,7 +108,7 @@ export async function syncEventsToSearch() {
     title: event.title,
     description: event.description || '',
     location: event.location,
-    category: event.category.name,
+    category: event.eventCategories[0]?.category.name ?? '',
     data: {
       id: event.id,
       title: event.title,
@@ -116,7 +116,7 @@ export async function syncEventsToSearch() {
       image: event.image,
       startDate: event.startDate,
       location: event.location,
-      category: event.category
+      category: event.eventCategories[0]?.category ?? null
     }
   }))
 
@@ -127,7 +127,7 @@ export async function syncEventsToSearch() {
 export async function syncVenuesToSearch() {
   const venues = await prisma.venue.findMany({
     where: { status: 'APPROVED' },
-    include: { category: true }
+    include: { venueCategories: { include: { category: true } } }
   })
 
   const docs = venues.map(venue => ({
@@ -136,14 +136,14 @@ export async function syncVenuesToSearch() {
     title: venue.name,
     description: venue.description || '',
     location: venue.location,
-    category: venue.category.name,
+    category: venue.venueCategories[0]?.category.name ?? '',
     data: {
       id: venue.id,
       name: venue.name,
       slug: venue.slug,
       image: venue.image,
       location: venue.location,
-      category: venue.category
+      category: venue.venueCategories[0]?.category ?? null
     }
   }))
 

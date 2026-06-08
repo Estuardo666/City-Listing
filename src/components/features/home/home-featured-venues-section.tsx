@@ -1,7 +1,27 @@
 import { getVenues } from '@/lib/queries/venues'
 import { HomeFeaturedVenues } from './home-featured-venues'
+import type { ExploreVenue } from '@/types/explore'
 
 export async function HomeFeaturedVenuesSection() {
   const venueList = await getVenues({ status: 'APPROVED' }, 80)
-  return <HomeFeaturedVenues venues={venueList} />
+  const formattedVenues: ExploreVenue[] = venueList.map((venue) => ({
+    id: venue.id,
+    name: venue.name,
+    slug: venue.slug,
+    description: venue.description,
+    image: venue.image,
+    location: venue.location,
+    address: venue.address,
+    lat: venue.lat,
+    lng: venue.lng,
+    featured: venue.featured,
+    phone: venue.phone,
+    website: venue.website,
+    priceRange: venue.priceRange,
+    avgRating: venue.avgRating,
+    reviewCount: venue.reviewCount,
+    verified: venue.verified,
+    categories: venue.venueCategories.map((vc) => vc.category),
+  }))
+  return <HomeFeaturedVenues venues={formattedVenues} />
 }

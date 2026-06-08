@@ -39,7 +39,7 @@ function RelatedEventCard({ event }: { event: ExploreEvent }) {
           />
         ) : (
           <CategoryGradientBg
-            categorySlug={event.category.slug}
+            categorySlug={event.categories[0]?.slug ?? ''}
             name={event.title}
             showInitials
             className="h-full w-full"
@@ -47,7 +47,7 @@ function RelatedEventCard({ event }: { event: ExploreEvent }) {
           />
         )}
         <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
-          {event.category.icon ?? ''} {event.category.name}
+          {event.categories[0]?.icon ?? ''} {event.categories[0]?.name ?? ''}
         </span>
       </div>
       <div className="flex flex-col gap-2 p-4">

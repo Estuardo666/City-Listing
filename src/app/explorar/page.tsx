@@ -48,7 +48,7 @@ export default async function ExplorarPage() {
     promotions: [],
     services: [],
     businessHours: [],
-    category: v.category,
+    categories: v.venueCategories.map((vc: any) => vc.category),
   })) as ExploreVenue[]
 
   const serializedEvents = eventList.map((e) => ({
@@ -67,7 +67,7 @@ export default async function ExplorarPage() {
     price: (e as any).price ?? null,
     avgRating: (e as any).avgRating ?? null,
     reviewCount: (e as any).reviewCount ?? 0,
-    category: e.category,
+    categories: e.eventCategories.map((ec: any) => ec.category),
   })) as ExploreEvent[]
 
   return (

@@ -72,7 +72,7 @@ interface VenueWizardData {
   description: string
   content: string
   image: string
-  categoryId: string
+  categoryIds: string[]
   priceRange: string
   location: string
   address: string
@@ -118,7 +118,7 @@ export function VenueWizard({ categories }: VenueWizardProps) {
     description: '',
     content: '',
     image: '',
-    categoryId: '',
+    categoryIds: [],
     priceRange: '',
     location: '',
     address: '',
@@ -138,15 +138,14 @@ export function VenueWizard({ categories }: VenueWizardProps) {
     setData((prev) => ({ ...prev, [key]: value }))
   }, [])
 
-  const selectedCategory = useMemo(
-    () => categories.find((c) => c.id === data.categoryId),
-    [categories, data.categoryId]
+  const selectedCategories = useMemo(
+    () => categories.filter((c) => data.categoryIds.includes(c.id)),
+    [categories, data.categoryIds]
   )
 
   const isGastronomic = useMemo(() => {
-    if (!selectedCategory) return false
-    return GASTRONOMIC_CATEGORY_SLUGS.includes(selectedCategory.slug)
-  }, [selectedCategory])
+    return selectedCategories.some((c) => GASTRONOMIC_CATEGORY_SLUGS.includes(c.slug))
+  }, [selectedCategories])
 
   const handleComplete = useCallback(async () => {
     setIsSubmitting(true)
@@ -157,7 +156,7 @@ export function VenueWizard({ categories }: VenueWizardProps) {
           description: data.description,
           content: data.content || null,
           image: data.image || null,
-          categoryId: data.categoryId,
+          categoryIds: data.categoryIds,
           priceRange: data.priceRange || null,
         },
         location: {
@@ -243,7 +242,7 @@ export function VenueWizard({ categories }: VenueWizardProps) {
       title: 'Información Básica',
       description: 'Datos principales e imagen de tu local',
       icon: <Info className="h-5 w-5" />,
-      isValid: data.name.length >= 3 && data.description.length >= 10 && data.categoryId !== '',
+      isValid: data.name.length >= 3 && data.description.length >= 10 && data.categoryIds.length > 0,
       content: (
         <StepBasicInfo data={data} categories={categories} onChange={updateField} />
       ),
@@ -337,24 +336,38 @@ function StepBasicInfo({
 
       {/* Categoría + Precio */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+          <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Tag className="h-4 w-4 text-muted-foreground" />
-            <Label htmlFor="category">Categoría *</Label>
-            <WizardTooltip content="Categoría principal de tu negocio." />
+            <Label htmlFor="category">Categorías *</Label>
+            <WizardTooltip content="Selecciona una o más categorías para tu negocio." />
           </div>
-          <Select value={data.categoryId} onValueChange={(v) => onChange('categoryId', v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecciona una categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => {
+              const active = data.categoryIds.includes(cat.id)
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    const next = active
+                      ? data.categoryIds.filter((id) => id !== cat.id)
+                      : [...data.categoryIds, cat.id]
+                    onChange('categoryIds', next)
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                    active
+                      ? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-600 dark:text-white'
+                      : 'border-border bg-card text-foreground hover:bg-muted/50 hover:border-foreground/20'
+                  }`}
+                >
+                  <span>{cat.icon}</span>
+                  <span className="text-xs">{cat.name}</span>
+                  {active && <Check className="h-3 w-3" />}
+                </button>
+              )
+            })}
+          </div>
         </div>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -1046,7 +1059,7 @@ function StepSummary({
   categories: VenueCategory[]
   isGastronomic: boolean
 }) {
-  const category = categories.find((c) => c.id === data.categoryId)
+  const category = categories.find((c) => c.id === data.categoryIds[0])
   const selectedServiceNames = Array.from(data.selectedServices)
   const activeHours = data.businessHours.filter((d) => !d.isClosed && d.slots.length > 0)
   const closedDays = data.businessHours.filter((d) => d.isClosed)

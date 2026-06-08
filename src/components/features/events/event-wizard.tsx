@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -37,7 +39,7 @@ interface EventWizardData {
   description: string
   content: string
   image: string
-  categoryId: string
+  categoryIds: string[]
   startDate: string
   endDate: string
   price: string
@@ -73,7 +75,7 @@ export function EventWizard({ categories, venues }: EventWizardProps) {
     description: '',
     content: '',
     image: '',
-    categoryId: '',
+    categoryIds: [],
     startDate: getDefaultStartDate(),
     endDate: '',
     price: '',
@@ -89,8 +91,8 @@ export function EventWizard({ categories, venues }: EventWizardProps) {
   }, [])
 
   const isStep1Valid = useMemo(() => {
-    return data.title.length >= 3 && data.description.length >= 10 && data.categoryId !== ''
-  }, [data.title, data.description, data.categoryId])
+    return data.title.length >= 3 && data.description.length >= 10 && data.categoryIds.length > 0
+  }, [data.title, data.description, data.categoryIds])
 
   const isStep2Valid = useMemo(() => {
     if (!data.startDate) return false
@@ -107,7 +109,8 @@ export function EventWizard({ categories, venues }: EventWizardProps) {
         description: data.description,
         content: data.content || null,
         image: data.image || null,
-        categoryId: data.categoryId,
+        categoryIds: data.categoryIds,
+        subcategoryIds: [],
         startDate: new Date(data.startDate),
         endDate: data.endDate ? new Date(data.endDate) : null,
         price: data.price ? parseFloat(data.price) : null,
@@ -211,24 +214,50 @@ function StepEventInfo({
       </div>
 
       {/* Categoría */}
-      <div className="space-y-2">
+        <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Tag className="h-4 w-4 text-muted-foreground" />
           <Label htmlFor="category">Categoría *</Label>
           <WizardTooltip content="Categoría que describe tu evento." />
         </div>
-        <Select value={data.categoryId} onValueChange={(v) => onChange('categoryId', v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona una categoría" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.icon} {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              {data.categoryIds.length > 0
+                ? `${data.categoryIds.length} seleccionada${data.categoryIds.length > 1 ? 's' : ''}`
+                : 'Selecciona categorías'}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-2" align="start">
+            <div className="space-y-1">
+              {categories.map((cat) => {
+                const checked = data.categoryIds.includes(cat.category.id)
+                return (
+                  <label
+                    key={cat.category.id}
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        const next = v
+                          ? [...data.categoryIds, cat.category.id]
+                          : data.categoryIds.filter((id) => id !== cat.category.id)
+                        onChange('categoryIds', next)
+                      }}
+                    />
+                    <span className="text-sm">
+                      {cat.category.icon} {cat.category.name}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Descripción + Contenido en 1 fila */}
@@ -438,7 +467,7 @@ function StepEventSummary({
   categories: EventCategory[]
   venues: VenueSelectOption[]
 }) {
-  const category = categories.find((c) => c.id === data.categoryId)
+  const selectedCategories = categories.filter((c) => data.categoryIds.includes(c.category.id))
   const venue = venues.find((v) => v.id === data.venueId)
 
   const formatDate = (dateStr: string) => {
@@ -492,11 +521,11 @@ function StepEventSummary({
         <div className="p-5 space-y-3">
           {/* Category + Date */}
           <div className="flex items-center gap-2 flex-wrap">
-            {category && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
-                {category.icon} {category.name}
+            {selectedCategories.length > 0 && selectedCategories.map((category) => (
+              <span key={category.category.id} className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
+                {category.category.icon} {category.category.name}
               </span>
-            )}
+            ))}
             {data.startDate && (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />

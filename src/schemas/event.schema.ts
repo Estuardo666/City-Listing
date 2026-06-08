@@ -57,7 +57,8 @@ export const eventSchema = z.object({
 
     return value
   }, z.string().min(1, 'Local inválido').nullable()),
-  categoryId: z.string().trim().min(1, 'Selecciona una categoría'),
+  categoryIds: z.array(z.string()).min(1, 'Selecciona al menos una categoria'),
+  subcategoryIds: z.array(z.string()).optional().default([]),
   featured: z.coerce.boolean().optional().default(false),
 }).superRefine((value, ctx) => {
   if (value.endDate && value.endDate < value.startDate) {

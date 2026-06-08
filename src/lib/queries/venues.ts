@@ -35,13 +35,17 @@ const venueListSelect = Prisma.validator<Prisma.VenueSelect>()({
   reviewCount: true,
   verified: true,
   badge: true,
-  category: {
+  venueCategories: {
     select: {
-      id: true,
-      name: true,
-      slug: true,
-      color: true,
-      icon: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          color: true,
+          icon: true,
+        },
+      },
     },
   },
 })
@@ -55,10 +59,14 @@ const userVenueListSelect = Prisma.validator<Prisma.VenueSelect>()({
   location: true,
   address: true,
   createdAt: true,
-  category: {
+  venueCategories: {
     select: {
-      name: true,
-      icon: true,
+      category: {
+        select: {
+          name: true,
+          icon: true,
+        },
+      },
     },
   },
 })
@@ -71,9 +79,13 @@ const venueMapSelect = Prisma.validator<Prisma.VenueSelect>()({
   address: true,
   lat: true,
   lng: true,
-  category: {
+  venueCategories: {
     select: {
-      name: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
     },
   },
 })
@@ -95,11 +107,15 @@ const venueAdminListSelect = Prisma.validator<Prisma.VenueSelect>()({
   verified: true,
   badge: true,
   createdAt: true,
-  category: {
+  venueCategories: {
     select: {
-      id: true,
-      name: true,
-      slug: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
     },
   },
   user: {
@@ -201,8 +217,12 @@ export async function getVenues(
   }
 
   if (filters.category) {
-    where.category = {
-      slug: filters.category,
+    where.venueCategories = {
+      some: {
+        category: {
+          slug: filters.category,
+        },
+      },
     }
   }
 
@@ -292,7 +312,8 @@ export async function getVenueBySlug(slug: string): Promise<VenueWithRelations |
       status: 'APPROVED',
     },
     include: {
-      category: true,
+      venueCategories: { include: { category: true } },
+      venueSubcategories: { include: { subcategory: true } },
       user: {
         select: {
           id: true,

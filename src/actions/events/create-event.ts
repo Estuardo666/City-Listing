@@ -53,9 +53,9 @@ export async function createEventAction(input: unknown): Promise<ActionResponse<
       }
     }
 
-    const category = await prisma.category.findFirst({
+    const categories = await prisma.category.findMany({
       where: {
-        id: parsed.data.categoryId,
+        id: { in: parsed.data.categoryIds },
         type: 'EVENT',
       },
       select: {
@@ -63,10 +63,10 @@ export async function createEventAction(input: unknown): Promise<ActionResponse<
       },
     })
 
-    if (!category) {
+    if (categories.length !== parsed.data.categoryIds.length) {
       return {
         success: false,
-        error: 'La categoría seleccionada no es válida para eventos.',
+        error: 'Una o más categorías seleccionadas no son válidas para eventos.',
       }
     }
 
@@ -91,43 +91,56 @@ export async function createEventAction(input: unknown): Promise<ActionResponse<
 
     const slug = await generateUniqueEventSlug(parsed.data.title)
 
-    const created = await prisma.event.create({
-      data: {
-        title: parsed.data.title,
-        slug,
-        description: parsed.data.description,
-        content: parsed.data.content,
-        image: parsed.data.image,
-        startDate: parsed.data.startDate,
-        endDate: parsed.data.endDate,
-        price: parsed.data.price,
-        location: parsed.data.location,
-        address: parsed.data.address,
-        lat: parsed.data.lat,
-        lng: parsed.data.lng,
-        venueId: parsed.data.venueId,
-        featured: parsed.data.featured,
-        status: 'APPROVED',
-        categoryId: category.id,
-        userId: session.user.id,
-      },
-      include: {
-        category: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const created = await prisma.$transaction(async (tx) => {
+      const event = await tx.event.create({
+        data: {
+          title: parsed.data.title,
+          slug,
+          description: parsed.data.description,
+          content: parsed.data.content,
+          image: parsed.data.image,
+          startDate: parsed.data.startDate,
+          endDate: parsed.data.endDate,
+          price: parsed.data.price,
+          location: parsed.data.location,
+          address: parsed.data.address,
+          lat: parsed.data.lat,
+          lng: parsed.data.lng,
+          venueId: parsed.data.venueId,
+          featured: parsed.data.featured,
+          status: 'APPROVED',
+          userId: session.user.id,
+        },
+      })
+
+      await tx.eventCategory.createMany({
+        data: categories.map((cat) => ({
+          eventId: event.id,
+          categoryId: cat.id,
+        })),
+      })
+
+      return tx.event.findUniqueOrThrow({
+        where: { id: event.id },
+        include: {
+          eventCategories: { include: { category: true } },
+          eventSubcategories: { include: { subcategory: true } },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
+          venue: true,
+          media: { orderBy: { order: 'asc' } },
+          reviews: {
+            include: { user: { select: { id: true, name: true, image: true } } },
+            orderBy: { createdAt: 'desc' },
+          },
+          recurrenceRule: true,
         },
-        venue: true,
-        media: { orderBy: { order: 'asc' } },
-        reviews: {
-          include: { user: { select: { id: true, name: true, image: true } } },
-          orderBy: { createdAt: 'desc' },
-        },
-        recurrenceRule: true,
-      },
+      })
     })
 
     revalidatePath('/eventos')

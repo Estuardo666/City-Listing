@@ -21,7 +21,7 @@ interface GoogleImportPreviewProps {
   places: PlaceResult[]
   duplicates: Map<string, DuplicateCheckResult>
   categories: { id: string; name: string }[]
-  onImport: (selectedPlaces: PlaceResult[], categoryId: string, duplicateAction: 'skip' | 'update') => void
+  onImport: (selectedPlaces: PlaceResult[], categoryIds: string[], duplicateAction: 'skip' | 'update') => void
   onCancel: () => void
   isImporting: boolean
 }
@@ -37,7 +37,9 @@ export function GoogleImportPreview({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     new Set(places.filter((p) => !p.alreadyImported).map((p) => p.google_place_id))
   )
-  const [categoryId, setCategoryId] = useState(categories[0]?.id || '')
+  const [categoryIds, setCategoryIds] = useState<string[]>(
+    categories.length > 0 ? [categories[0].id] : []
+  )
   const [duplicateAction, setDuplicateAction] = useState<'skip' | 'update'>('skip')
 
   const toggleSelect = (id: string) => {
@@ -66,7 +68,7 @@ export function GoogleImportPreview({
 
   const handleImport = () => {
     const selected = places.filter((p) => selectedIds.has(p.google_place_id))
-    onImport(selected, categoryId, duplicateAction)
+    onImport(selected, categoryIds, duplicateAction)
   }
 
   const selectedCount = selectedIds.size
@@ -87,19 +89,26 @@ export function GoogleImportPreview({
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Categoría para importar</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
+            <Label>Categorías para importar</Label>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => {
+                const isSelected = categoryIds.includes(cat.id)
+                return (
+                  <Button
+                    key={cat.id}
+                    variant={isSelected ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setCategoryIds((prev) =>
+                        isSelected ? prev.filter((id) => id !== cat.id) : [...prev, cat.id]
+                      )
+                    }}
+                  >
                     {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </Button>
+                )
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">

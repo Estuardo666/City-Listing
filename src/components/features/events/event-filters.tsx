@@ -43,9 +43,9 @@ export function EventFilters({
             className="h-11 w-full rounded-xl border border-input/80 bg-white/80 px-4 text-sm text-foreground shadow-[0_8px_20px_-18px_rgba(15,23,42,0.65)] ring-offset-background transition-all duration-200 focus-visible:border-primary/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
           >
             <option value="">Todas</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.slug}>
-                {category.name}
+            {categories.map((cat) => (
+              <option key={cat.category.id} value={cat.category.slug}>
+                {cat.category.name}
               </option>
             ))}
           </select>

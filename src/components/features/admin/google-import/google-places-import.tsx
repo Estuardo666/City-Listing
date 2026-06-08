@@ -174,7 +174,7 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
 
   // Direct import (≤500 records)
   const handleDirectImport = useCallback(
-    async (places: PlaceResult[], categoryId: string, duplicateAction: 'skip' | 'update') => {
+    async (places: PlaceResult[], categoryIds: string[], duplicateAction: 'skip' | 'update') => {
       setIsImporting(true)
       addLog(createLog('info', `Importando ${places.length} negocios...`))
 
@@ -192,7 +192,7 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
               lat: p.lat,
               lng: p.lng,
             })),
-            categoryId,
+            categoryIds,
             duplicateAction,
             address: geoResult?.formattedAddress || '',
             categories: selectedCategories,
@@ -249,7 +249,7 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
             lat: p.lat,
             lng: p.lng,
           })),
-          categoryId: categories[0]?.id || '',
+          categoryIds: [categories[0]?.id || ''].filter(Boolean),
           duplicateAction: 'skip',
           country: '',
           province: '',

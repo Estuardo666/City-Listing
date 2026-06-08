@@ -49,7 +49,7 @@ export interface VenueCompleteInput {
     description: string
     content?: string | null
     image?: string | null
-    categoryId: string
+    categoryIds: string[]
     priceRange?: string | null
   }
   location: {
@@ -110,18 +110,18 @@ export async function createVenueCompleteAction(
       }
     }
 
-    const category = await prisma.category.findFirst({
+    const categories = await prisma.category.findMany({
       where: {
-        id: parsed.data.categoryId,
+        id: { in: parsed.data.categoryIds },
         type: 'VENUE',
       },
       select: { id: true },
     })
 
-    if (!category) {
+    if (categories.length !== parsed.data.categoryIds.length) {
       return {
         success: false,
-        error: 'La categoría seleccionada no es válida para locales.',
+        error: 'Una o más categorías seleccionadas no son válidas para locales.',
       }
     }
 
@@ -145,10 +145,32 @@ export async function createVenueCompleteAction(
           priceRange: parsed.data.priceRange,
           featured: parsed.data.featured,
           status: 'PENDING',
-          categoryId: category.id,
           userId: session.user.id,
         },
       })
+
+      await tx.venueCategory.createMany({
+        data: categories.map((cat) => ({
+          venueId: venue.id,
+          categoryId: cat.id,
+        })),
+      })
+
+      if (parsed.data.subcategoryIds && parsed.data.subcategoryIds.length > 0) {
+        const subcategories = await tx.subcategory.findMany({
+          where: { id: { in: parsed.data.subcategoryIds } },
+          select: { id: true },
+        })
+
+        if (subcategories.length > 0) {
+          await tx.venueSubcategory.createMany({
+            data: subcategories.map((sub) => ({
+              venueId: venue.id,
+              subcategoryId: sub.id,
+            })),
+          })
+        }
+      }
 
       if (input.businessHours.length > 0) {
         await tx.venueBusinessHours.createMany({
@@ -222,7 +244,8 @@ export async function createVenueCompleteAction(
       return tx.venue.findUniqueOrThrow({
         where: { id: venue.id },
         include: {
-          category: true,
+          venueCategories: { include: { category: true } },
+          venueSubcategories: { include: { subcategory: true } },
           user: {
             select: { id: true, name: true, email: true },
           },

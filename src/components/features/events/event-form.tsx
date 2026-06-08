@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -60,7 +62,7 @@ export function EventForm({ categories, venues, initialData }: EventFormProps) {
       description: initialData?.description || "",
       content: initialData?.content || null,
       image: initialData?.image || null,
-      categoryId: initialData?.categoryId || "",
+      categoryIds: initialData?.categoryIds || [],
       startDate: initialData?.startDate ? new Date(initialData.startDate) : new Date(),
       endDate: initialData?.endDate || null,
       price: initialData?.price ?? null,
@@ -157,24 +159,49 @@ export function EventForm({ categories, venues, initialData }: EventFormProps) {
 
           <FormField
             control={form.control}
-            name="categoryId"
+            name="categoryIds"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Categoría</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una categoría" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormLabel>Categorías</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <button
+                        type="button"
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      >
+                        {field.value?.length > 0
+                          ? `${field.value.length} seleccionada${field.value.length > 1 ? 's' : ''}`
+                          : 'Selecciona categorías'}
+                      </button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-2" align="start">
+                    <div className="space-y-1">
+                      {categories.map((category) => {
+                        const checked = field.value?.includes(category.category.id)
+                        return (
+                          <label
+                            key={category.category.id}
+                            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(v) => {
+                                const current = field.value || []
+                                const next = v
+                                  ? [...current, category.category.id]
+                                  : current.filter((id) => id !== category.category.id)
+                                field.onChange(next)
+                              }}
+                            />
+                            <span className="text-sm">{category.category.name}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}

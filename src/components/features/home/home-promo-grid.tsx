@@ -31,8 +31,8 @@ export function HomePromoGrid({ venues, events }: HomePromoGridProps) {
       slug: `/locales/${v.slug}`,
       image: v.image,
       type: 'venue',
-      category: v.category.name,
-      categoryIcon: v.category.icon,
+      category: v.categories[0]?.name ?? '',
+      categoryIcon: v.categories[0]?.icon ?? null,
     }))
 
   const eventItems: PromoItem[] = events
@@ -44,8 +44,8 @@ export function HomePromoGrid({ venues, events }: HomePromoGridProps) {
       slug: `/eventos/${e.slug}`,
       image: e.image,
       type: 'event',
-      category: e.category.name,
-      categoryIcon: e.category.icon,
+      category: e.categories[0]?.name ?? '',
+      categoryIcon: e.categories[0]?.icon ?? null,
     }))
 
   const items = [...venueItems, ...eventItems].slice(0, 6)

@@ -23,7 +23,7 @@ type SearchEvent = {
   image: string | null
   startDate: string
   location: string
-  category: { name: string; color: string | null }
+  eventCategories: { name: string; color: string | null }[]
 }
 
 type SearchVenue = {
@@ -32,7 +32,7 @@ type SearchVenue = {
   slug: string
   image: string | null
   location: string
-  category: { name: string; color: string | null }
+  venueCategories: { name: string; color: string | null }[]
 }
 
 type SearchPost = {
@@ -251,8 +251,8 @@ export function CommandPalette() {
                         image={e.image}
                         title={e.title}
                         meta={e.location}
-                        badge={e.category.name}
-                        badgeColor={e.category.color}
+                        badge={e.eventCategories[0]?.name ?? ''}
+                        badgeColor={e.eventCategories[0]?.color ?? null}
                         active={activeIndex === globalIdx}
                         onHover={() => setActiveIndex(globalIdx)}
                         onClick={() => navigate(`/eventos/${e.slug}`)}
@@ -273,8 +273,8 @@ export function CommandPalette() {
                         image={v.image}
                         title={v.name}
                         meta={v.location}
-                        badge={v.category.name}
-                        badgeColor={v.category.color}
+                        badge={v.venueCategories[0]?.name ?? ''}
+                        badgeColor={v.venueCategories[0]?.color ?? null}
                         active={activeIndex === globalIdx}
                         onHover={() => setActiveIndex(globalIdx)}
                         onClick={() => navigate(`/locales/${v.slug}`)}
@@ -367,6 +367,9 @@ function ResultRow({
   onHover: () => void
   onClick: () => void
 }) {
+  const [imageError, setImageError] = useState(false)
+  const hasValidImage = Boolean(image && image.startsWith('http'))
+
   return (
     <button
       type="button"
@@ -379,8 +382,8 @@ function ResultRow({
     >
       {/* Thumbnail */}
       <div className="relative h-9 w-12 shrink-0 overflow-hidden rounded-lg bg-muted">
-        {image ? (
-          <Image src={image} alt={title} fill className="object-cover" sizes="48px" />
+        {hasValidImage && !imageError ? (
+          <Image src={image!} alt={title} fill className="object-cover" sizes="48px" onError={() => setImageError(true)} />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <ImageIcon className="h-4 w-4 text-muted-foreground/40" />

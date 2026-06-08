@@ -96,7 +96,7 @@ export function VenuesMap({ venues, mapboxToken, mapStyle, className }: VenuesMa
             >
               <div className="space-y-2 p-1">
                 <p className="text-sm font-semibold text-foreground">{selectedVenue.name}</p>
-                <p className="text-xs text-muted-foreground">{selectedVenue.category.name}</p>
+                <p className="text-xs text-muted-foreground">{selectedVenue.venueCategories[0]?.category.name}</p>
                 <p className="text-xs text-muted-foreground">{selectedVenue.address ?? selectedVenue.location}</p>
                 <Button asChild className="h-8 px-3 text-xs">
                   <Link href={`/locales/${selectedVenue.slug}`}>Ver local</Link>

@@ -83,8 +83,8 @@ export function EventFiltersClient({ categories }: EventFiltersProps) {
           >
             <option value="">Todas</option>
             {categories.map((cat) => (
-              <option key={cat.id} value={cat.slug}>
-                {cat.name}
+              <option key={cat.category.id} value={cat.category.slug}>
+                {cat.category.name}
               </option>
             ))}
           </select>

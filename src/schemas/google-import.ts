@@ -22,7 +22,8 @@ export const GoogleImportItemSchema = z.object({
 
 export const GoogleImportSchema = z.object({
   places: z.array(GoogleImportItemSchema),
-  categoryId: z.string().min(1, 'Categoría requerida'),
+  categoryIds: z.array(z.string()).min(1, 'Categoría requerida'),
+  subcategoryIds: z.array(z.string()).optional(),
   duplicateAction: z.enum(['skip', 'update']).default('skip'),
 })
 
@@ -30,7 +31,8 @@ export type GoogleImportInput = z.infer<typeof GoogleImportSchema>
 
 export const GoogleBulkImportSchema = z.object({
   places: z.array(GoogleImportItemSchema),
-  categoryId: z.string().min(1, 'Categoría requerida'),
+  categoryIds: z.array(z.string()).min(1, 'Categoría requerida'),
+  subcategoryIds: z.array(z.string()).optional(),
   duplicateAction: z.enum(['skip', 'update']).default('skip'),
   country: z.string().min(1),
   province: z.string().min(1),

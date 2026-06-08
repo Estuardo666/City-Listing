@@ -40,7 +40,7 @@ export function UpcomingEventNotifications({
                   {formatDateTime(item.startDate)}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">{item.address ?? item.location}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Categoría: {item.category.name}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Categoría: {item.eventCategories[0]?.category.name}</p>
                 <Button asChild className="mt-2 h-8 px-3 text-xs">
                   <Link href={`/eventos/${item.slug}`}>Ver evento</Link>
                 </Button>

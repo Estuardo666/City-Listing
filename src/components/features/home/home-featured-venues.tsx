@@ -31,7 +31,7 @@ function FeaturedVenueCard({ venue }: { venue: ExploreVenue }) {
           />
         ) : (
           <CategoryGradientBg
-            categorySlug={venue.category.slug}
+            categorySlug={venue.categories[0]?.slug}
             name={venue.name}
             showInitials
             className="h-full w-full"

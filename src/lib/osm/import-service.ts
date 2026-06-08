@@ -81,9 +81,9 @@ class ImportService {
       .slice(0, 80)
   }
 
-  async createPlace(place: OsmPlace, categoryId: string, userId: string) {
+  async createPlace(place: OsmPlace, categoryIds: string[], userId: string) {
     const slug = `${this.buildSlug(place.name)}-${Date.now().toString(36).slice(-4)}`
-    return prisma.venue.create({
+    const venue = await prisma.venue.create({
       data: {
         name: place.name,
         slug,
@@ -96,11 +96,18 @@ class ImportService {
         website: place.website,
         email: place.email,
         status: 'PENDING',
-        categoryId,
         userId,
         osmId: String(place.osmId),
       } as any,
     })
+
+    if (categoryIds.length > 0) {
+      await prisma.venueCategory.createMany({
+        data: categoryIds.map((categoryId) => ({ venueId: venue.id, categoryId })),
+      })
+    }
+
+    return venue
   }
 
   async updatePlace(venueId: string, place: OsmPlace) {
@@ -122,7 +129,7 @@ class ImportService {
 
   async bulkImport(
     places: OsmPlace[],
-    categoryId: string,
+    categoryIds: string[],
     userId: string,
     options: { skipDuplicates: boolean; updateExisting: boolean; batchSize: number },
     importId?: string,
@@ -156,12 +163,12 @@ class ImportService {
               results.push({ placeId: place.id, action: 'skipped', error: `Duplicado (${dupCheck.matchType})` })
               duplicates++
             } else {
-              const venue = await this.createPlace(place, categoryId, userId)
+              const venue = await this.createPlace(place, categoryIds, userId)
               results.push({ placeId: place.id, action: 'created', venueId: venue.id })
               imported++
             }
           } else {
-            const venue = await this.createPlace(place, categoryId, userId)
+            const venue = await this.createPlace(place, categoryIds, userId)
             results.push({ placeId: place.id, action: 'created', venueId: venue.id })
             imported++
           }

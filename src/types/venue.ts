@@ -2,7 +2,16 @@ import type { Prisma } from '@prisma/client'
 
 export type VenueWithRelations = Prisma.VenueGetPayload<{
   include: {
-    category: true
+    venueCategories: {
+      select: {
+        category: true
+      }
+    }
+    venueSubcategories: {
+      select: {
+        subcategory: true
+      }
+    }
     user: {
       select: {
         id: true
@@ -63,10 +72,14 @@ export type UserVenueListItem = Prisma.VenueGetPayload<{
     location: true
     address: true
     createdAt: true
-    category: {
+    venueCategories: {
       select: {
-        name: true
-        icon: true
+        category: {
+          select: {
+            name: true
+            icon: true
+          }
+        }
       }
     }
   }
@@ -92,13 +105,17 @@ export type VenueListItem = Prisma.VenueGetPayload<{
     reviewCount: true
     verified: true
     badge: true
-    category: {
+    venueCategories: {
       select: {
-        id: true
-        name: true
-        slug: true
-        color: true
-        icon: true
+        category: {
+          select: {
+            id: true
+            name: true
+            slug: true
+            color: true
+            icon: true
+          }
+        }
       }
     }
   }
@@ -123,9 +140,13 @@ export type VenueMapItem = Prisma.VenueGetPayload<{
     address: true
     lat: true
     lng: true
-    category: {
+    venueCategories: {
       select: {
-        name: true
+        category: {
+          select: {
+            name: true
+          }
+        }
       }
     }
   }
@@ -149,11 +170,15 @@ export type VenueAdminListItem = Prisma.VenueGetPayload<{
     verified: true
     badge: true
     createdAt: true
-    category: {
+    venueCategories: {
       select: {
-        id: true
-        name: true
-        slug: true
+        category: {
+          select: {
+            id: true
+            name: true
+            slug: true
+          }
+        }
       }
     }
     user: {

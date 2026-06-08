@@ -109,7 +109,12 @@ async function main() {
     const venue = await prisma.venue.upsert({
       where: { slug: rest.slug },
       update: { image: rest.image },
-      create: { ...rest, userId: admin.id, categoryId: cat.id, status: 'APPROVED', featured: rest.featured ?? false },
+      create: { ...rest, userId: admin.id, status: 'APPROVED', featured: rest.featured ?? false },
+    })
+    await prisma.venueCategory.upsert({
+      where: { venueId_categoryId: { venueId: venue.id, categoryId: cat.id } },
+      update: {},
+      create: { venueId: venue.id, categoryId: cat.id },
     })
     createdVenues[rest.slug] = venue.id
   }
@@ -159,10 +164,15 @@ async function main() {
     if (!cat) continue
     const venueId = e.venueSlug ? createdVenues[e.venueSlug] : undefined
     const { categorySlug, venueSlug, ...rest } = e
-    await prisma.event.upsert({
+    const ev = await prisma.event.upsert({
       where: { slug: rest.slug },
       update: { image: rest.image },
-      create: { ...rest, userId: admin.id, categoryId: cat.id, venueId, status: 'APPROVED', featured: rest.featured ?? false },
+      create: { ...rest, userId: admin.id, venueId, status: 'APPROVED', featured: rest.featured ?? false },
+    })
+    await prisma.eventCategory.upsert({
+      where: { eventId_categoryId: { eventId: ev.id, categoryId: cat.id } },
+      update: {},
+      create: { eventId: ev.id, categoryId: cat.id },
     })
   }
   console.log(`${events.length} events seeded`)

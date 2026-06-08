@@ -66,7 +66,8 @@ export const venueSchema = z.object({
     (value) => value === null || (value >= -180 && value <= 180),
     'Longitud inválida'
   ),
-  categoryId: z.string().trim().min(1, 'Selecciona una categoría'),
+  categoryIds: z.array(z.string()).min(1, 'Selecciona al menos una categoria'),
+  subcategoryIds: z.array(z.string()).optional().default([]),
   featured: z.coerce.boolean().optional().default(false),
   priceRange: z.preprocess((value) => {
     if (value === '' || value === null || value === undefined) return null

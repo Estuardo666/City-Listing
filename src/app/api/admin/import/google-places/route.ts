@@ -338,7 +338,9 @@ export async function PUT(request: NextRequest) {
               phone: placeDetails.nationalPhoneNumber || placeDetails.phoneNumber,
               website: placeDetails.websiteUri,
               status: 'APPROVED',
-              categoryId: targetCategoryId,
+              venueCategories: {
+                create: { categoryId: targetCategoryId },
+              },
             },
           });
           
@@ -361,13 +363,16 @@ export async function PUT(request: NextRequest) {
               phone: placeDetails.nationalPhoneNumber || placeDetails.phoneNumber,
               website: placeDetails.websiteUri,
               status: 'APPROVED',
-              categoryId: targetCategoryId,
               userId: session.user.id,
             },
           });
           
           // Asignar googlePlaceId por separado
           await prisma.$executeRaw`UPDATE "Venue" SET "googlePlaceId" = ${importItem.placeId} WHERE id = ${newVenue.id}`;
+          
+          await prisma.venueCategory.create({
+            data: { venueId: newVenue.id, categoryId: targetCategoryId },
+          });
           
           venue = newVenue;
         }

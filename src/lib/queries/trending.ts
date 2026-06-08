@@ -103,8 +103,12 @@ export async function getTrendingVenues(period: 'week' | 'month' = 'week', limit
       reviewCount: true,
       verified: true,
       badge: true,
-      category: {
-        select: { id: true, name: true, slug: true, color: true, icon: true },
+      venueCategories: {
+        select: {
+          category: {
+            select: { id: true, name: true, slug: true, color: true, icon: true },
+          },
+        },
       },
     },
   })
@@ -148,7 +152,11 @@ export async function getTrendingEvents(period: 'week' | 'month' = 'week', limit
       avgRating: true,
       reviewCount: true,
       venue: { select: { id: true, name: true, slug: true } },
-      category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+      eventCategories: {
+        select: {
+          category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+        },
+      },
     },
   })
 }
@@ -163,7 +171,11 @@ export async function getUserFavorites(userId: string) {
           id: true, title: true, slug: true, image: true, startDate: true, location: true, address: true,
           featured: true, status: true, price: true, isRecurring: true, avgRating: true, reviewCount: true,
           venueId: true, description: true, endDate: true, lat: true, lng: true,
-          category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+          eventCategories: {
+            select: {
+              category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+            },
+          },
           venue: { select: { id: true, name: true, slug: true } },
         },
       },
@@ -172,7 +184,11 @@ export async function getUserFavorites(userId: string) {
           id: true, name: true, slug: true, image: true, location: true, address: true,
           priceRange: true, avgRating: true, reviewCount: true, verified: true, badge: true,
           featured: true, status: true, description: true, lat: true, lng: true, phone: true, website: true,
-          category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+          venueCategories: {
+            select: {
+              category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+            },
+          },
         },
       },
       post: {

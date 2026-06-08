@@ -65,7 +65,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
           />
         ) : (
           <CategoryGradientBg
-            categorySlug={event.category.slug}
+            categorySlug={event.eventCategories[0]?.category.slug}
             name={event.title}
             showInitials
             className="h-full w-full"
@@ -77,7 +77,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
         {/* Badges over hero */}
         <div className="absolute left-5 top-5 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
-            {resolveIconEmoji(event.category.icon, 'event')} {event.category.name}
+            {resolveIconEmoji(event.eventCategories[0]?.category.icon, 'event')} {event.eventCategories[0]?.category.name}
           </span>
           {event.featured && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
@@ -266,7 +266,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
                   address: event.address,
                   lat: event.lat,
                   lng: event.lng,
-                  category: { name: event.category.name },
+                  eventCategories: [{ category: { name: event.eventCategories[0]?.category.name ?? '' } }],
                 }]}
                 mapboxToken={mapboxToken}
                 mapStyle={mapStyle}
@@ -412,13 +412,13 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
 
           {/* Category pill */}
           <Link
-            href={`/explorar?q=${encodeURIComponent(event.category.name)}`}
+            href={`/explorar?q=${encodeURIComponent(event.eventCategories[0]?.category.name ?? '')}`}
             className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:bg-accent"
           >
-            <span className="text-3xl">{resolveIconEmoji(event.category.icon, 'event')}</span>
+            <span className="text-3xl">{resolveIconEmoji(event.eventCategories[0]?.category.icon, 'event')}</span>
             <div>
               <p className="text-xs text-muted-foreground">Categoría</p>
-              <p className="text-sm font-medium text-foreground">{event.category.name}</p>
+              <p className="text-sm font-medium text-foreground">{event.eventCategories[0]?.category.name}</p>
             </div>
           </Link>
         </aside>

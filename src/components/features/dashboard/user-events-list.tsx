@@ -193,7 +193,7 @@ export function UserEventsList() {
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    <span>{event.category.icon ?? '📅'} {event.category.name}</span>
+                    <span>{event.eventCategories[0]?.category.icon ?? '📅'} {event.eventCategories[0]?.category.name}</span>
                     <span className="inline-flex items-center gap-1">
                       <CalendarDays className="h-3 w-3" />
                       {formatDate(event.startDate)}

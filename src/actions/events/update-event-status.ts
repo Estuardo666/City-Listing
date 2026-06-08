@@ -38,7 +38,7 @@ export async function updateEventStatusAction(
         status: parsed.data.status,
       },
       include: {
-        category: true,
+        eventCategories: { include: { category: true } },
         user: {
           select: {
             id: true,
@@ -65,7 +65,7 @@ export async function updateEventStatusAction(
 
     return {
       success: true,
-      data: updated,
+      data: updated as unknown as EventWithRelations,
     }
   } catch {
     return {

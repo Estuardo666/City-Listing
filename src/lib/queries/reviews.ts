@@ -21,13 +21,13 @@ export type ReviewAdminListItem = {
     id: string
     name: string
     slug: string
-    category: { name: string } | null
+    venueCategories: { category: { name: string } }[]
   } | null
   event: {
     id: string
     title: string
     slug: string
-    category: { name: string } | null
+    eventCategories: { category: { name: string } }[]
   } | null
   photos: {
     id: string
@@ -66,8 +66,12 @@ const reviewAdminSelect = {
       id: true,
       name: true,
       slug: true,
-      category: {
-        select: { name: true },
+      venueCategories: {
+        select: {
+          category: {
+            select: { name: true },
+          },
+        },
       },
     },
   },
@@ -76,8 +80,12 @@ const reviewAdminSelect = {
       id: true,
       title: true,
       slug: true,
-      category: {
-        select: { name: true },
+      eventCategories: {
+        select: {
+          category: {
+            select: { name: true },
+          },
+        },
       },
     },
   },
@@ -127,8 +135,8 @@ export async function getAdminReviews(
   if (filters.category) {
     where.OR = [
       ...(where.OR ?? []),
-      { venue: { category: { slug: filters.category } } },
-      { event: { category: { slug: filters.category } } },
+      { venue: { venueCategories: { some: { category: { slug: filters.category } } } } },
+      { event: { eventCategories: { some: { category: { slug: filters.category } } } } },
     ]
   }
 

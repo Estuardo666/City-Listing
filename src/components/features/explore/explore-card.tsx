@@ -22,7 +22,7 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
   const href = isVenue ? `/locales/${item.slug}` : `/eventos/${item.slug}`
   const name = isVenue ? item.name : item.title
   const image = item.image
-  const category = item.category
+  const category = item.categories[0] ?? { id: '', name: '', slug: '', color: null, icon: null }
   const address = item.address ?? item.location
   const [imageError, setImageError] = useState(false)
   const hasValidImage = Boolean(image && image.startsWith('http'))

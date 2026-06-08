@@ -2,7 +2,16 @@ import type { Prisma } from '@prisma/client'
 
 export type EventWithRelations = Prisma.EventGetPayload<{
   include: {
-    category: true
+    eventCategories: {
+      include: {
+        category: true
+      }
+    }
+    eventSubcategories: {
+      include: {
+        subcategory: true
+      }
+    }
     user: {
       select: {
         id: true
@@ -48,10 +57,14 @@ export type UserEventListItem = Prisma.EventGetPayload<{
     location: true
     address: true
     createdAt: true
-    category: {
+    eventCategories: {
       select: {
-        name: true
-        icon: true
+        category: {
+          select: {
+            name: true
+            icon: true
+          }
+        }
       }
     }
   }
@@ -84,6 +97,24 @@ export type EventListItem = Prisma.EventGetPayload<{
         slug: true
       }
     }
+    eventCategories: {
+      select: {
+        category: {
+          select: {
+            id: true
+            name: true
+            slug: true
+            color: true
+            icon: true
+          }
+        }
+      }
+    }
+  }
+}>
+
+export type EventCategory = Prisma.EventCategoryGetPayload<{
+  select: {
     category: {
       select: {
         id: true
@@ -93,16 +124,6 @@ export type EventListItem = Prisma.EventGetPayload<{
         icon: true
       }
     }
-  }
-}>
-
-export type EventCategory = Prisma.CategoryGetPayload<{
-  select: {
-    id: true
-    name: true
-    slug: true
-    color: true
-    icon: true
   }
 }>
 
@@ -129,11 +150,15 @@ export type EventAdminListItem = Prisma.EventGetPayload<{
         slug: true
       }
     }
-    category: {
+    eventCategories: {
       select: {
-        id: true
-        name: true
-        slug: true
+        category: {
+          select: {
+            id: true
+            name: true
+            slug: true
+          }
+        }
       }
     }
     user: {
@@ -156,9 +181,13 @@ export type EventMapItem = Prisma.EventGetPayload<{
     address: true
     lat: true
     lng: true
-    category: {
+    eventCategories: {
       select: {
-        name: true
+        category: {
+          select: {
+            name: true
+          }
+        }
       }
     }
   }
@@ -172,9 +201,13 @@ export type UpcomingEventNotification = Prisma.EventGetPayload<{
     startDate: true
     location: true
     address: true
-    category: {
+    eventCategories: {
       select: {
-        name: true
+        category: {
+          select: {
+            name: true
+          }
+        }
       }
     }
   }

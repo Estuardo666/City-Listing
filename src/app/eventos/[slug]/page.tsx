@@ -30,7 +30,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   const [relatedEvents, isFavorite, collections] = await Promise.all([
     getEvents(
-      { status: 'APPROVED', category: event.category.slug },
+      { status: 'APPROVED', category: event.eventCategories[0]?.category.slug },
       5
     ).then((list) => list.filter((e) => e.id !== event.id).slice(0, 4)),
     session?.user?.id

@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { googlePlacesService } from '@/lib/google-places'
 import type { GooglePlaceNormalized, DuplicateCheckResult } from '@/types/google-import'
 import { GOOGLE_CATEGORIES } from '@/types/google-import'
+import { getCategoriesFromGoogleTypes } from '@/lib/google/google-type-mapper'
 
 function normalizeString(s: string): string {
   return s
@@ -222,7 +223,7 @@ class GooglePlacesImporter {
 
   async savePlace(
     place: GooglePlaceNormalized,
-    categoryId: string,
+    categoryIds: string[],
     userId: string,
     duplicateAction: 'skip' | 'update' = 'skip'
   ): Promise<{ venueId: string; action: 'created' | 'updated' | 'skipped' }> {
@@ -246,6 +247,13 @@ class GooglePlacesImporter {
             googlePlaceId: place.google_place_id,
           } as any,
         })
+        if (categoryIds.length > 0 && duplicate.existingVenue) {
+          const venueId = duplicate.existingVenue.id
+          await prisma.venueCategory.deleteMany({ where: { venueId } })
+          await prisma.venueCategory.createMany({
+            data: categoryIds.map((categoryId) => ({ venueId, categoryId })),
+          })
+        }
         return { venueId: duplicate.existingVenue.id, action: 'updated' }
       }
     }
@@ -262,13 +270,29 @@ class GooglePlacesImporter {
         address: place.address,
         phone: place.phone,
         status: 'APPROVED',
-        categoryId,
         userId,
         googlePlaceId: place.google_place_id,
       } as any,
     })
 
+    if (categoryIds.length > 0) {
+      await prisma.venueCategory.createMany({
+        data: categoryIds.map((categoryId) => ({ venueId: venue.id, categoryId })),
+      })
+    }
+
     return { venueId: venue.id, action: 'created' }
+  }
+
+  async resolveCategoryIds(types: string[]): Promise<string[]> {
+    const result = await getCategoriesFromGoogleTypes(types)
+    if (result.categorySlugs.length === 0) return []
+
+    const categories = await prisma.category.findMany({
+      where: { slug: { in: result.categorySlugs } },
+      select: { id: true },
+    })
+    return categories.map((c) => c.id)
   }
 }
 

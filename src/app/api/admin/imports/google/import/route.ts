@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { places, categoryId, duplicateAction } = validated.data
+    const { places, categoryIds, duplicateAction } = validated.data
 
     const job = await prisma.googleImportJob.create({
       data: {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       try {
         const result = await googlePlacesImporter.savePlace(
           place,
-          categoryId,
+          categoryIds,
           session.user.id,
           duplicateAction
         )

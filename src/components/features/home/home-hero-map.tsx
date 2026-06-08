@@ -39,8 +39,7 @@ function buildMarkers(items: ExploreItem[]): ExploreMapMarker[] {
       lng: item.lng as number,
       name: item._type === 'venue' ? item.name : item.title,
       slug: item.slug,
-      category: item.category.name,
-      categoryIcon: item.category.icon,
+      categories: item.categories,
     }))
 }
 
@@ -49,7 +48,7 @@ function matchesSearch(item: ExploreItem, query: string): boolean {
     item._type === 'venue' ? item.name : item.title,
     item.location,
     item.address ?? '',
-    item.category.name,
+    item.categories[0]?.name ?? '',
     item.description,
   ]
     .join(' ')

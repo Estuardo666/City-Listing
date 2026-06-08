@@ -19,7 +19,7 @@ export async function createBranchAction(
     phone?: string
     email?: string
     website?: string
-    categoryId: string
+    categoryIds: string[]
   }
 ): Promise<ActionResponse<{ id: string; slug: string }>> {
   try {
@@ -50,16 +50,20 @@ export async function createBranchAction(
       return { success: false, error: 'La ubicación es requerida.' }
     }
 
-    const category = await prisma.category.findFirst({
+    if (!branchData.categoryIds || branchData.categoryIds.length === 0) {
+      return { success: false, error: 'Selecciona al menos una categoría.' }
+    }
+
+    const categories = await prisma.category.findMany({
       where: {
-        id: branchData.categoryId,
+        id: { in: branchData.categoryIds },
         type: 'VENUE',
       },
       select: { id: true },
     })
 
-    if (!category) {
-      return { success: false, error: 'Categoría inválida.' }
+    if (categories.length !== branchData.categoryIds.length) {
+      return { success: false, error: 'Una o más categorías inválidas.' }
     }
 
     const baseSlug = slugify(branchData.name)
@@ -78,23 +82,33 @@ export async function createBranchAction(
       slug = `${baseSlug}-${suffix}`
     }
 
-    const branch = await prisma.venue.create({
-      data: {
-        name: branchData.name.trim(),
-        slug,
-        description: branchData.description.trim(),
-        location: branchData.location.trim(),
-        address: branchData.address?.trim() || null,
-        lat: branchData.lat || null,
-        lng: branchData.lng || null,
-        phone: branchData.phone?.trim() || null,
-        email: branchData.email?.trim() || null,
-        website: branchData.website?.trim() || null,
-        categoryId: category.id,
-        userId: session.user.id,
-        parentId: parentVenueId,
-        status: 'PENDING',
-      },
+    const branch = await prisma.$transaction(async (tx) => {
+      const venue = await tx.venue.create({
+        data: {
+          name: branchData.name.trim(),
+          slug,
+          description: branchData.description.trim(),
+          location: branchData.location.trim(),
+          address: branchData.address?.trim() || null,
+          lat: branchData.lat || null,
+          lng: branchData.lng || null,
+          phone: branchData.phone?.trim() || null,
+          email: branchData.email?.trim() || null,
+          website: branchData.website?.trim() || null,
+          userId: session.user.id,
+          parentId: parentVenueId,
+          status: 'PENDING',
+        },
+      })
+
+      await tx.venueCategory.createMany({
+        data: categories.map((cat) => ({
+          venueId: venue.id,
+          categoryId: cat.id,
+        })),
+      })
+
+      return venue
     })
 
     revalidatePath(`/dashboard/locales/${parentVenueId}/sucursales`)
@@ -270,7 +284,7 @@ export async function getBranchesAction(parentVenueId: string) {
         parentId: parentVenueId,
       },
       include: {
-        category: true,
+        venueCategories: { include: { category: true } },
         _count: {
           select: {
             reviews: true,

@@ -145,10 +145,10 @@ export async function GET(request: NextRequest) {
                 { description: textFilter },
                 { location: textFilter },
                 { address: textFilter },
-                { category: { name: textFilter } },
+                { venueCategories: { some: { category: { name: textFilter } } } },
               ],
             }),
-            ...(category && { category: { slug: category } }),
+            ...(category && { venueCategories: { some: { category: { slug: category } } } }),
             ...(featured && { featured: true }),
             ...(minRating !== null && { avgRating: { gte: minRating } }),
             ...(verified && { verified: true }),
@@ -184,8 +184,8 @@ export async function GET(request: NextRequest) {
               avgRating: true,
               reviewCount: true,
               verified: true,
-              category: {
-                select: { id: true, name: true, slug: true, color: true, icon: true },
+              venueCategories: {
+                select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } },
               },
               services: { where: { isActive: true }, select: { name: true } },
               promotions: {
@@ -272,10 +272,10 @@ export async function GET(request: NextRequest) {
                 { description: textFilter },
                 { location: textFilter },
                 { address: textFilter },
-                { category: { name: textFilter } },
+                { eventCategories: { some: { category: { name: textFilter } } } },
               ],
             }),
-            ...(category && { category: { slug: category } }),
+            ...(category && { eventCategories: { some: { category: { slug: category } } } }),
             ...(featured && { featured: true }),
             ...(minRating !== null && { avgRating: { gte: minRating } }),
             ...(eventDatePreset && (() => {
@@ -287,7 +287,7 @@ export async function GET(request: NextRequest) {
             }),
             ...(eventPrice === 'paid' && { price: { gt: 0 } }),
             ...(eventMaxPrice !== null && { price: { lte: eventMaxPrice } }),
-            ...(eventType && { category: { slug: eventType } }),
+            ...(eventType && { eventCategories: { some: { category: { slug: eventType } } } }),
             ...(proximityBounds && {
               lat: { gte: proximityBounds.latMin, lte: proximityBounds.latMax },
               lng: { gte: proximityBounds.lngMin, lte: proximityBounds.lngMax },
@@ -315,8 +315,8 @@ export async function GET(request: NextRequest) {
               price: true,
               avgRating: true,
               reviewCount: true,
-              category: {
-                select: { id: true, name: true, slug: true, color: true, icon: true },
+              eventCategories: {
+                select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } },
               },
             },
           })

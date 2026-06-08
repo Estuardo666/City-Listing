@@ -11,9 +11,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { place, categoryId, importOptions } = await request.json()
+    const { place, categoryIds, importOptions } = await request.json()
 
-    if (!place || !categoryId) {
+    if (!place || !categoryIds?.length) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 })
     }
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const venue = await importService.createPlace(osmPlace, categoryId, session.user.id)
+    const venue = await importService.createPlace(osmPlace, categoryIds[0], session.user.id)
     return NextResponse.json({ success: true, venue, action: 'created' })
   } catch (error) {
     console.error('Error importing OSM place:', error)

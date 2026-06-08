@@ -41,9 +41,11 @@ interface Branch {
   location: string
   address?: string | null
   status: string
-  category: {
-    name: string
-  }
+  venueCategories: {
+    category: {
+      name: string
+    }
+  }[]
   _count: {
     reviews: number
     reservations: number
@@ -80,7 +82,7 @@ export function BranchManager({ parentVenueId, branches, availableVenues, catego
     phone: '',
     email: '',
     website: '',
-    categoryId: '',
+          categoryIds: [] as string[],
   })
 
   const [selectedVenueId, setSelectedVenueId] = useState('')
@@ -98,7 +100,7 @@ export function BranchManager({ parentVenueId, branches, availableVenues, catego
       toast.error('La ubicación es requerida.')
       return
     }
-    if (!newBranch.categoryId) {
+    if (newBranch.categoryIds.length === 0) {
       toast.error('La categoría es requerida.')
       return
     }
@@ -113,7 +115,7 @@ export function BranchManager({ parentVenueId, branches, availableVenues, catego
         phone: newBranch.phone || undefined,
         email: newBranch.email || undefined,
         website: newBranch.website || undefined,
-        categoryId: newBranch.categoryId,
+        categoryIds: newBranch.categoryIds,
       })
 
       if (result.success) {
@@ -127,7 +129,7 @@ export function BranchManager({ parentVenueId, branches, availableVenues, catego
           phone: '',
           email: '',
           website: '',
-          categoryId: '',
+    categoryIds: [] as string[],
         })
       } else {
         toast.error(result.error ?? 'Error al crear sucursal.')
@@ -301,8 +303,8 @@ export function BranchManager({ parentVenueId, branches, availableVenues, catego
               <div className="space-y-2">
                 <Label>Categoría *</Label>
                 <Select
-                  value={newBranch.categoryId}
-                  onValueChange={(value) => setNewBranch({ ...newBranch, categoryId: value })}
+                  value={newBranch.categoryIds[0] ?? ''}
+                  onValueChange={(value) => setNewBranch({ ...newBranch, categoryIds: [value] })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar" />

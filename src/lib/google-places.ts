@@ -371,7 +371,7 @@ class GooglePlacesService {
   }
 
   // Mapear lugar de Google a nuestro modelo Venue
-  mapToVenue(googlePlace: GooglePlace | GooglePlaceDetails, categoryId: string, userId: string) {
+  mapToVenue(googlePlace: GooglePlace | GooglePlaceDetails, categoryIds: string[], userId: string) {
     const placeId = googlePlace.id || googlePlace.placeId;
     const name = googlePlace.displayName?.text || '';
     
@@ -387,9 +387,9 @@ class GooglePlacesService {
       lat: googlePlace.location?.latitude,
       lng: googlePlace.location?.longitude,
       address: googlePlace.formattedAddress,
-      status: 'APPROVED' as const,  // Cambiado de 'PENDING' a 'APPROVED'
+      status: 'APPROVED' as const,
       featured: false,
-      categoryId,
+      categoryIds,
       userId,
       googlePlaceId: placeId,
     };

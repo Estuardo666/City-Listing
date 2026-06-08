@@ -66,7 +66,7 @@ export default async function DashboardEventEditPage({ params }: EventEditPagePr
         </div>
 
         <div className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8">
-          <EventEditForm event={event} categories={categories} venues={venues} />
+          <EventEditForm event={event} categories={categories.map(c => ({ category: c }))} venues={venues} />
         </div>
 
       </section>

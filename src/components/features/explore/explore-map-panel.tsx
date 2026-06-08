@@ -245,7 +245,7 @@ const PinButton = memo(function PinButton({ marker, isActive, delay, renderLat, 
       aria-label={marker.name}
     >
       <span className="text-base leading-none">
-        {resolveIconEmoji(marker.categoryIcon, marker.type)}
+        {resolveIconEmoji(marker.categories[0]?.icon ?? null, marker.type)}
       </span>
 
       <AnimatePresence>
@@ -587,9 +587,9 @@ export function ExploreMapPanel({
         slug: marker.slug,
         type: marker.type,
         name: marker.name,
-        category: marker.category,
-        categoryIcon: marker.categoryIcon ?? null,
-        categoryKey: getCategoryKey(marker.category, marker.type),
+        category: marker.categories[0]?.name ?? '',
+        categoryIcon: marker.categories[0]?.icon ?? null,
+        categoryKey: getCategoryKey(marker.categories[0]?.name ?? '', marker.type),
       },
       geometry: {
         type: 'Point' as const,
@@ -1218,7 +1218,7 @@ export function ExploreMapPanel({
                 {/* Type badge */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '999px', padding: '3px 9px', fontSize: '11px', fontWeight: 600, background: activeMarker.type === 'venue' ? 'hsl(158 64% 38% / 0.12)' : 'hsl(14 90% 55% / 0.12)', color: activeMarker.type === 'venue' ? 'hsl(158 64% 32%)' : 'hsl(14 90% 45%)', border: `1px solid ${activeMarker.type === 'venue' ? 'hsl(158 64% 38% / 0.25)' : 'hsl(14 90% 55% / 0.25)'}` }}>
-                    <span style={{ fontSize: '13px', lineHeight: 1 }}>{resolveIconEmoji(activeMarker.categoryIcon, activeMarker.type)}</span>
+                    <span style={{ fontSize: '13px', lineHeight: 1 }}>{resolveIconEmoji(activeMarker.categories[0]?.icon ?? null, activeMarker.type)}</span>
                     {activeMarker.type === 'venue' ? 'Local' : 'Evento'}
                   </span>
                 </div>

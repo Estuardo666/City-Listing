@@ -52,83 +52,116 @@ export async function updateVenueAction(
       }
     }
 
-    // Validate category
-    const category = await prisma.category.findFirst({
+    // Validate categories
+    const categories = await prisma.category.findMany({
       where: {
-        id: parsed.data.categoryId,
+        id: { in: parsed.data.categoryIds },
         type: 'VENUE',
       },
       select: { id: true },
     })
 
-    if (!category) {
+    if (categories.length !== parsed.data.categoryIds.length) {
       return {
         success: false,
-        error: 'La categoría seleccionada no es válida para locales.',
+        error: 'Una o más categorías seleccionadas no son válidas para locales.',
       }
     }
 
-    const updated = await prisma.venue.update({
-      where: { id: venueId },
-      data: {
-        name: parsed.data.name,
-        description: parsed.data.description,
-        content: parsed.data.content,
-        image: parsed.data.image,
-        phone: parsed.data.phone,
-        email: parsed.data.email,
-        website: parsed.data.website,
-        location: parsed.data.location,
-        address: parsed.data.address,
-        lat: parsed.data.lat,
-        lng: parsed.data.lng,
-        priceRange: parsed.data.priceRange,
-        featured: parsed.data.featured,
-        categoryId: category.id,
-      },
-      include: {
-        category: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.venueCategory.deleteMany({
+        where: { venueId },
+      })
+
+      await tx.venueCategory.createMany({
+        data: categories.map((cat) => ({
+          venueId,
+          categoryId: cat.id,
+        })),
+      })
+
+      await tx.venueSubcategory.deleteMany({
+        where: { venueId },
+      })
+
+      if (parsed.data.subcategoryIds && parsed.data.subcategoryIds.length > 0) {
+        const subcategories = await tx.subcategory.findMany({
+          where: { id: { in: parsed.data.subcategoryIds } },
+          select: { id: true },
+        })
+
+        if (subcategories.length > 0) {
+          await tx.venueSubcategory.createMany({
+            data: subcategories.map((sub) => ({
+              venueId,
+              subcategoryId: sub.id,
+            })),
+          })
+        }
+      }
+
+      return tx.venue.update({
+        where: { id: venueId },
+        data: {
+          name: parsed.data.name,
+          description: parsed.data.description,
+          content: parsed.data.content,
+          image: parsed.data.image,
+          phone: parsed.data.phone,
+          email: parsed.data.email,
+          website: parsed.data.website,
+          location: parsed.data.location,
+          address: parsed.data.address,
+          lat: parsed.data.lat,
+          lng: parsed.data.lng,
+          priceRange: parsed.data.priceRange,
+          featured: parsed.data.featured,
+        },
+        include: {
+          venueCategories: { include: { category: true } },
+          venueSubcategories: { include: { subcategory: true } },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
-        },
-        events: {
-          where: {
-            status: 'APPROVED',
+          events: {
+            where: {
+              status: 'APPROVED',
+            },
+            orderBy: {
+              startDate: 'asc',
+            },
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              startDate: true,
+              location: true,
+              address: true,
+            },
           },
-          orderBy: {
-            startDate: 'asc',
+          media: { orderBy: { order: 'asc' } },
+          operatingHours: true,
+          businessHours: {
+            orderBy: [{ dayOfWeek: 'asc' }, { openTime: 'asc' }],
           },
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            startDate: true,
-            location: true,
-            address: true,
+          services: {
+            orderBy: { sortOrder: 'asc' },
           },
+          products: {
+            orderBy: { order: 'asc' },
+          },
+          reviews: {
+            include: { user: { select: { id: true, name: true, image: true } } },
+            orderBy: { createdAt: 'desc' },
+          },
+          promotions: { where: { status: 'ACTIVE' }, orderBy: { createdAt: 'desc' } },
+          reservationSettings: true,
         },
-        media: { orderBy: { order: 'asc' } },
-        operatingHours: true,
-        businessHours: {
-          orderBy: [{ dayOfWeek: 'asc' }, { openTime: 'asc' }],
-        },
-        services: {
-          orderBy: { sortOrder: 'asc' },
-        },
-        products: {
-          orderBy: { order: 'asc' },
-        },
-        reviews: {
-          include: { user: { select: { id: true, name: true, image: true } } },
-          orderBy: { createdAt: 'desc' },
-        },
-        promotions: { where: { status: 'ACTIVE' }, orderBy: { createdAt: 'desc' } },
-        reservationSettings: true,
-      },
+      })
     })
 
     revalidatePath('/locales')

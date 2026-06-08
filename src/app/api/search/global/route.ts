@@ -26,7 +26,7 @@ async function searchInDatabase(query: string) {
         OR: [
           { title: { contains, mode: 'insensitive' } },
           { location: { contains, mode: 'insensitive' } },
-          ...(categoryIds.length > 0 ? [{ categoryId: { in: categoryIds } }] : [])
+          ...(categoryIds.length > 0 ? [{ eventCategories: { some: { categoryId: { in: categoryIds } } } }] : [])
         ]
       },
       select: {
@@ -36,7 +36,7 @@ async function searchInDatabase(query: string) {
         image: true,
         startDate: true,
         location: true,
-        category: { select: { name: true, color: true } }
+        eventCategories: { select: { category: { select: { name: true, color: true } } } }
       },
       orderBy: [{ featured: 'desc' }, { startDate: 'asc' }],
       take: LIMIT
@@ -49,7 +49,7 @@ async function searchInDatabase(query: string) {
         OR: [
           { name: { contains, mode: 'insensitive' } },
           { location: { contains, mode: 'insensitive' } },
-          ...(categoryIds.length > 0 ? [{ categoryId: { in: categoryIds } }] : [])
+          ...(categoryIds.length > 0 ? [{ venueCategories: { some: { categoryId: { in: categoryIds } } } }] : [])
         ]
       },
       select: {
@@ -58,7 +58,7 @@ async function searchInDatabase(query: string) {
         slug: true,
         image: true,
         location: true,
-        category: { select: { name: true, color: true } }
+        venueCategories: { select: { category: { select: { name: true, color: true } } } }
       },
       orderBy: [{ featured: 'desc' }, { name: 'asc' }],
       take: LIMIT

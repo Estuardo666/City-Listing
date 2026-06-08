@@ -431,7 +431,7 @@ export function AdminReviewModeration({
           const entityName = review.venue?.name ?? review.event?.title ?? 'Desconocido'
           const entitySlug = review.venue?.slug ?? review.event?.slug
           const entityType = review.venue ? 'locales' : 'eventos'
-          const categoryName = review.venue?.category?.name ?? review.event?.category?.name
+          const categoryName = review.venue?.venueCategories?.[0]?.category?.name ?? review.event?.eventCategories?.[0]?.category?.name
           const isFlagged = review.flaggedReason !== null
 
           return (
