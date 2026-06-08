@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { googlePlacesService } from '@/lib/google-places'
 import type { GooglePlaceNormalized, DuplicateCheckResult } from '@/types/google-import'
-import { getGoogleCategoryType } from '@/types/google-import'
+import { GOOGLE_CATEGORIES } from '@/types/google-import'
 
 function normalizeString(s: string): string {
   return s
@@ -43,18 +43,38 @@ class GooglePlacesImporter {
     categoryKeys?: string[],
     maxResults: number = 20
   ): Promise<any[]> {
-    const includedTypes = categoryKeys
-      ?.map((key) => getGoogleCategoryType(key))
-      .filter(Boolean)
+    const typesToSearch = categoryKeys && categoryKeys.length > 0
+      ? categoryKeys
+      : ['restaurant']
 
-    const results = await googlePlacesService.searchPlaces(query, {
-      location,
-      radius,
-      includedTypes: includedTypes && includedTypes.length > 0 ? includedTypes : undefined,
-      maxResultCount: Math.min(maxResults, 20),
-    })
+    const seenIds = new Set<string>()
+    const allResults: any[] = []
 
-    return results
+    for (const key of typesToSearch) {
+      const cat = GOOGLE_CATEGORIES[key]
+      if (!cat) continue
+
+      const typeQuery = `${cat.label} en ${query}`
+
+      try {
+        const results = await googlePlacesService.searchPlaces(typeQuery, {
+          location,
+          radius,
+          maxResultCount: Math.min(maxResults, 20),
+        })
+
+        for (const place of results) {
+          if (place.id && !seenIds.has(place.id)) {
+            seenIds.add(place.id)
+            allResults.push(place)
+          }
+        }
+      } catch (error) {
+        console.error(`Error searching for ${key}:`, error)
+      }
+    }
+
+    return allResults.slice(0, maxResults)
   }
 
   async getPlaceDetails(placeId: string): Promise<GooglePlaceNormalized | null> {

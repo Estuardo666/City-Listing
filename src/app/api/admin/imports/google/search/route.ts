@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { googlePlacesImporter } from '@/lib/google/google-places-importer'
-import { getGoogleCategoryType } from '@/types/google-import'
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +16,6 @@ export async function GET(request: NextRequest) {
     const country = searchParams.get('country')
     const categoriesParam = searchParams.get('categories')
     const radius = searchParams.get('radius')
-    const pageToken = searchParams.get('pageToken')
 
     if (!city || !categoriesParam || !radius) {
       return NextResponse.json(
@@ -31,13 +29,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Selecciona al menos una categoría' }, { status: 400 })
     }
 
-    const locationParts = [city, province, country].filter(Boolean)
-    const query = `negocios en ${locationParts.join(', ')}`
-
-    const googleTypes = categories.map((key) => getGoogleCategoryType(key)).filter(Boolean)
+    const locationQuery = [city, province, country].filter(Boolean).join(', ')
 
     const results = await googlePlacesImporter.searchPlaces(
-      query,
+      locationQuery,
       { lat: -3.99313, lng: -79.2042 },
       Number(radius),
       categories,
