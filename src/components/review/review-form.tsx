@@ -121,82 +121,89 @@ export function ReviewForm({ entityType, entityId, onSuccess }: ReviewFormProps)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label>Tu calificación</Label>
-        <StarRatingInput value={rating} onChange={setRating} size="lg" />
-      </div>
-      <div className="space-y-1.5">
-        <Label>Título (opcional)</Label>
-        <Input
-          placeholder="Resumen de tu experiencia"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={120}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label>Reseña (opcional)</Label>
-        <Textarea
-          placeholder="Cuéntanos tu experiencia..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          maxLength={1000}
-          rows={3}
-        />
+      {/* Rating + Title en 1 fila */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
+        <div className="space-y-1.5">
+          <Label>Tu calificación</Label>
+          <StarRatingInput value={rating} onChange={setRating} size="md" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Título (opcional)</Label>
+          <Input
+            placeholder="Resumen de tu experiencia"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={120}
+          />
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label>Fotos (opcional, máx. {MAX_PHOTOS})</Label>
+      {/* Reseña + Fotos en 1 fila: 60% / 40% */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[3fr_2fr]">
+        <div className="space-y-1.5">
+          <Label>Reseña (opcional)</Label>
+          <Textarea
+            placeholder="Cuéntanos tu experiencia..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            maxLength={1000}
+            rows={4}
+          />
+        </div>
 
-        {photos.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {photos.map((url, index) => (
-              <div key={index} className="relative group">
-                <img
-                  src={url}
-                  alt={`Foto ${index + 1}`}
-                  className="h-20 w-20 rounded-lg object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => removePhoto(index)}
-                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="space-y-1.5">
+          <Label>Fotos (opcional, máx. {MAX_PHOTOS})</Label>
 
-        {photos.length < MAX_PHOTOS && (
-          <div
-            {...getRootProps()}
-            className={cn(
-              'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border/60 p-4 transition-colors hover:border-primary/50 hover:bg-muted/30',
-              isDragActive && 'border-primary bg-primary/5',
-              uploadingPhotos && 'pointer-events-none opacity-60'
-            )}
-          >
-            <input {...getInputProps()} />
-            {uploadingPhotos ? (
-              <>
-                <Upload className="h-5 w-5 animate-pulse text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Subiendo fotos...</p>
-              </>
-            ) : (
-              <>
-                <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">
-                  Arrastra fotos aquí o haz clic para seleccionar
-                </p>
-                <p className="text-[10px] text-muted-foreground/70">
-                  JPEG, PNG, WebP, GIF · Máx 10MB c/u · {photos.length}/{MAX_PHOTOS} fotos
-                </p>
-              </>
-            )}
-          </div>
-        )}
+          {photos.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {photos.map((url, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={url}
+                    alt={`Foto ${index + 1}`}
+                    className="h-16 w-16 rounded-lg object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(index)}
+                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {photos.length < MAX_PHOTOS && (
+            <div
+              {...getRootProps()}
+              className={cn(
+                'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-border/60 p-3 transition-colors hover:border-primary/50 hover:bg-muted/30',
+                isDragActive && 'border-primary bg-primary/5',
+                uploadingPhotos && 'pointer-events-none opacity-60'
+              )}
+            >
+              <input {...getInputProps()} />
+              {uploadingPhotos ? (
+                <>
+                  <Upload className="h-4 w-4 animate-pulse text-muted-foreground" />
+                  <p className="text-[10px] text-muted-foreground">Subiendo...</p>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    Arrastra o haz clic
+                  </p>
+                  <p className="text-[9px] text-muted-foreground/60">
+                    {photos.length}/{MAX_PHOTOS}
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {pendingMessage && (
