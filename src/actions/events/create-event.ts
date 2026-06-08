@@ -130,6 +130,7 @@ export async function createEventAction(input: unknown): Promise<ActionResponse<
               id: true,
               name: true,
               email: true,
+              role: true,
             },
           },
           venue: true,

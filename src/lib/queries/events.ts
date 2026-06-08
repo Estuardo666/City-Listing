@@ -408,6 +408,7 @@ export async function getEventBySlug(slug: string): Promise<EventWithRelations |
           id: true,
           name: true,
           email: true,
+          role: true,
         },
       },
       venue: true,

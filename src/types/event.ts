@@ -17,6 +17,7 @@ export type EventWithRelations = Prisma.EventGetPayload<{
         id: true
         name: true
         email: true
+        role: true
       }
     }
     venue?: {

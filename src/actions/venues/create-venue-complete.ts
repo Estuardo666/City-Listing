@@ -247,7 +247,7 @@ export async function createVenueCompleteAction(
           venueCategories: { include: { category: true } },
           venueSubcategories: { include: { subcategory: true } },
           user: {
-            select: { id: true, name: true, email: true },
+            select: { id: true, name: true, email: true, role: true },
           },
           businessHours: {
             orderBy: [{ dayOfWeek: 'asc' }, { openTime: 'asc' }],

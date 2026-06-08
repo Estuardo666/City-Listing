@@ -127,6 +127,7 @@ export async function createVenueAction(input: unknown): Promise<ActionResponse<
               id: true,
               name: true,
               email: true,
+              role: true,
             },
           },
           events: {

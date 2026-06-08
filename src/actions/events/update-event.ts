@@ -123,6 +123,7 @@ export async function updateEventAction(
               id: true,
               name: true,
               email: true,
+              role: true,
             },
           },
           venue: parsed.data.venueId ? {

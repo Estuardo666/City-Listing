@@ -462,17 +462,19 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
                 </div>
               )}
 
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <UserCircle2 className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-xs text-muted-foreground">Publicado por</p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {venue.user.name ?? venue.user.email ?? 'Usuario'}
-                  </p>
+              {venue.user.role !== 'ADMIN' && (
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <UserCircle2 className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Publicado por</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {venue.user.name ?? venue.user.email ?? 'Usuario'}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
