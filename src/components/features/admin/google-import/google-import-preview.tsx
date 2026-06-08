@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { PlaceResult } from './google-import-results'
+import type { PlaceResult } from './wizard-results'
 import type { DuplicateCheckResult } from '@/types/google-import'
 
 interface GoogleImportPreviewProps {

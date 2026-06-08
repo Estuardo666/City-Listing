@@ -11,15 +11,15 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const city = searchParams.get('city')
-    const province = searchParams.get('province')
-    const country = searchParams.get('country')
+    const lat = searchParams.get('lat')
+    const lng = searchParams.get('lng')
     const categoriesParam = searchParams.get('categories')
     const radius = searchParams.get('radius')
+    const address = searchParams.get('address')
 
-    if (!city || !categoriesParam || !radius) {
+    if (!lat || !lng || !categoriesParam || !radius) {
       return NextResponse.json(
-        { error: 'Ciudad, categorías y radio son requeridos' },
+        { error: 'Coordenadas, categorías y radio son requeridos' },
         { status: 400 }
       )
     }
@@ -29,11 +29,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Selecciona al menos una categoría' }, { status: 400 })
     }
 
-    const locationQuery = [city, province, country].filter(Boolean).join(', ')
+    const location = { lat: Number(lat), lng: Number(lng) }
+    const locationQuery = address || `${lat}, ${lng}`
 
     const results = await googlePlacesImporter.searchPlaces(
       locationQuery,
-      { lat: -3.99313, lng: -79.2042 },
+      location,
       Number(radius),
       categories,
       20
@@ -50,9 +51,7 @@ export async function GET(request: NextRequest) {
           })
         : []
 
-    const existingMap = new Map(
-      existingVenues.map((v: any) => [v.googlePlaceId, v])
-    )
+    const existingMap = new Map(existingVenues.map((v: any) => [v.googlePlaceId, v]))
 
     const placesWithStatus = normalized.map((place) => ({
       ...place,
