@@ -64,19 +64,44 @@ const DAY_MAP: Record<string, number> = {
   thursday: 4,
   friday: 5,
   saturday: 6,
+  domingo: 0,
+  lunes: 1,
+  martes: 2,
+  miércoles: 3,
+  miercoles: 3,
+  jueves: 4,
+  viernes: 5,
+  sábado: 6,
+  sabado: 6,
 }
 
 function parseTime12to24(timeStr: string): string {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
-  if (!match) return timeStr
-  let hours = parseInt(match[1], 10)
-  const minutes = match[2]
-  const period = match[3].toUpperCase()
+  const cleaned = timeStr.trim()
 
-  if (period === 'PM' && hours !== 12) hours += 12
-  if (period === 'AM' && hours === 12) hours = 0
+  const match24 = cleaned.match(/^(\d{1,2}):(\d{2})$/)
+  if (match24) return `${match24[1].padStart(2, '0')}:${match24[2]}`
 
-  return `${String(hours).padStart(2, '0')}:${minutes}`
+  const matchEN = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (matchEN) {
+    let hours = parseInt(matchEN[1], 10)
+    const minutes = matchEN[2]
+    const period = matchEN[3].toUpperCase()
+    if (period === 'PM' && hours !== 12) hours += 12
+    if (period === 'AM' && hours === 12) hours = 0
+    return `${String(hours).padStart(2, '0')}:${minutes}`
+  }
+
+  const matchESam = cleaned.match(/^(\d{1,2}):(\d{2})\s*a\.?\s*m\.?$/i)
+  if (matchESam) return `${matchESam[1].padStart(2, '0')}:${matchESam[2]}`
+
+  const matchESpm = cleaned.match(/^(\d{1,2}):(\d{2})\s*p\.?\s*m\.?$/i)
+  if (matchESpm) {
+    let hours = parseInt(matchESpm[1], 10) + 12
+    if (hours === 24) hours = 12
+    return `${String(hours).padStart(2, '0')}:${matchESpm[2]}`
+  }
+
+  return cleaned
 }
 
 export function normalizeOpeningHours(
@@ -97,12 +122,12 @@ export function normalizeOpeningHours(
 
     const timePart = desc.substring(colonIndex + 1).trim()
 
-    if (/closed/i.test(timePart)) {
+    if (/closed|cerrado/i.test(timePart)) {
       result.push({ dayOfWeek, openTime: '00:00', closeTime: '00:00', isClosed: true })
       continue
     }
 
-    if (/open 24 hours/i.test(timePart)) {
+    if (/open 24 hours|abierto las 24 horas|abierto 24 horas/i.test(timePart)) {
       result.push({ dayOfWeek, openTime: '00:00', closeTime: '23:59', isClosed: false })
       continue
     }
