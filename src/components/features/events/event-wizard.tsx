@@ -158,7 +158,7 @@ export function EventWizard({ categories, venues }: EventWizardProps) {
     {
       id: 'summary',
       title: 'Resumen',
-      description: 'Así se verá tu evento',
+      description: undefined,
       icon: <Package className="h-5 w-5" />,
       isValid: true,
       content: (
@@ -459,14 +459,14 @@ function StepEventSummary({
   return (
     <div className="space-y-4">
       {/* Alerta */}
-      <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3">
-        <p className="text-sm text-emerald-900 dark:text-emerald-100 font-medium">
+      <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3">
+        <p className="text-sm font-semibold text-emerald-800">
           Revisa la información antes de crear el evento.
         </p>
       </div>
 
       {/* Preview: simulación de card de evento */}
-      <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+      <div className="w-full overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
         {/* Hero image */}
         <div className="relative h-44 w-full overflow-hidden bg-accent">
           {data.image && data.image.startsWith('http') ? (

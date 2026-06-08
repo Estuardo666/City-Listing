@@ -283,7 +283,7 @@ export function VenueWizard({ categories }: VenueWizardProps) {
     {
       id: 'summary',
       title: 'Resumen',
-      description: 'Así se verá tu local',
+      description: undefined,
       icon: <Package className="h-5 w-5" />,
       isValid: true,
       content: (
@@ -597,10 +597,10 @@ function StepLocationHours({
             <Label>Horarios de atención</Label>
             <WizardTooltip content="Configura los horarios por día. Puedes agregar múltiples franjas." />
           </div>
-          <div className="max-h-80 space-y-1.5 overflow-y-auto pr-1">
+          <div className="space-y-1.5 pr-1">
             {data.businessHours.map((day, dayIdx) => (
-              <div key={dayIdx} className="rounded-lg border border-border/40 bg-card overflow-hidden">
-                <div className="flex items-center justify-between px-2.5 py-1.5 bg-muted/20">
+              <div key={dayIdx} className="rounded-lg border border-border bg-card overflow-visible">
+                <div className="flex items-center justify-between px-2.5 py-1.5 bg-muted/30">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium w-8">{DAY_LABELS[dayIdx]}</span>
                     <label className="flex items-center gap-1 cursor-pointer">
@@ -615,11 +615,11 @@ function StepLocationHours({
                   </div>
                   <div className="flex gap-0.5">
                     {!day.isClosed && (
-                      <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => addSlot(dayIdx)}>
+                      <Button size="sm" variant="ghost" className="h-5 w-5 p-0" onClick={() => addSlot(dayIdx)}>
                         <Plus className="h-2.5 w-2.5" />
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" className="h-5 px-1 text-[9px]" onClick={() => applyToAll(dayIdx)}>
+                    <Button size="sm" variant="ghost" className="h-5 px-1.5 text-[8px] leading-none" onClick={() => applyToAll(dayIdx)}>
                       Copiar
                     </Button>
                   </div>
@@ -715,14 +715,14 @@ function StepServices({
                 key={ps.name}
                 type="button"
                 onClick={() => toggleService(ps.name)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
                   active
-                    ? 'border-emerald-400 bg-emerald-100 text-emerald-900 dark:border-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-100'
-                    : 'bg-card border-border/50 text-foreground hover:bg-muted/50'
+                    ? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-600 dark:text-white'
+                    : 'border-border bg-card text-foreground hover:bg-muted/50 hover:border-foreground/20'
                 }`}
               >
                 <span>{ps.icon}</span>
-                <span className="text-xs font-medium">{ps.name}</span>
+                <span className="text-xs">{ps.name}</span>
                 {active && <Check className="h-3 w-3" />}
               </button>
             )
@@ -925,38 +925,40 @@ function StepMenuProducts({
                   {cat.items.map((item, itemIdx) => (
                     <div key={itemIdx} className="rounded-md border border-border/30 p-2 space-y-1.5">
                       <div className="flex items-start gap-1.5">
-                        <div className="flex-1 grid grid-cols-1 gap-1.5 sm:grid-cols-[1fr_1fr_100px]">
-                          <Input
-                            placeholder="Nombre *"
-                            value={item.name}
-                            onChange={(e) => updateMenuItem(catIdx, itemIdx, 'name', e.target.value)}
-                            className="text-xs h-7"
-                          />
-                          <Input
-                            placeholder="Descripción"
-                            value={item.description}
-                            onChange={(e) => updateMenuItem(catIdx, itemIdx, 'description', e.target.value)}
-                            className="text-xs h-7"
-                          />
-                          <Input
-                            placeholder="Precio"
-                            type="number"
-                            value={item.price}
-                            onChange={(e) => updateMenuItem(catIdx, itemIdx, 'price', e.target.value)}
-                            className="text-xs h-7"
-                            min="0"
-                            step="0.01"
+                        <div className="flex-1 grid grid-cols-1 gap-1.5 lg:grid-cols-2">
+                          <div className="space-y-1.5">
+                            <Input
+                              placeholder="Nombre *"
+                              value={item.name}
+                              onChange={(e) => updateMenuItem(catIdx, itemIdx, 'name', e.target.value)}
+                              className="text-xs h-7"
+                            />
+                            <Textarea
+                              placeholder="Descripción (doble tamaño)"
+                              value={item.description}
+                              onChange={(e) => updateMenuItem(catIdx, itemIdx, 'description', e.target.value)}
+                              className="text-xs min-h-[56px]"
+                              rows={2}
+                            />
+                            <Input
+                              placeholder="Precio"
+                              type="number"
+                              value={item.price}
+                              onChange={(e) => updateMenuItem(catIdx, itemIdx, 'price', e.target.value)}
+                              className="text-xs h-7 w-24"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                          <ImageUpload
+                            value={item.image}
+                            onChange={(v) => updateMenuItem(catIdx, itemIdx, 'image', v)}
                           />
                         </div>
                         <Button size="sm" variant="ghost" className="h-7 w-7 p-0 shrink-0" onClick={() => removeMenuItem(catIdx, itemIdx)}>
                           <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
                       </div>
-                      {/* Imagen con upload */}
-                      <ImageUpload
-                        value={item.image}
-                        onChange={(v) => updateMenuItem(catIdx, itemIdx, 'image', v)}
-                      />
                     </div>
                   ))}
                 </div>
@@ -994,34 +996,38 @@ function StepMenuProducts({
                 <Trash2 className="h-3 w-3 text-destructive" />
               </Button>
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_100px]">
-              <Input
-                placeholder="Nombre *"
-                value={product.name}
-                onChange={(e) => updateProduct(idx, 'name', e.target.value)}
-                className="text-xs h-7"
-              />
-              <Input
-                placeholder="Descripción"
-                value={product.description}
-                onChange={(e) => updateProduct(idx, 'description', e.target.value)}
-                className="text-xs h-7"
-              />
-              <Input
-                placeholder="Precio"
-                type="number"
-                value={product.price}
-                onChange={(e) => updateProduct(idx, 'price', e.target.value)}
-                className="text-xs h-7"
-                min="0"
-                step="0.01"
-              />
+            <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+              <div className="space-y-2">
+                <Input
+                  placeholder="Nombre *"
+                  value={product.name}
+                  onChange={(e) => updateProduct(idx, 'name', e.target.value)}
+                  className="text-xs h-7"
+                />
+                <Textarea
+                  placeholder="Descripción (doble tamaño)"
+                  value={product.description}
+                  onChange={(e) => updateProduct(idx, 'description', e.target.value)}
+                  className="text-xs min-h-[56px]"
+                  rows={2}
+                />
+                <Input
+                  placeholder="Precio"
+                  type="number"
+                  value={product.price}
+                  onChange={(e) => updateProduct(idx, 'price', e.target.value)}
+                  className="text-xs h-7 w-24"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <ImageUpload
+                  value={product.image}
+                  onChange={(v) => updateProduct(idx, 'image', v)}
+                />
+              </div>
             </div>
-            {/* Imagen con upload */}
-            <ImageUpload
-              value={product.image}
-              onChange={(v) => updateProduct(idx, 'image', v)}
-            />
           </div>
         ))}
       </div>
@@ -1050,14 +1056,14 @@ function StepSummary({
   return (
     <div className="space-y-4">
       {/* Alerta informativa */}
-      <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3">
-        <p className="text-sm text-emerald-900 dark:text-emerald-100 font-medium">
+      <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3">
+        <p className="text-sm font-semibold text-emerald-800">
           Tu local será revisado antes de publicarse. Revisa que toda la información sea correcta.
         </p>
       </div>
 
       {/* Preview: simulación de la card del frontend */}
-      <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+      <div className="w-full overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
         {/* Hero image */}
         <div className="relative h-44 w-full overflow-hidden bg-accent">
           {data.image && data.image.startsWith('http') ? (

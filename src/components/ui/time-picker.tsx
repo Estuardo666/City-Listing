@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -16,19 +17,52 @@ const MINUTES = ['00', '15', '30', '45']
 
 export function TimePicker({ value, onChange, className, disabled }: TimePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
 
   const [hour, minute] = value ? value.split(':') : ['09', '00']
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setCoords({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+      })
+    }
+
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        buttonRef.current && !buttonRef.current.contains(e.target as Node) &&
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false)
       }
     }
+    function handleScroll() {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect()
+        setCoords({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+        })
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    window.addEventListener('scroll', handleScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('scroll', handleScroll, true)
+    }
+  }, [isOpen])
 
   const selectTime = useCallback((h: string, m: string) => {
     onChange(`${h}:${m}`)
@@ -36,8 +70,9 @@ export function TimePicker({ value, onChange, className, disabled }: TimePickerP
   }, [onChange])
 
   return (
-    <div ref={containerRef} className="relative">
+    <>
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen((v) => !v)}
@@ -50,9 +85,12 @@ export function TimePicker({ value, onChange, className, disabled }: TimePickerP
         <span className="flex-1 text-left tabular-nums">{value || '--:--'}</span>
       </button>
 
-      {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1 flex gap-0 overflow-hidden rounded-lg border border-border bg-popover shadow-lg">
-          {/* Hours column */}
+      {isOpen && mounted && coords && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{ top: coords.top, left: coords.left, position: 'absolute' }}
+          className="z-[9999] flex gap-0 overflow-hidden rounded-lg border border-border bg-popover shadow-lg"
+        >
           <div className="max-h-52 overflow-y-auto border-r border-border/50 px-1 py-1 scrollbar-thin">
             {HOURS.map((h) => (
               <button
@@ -68,7 +106,6 @@ export function TimePicker({ value, onChange, className, disabled }: TimePickerP
               </button>
             ))}
           </div>
-          {/* Minutes column */}
           <div className="max-h-52 overflow-y-auto px-1 py-1 scrollbar-thin">
             {MINUTES.map((m) => (
               <button
@@ -84,8 +121,9 @@ export function TimePicker({ value, onChange, className, disabled }: TimePickerP
               </button>
             ))}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   )
 }
