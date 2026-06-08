@@ -1109,10 +1109,44 @@ function StepSummary({
           </div>
 
           {/* Location */}
-          <div className="flex items-start gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <span>{data.location || data.address || 'Ubicación no definida'}</span>
-          </div>
+          {data.location && (
+            <div className="flex items-start gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>{data.location}</span>
+            </div>
+          )}
+
+          {/* Address */}
+          {data.address && (
+            <div className="flex items-start gap-1.5 text-sm text-muted-foreground">
+              <span className="text-xs">📍</span>
+              <span>{data.address}</span>
+            </div>
+          )}
+
+          {/* Contact info: phone, email, website */}
+          {(data.phone || data.email || data.website) && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+              {data.phone && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Phone className="h-3.5 w-3.5 shrink-0" />
+                  <span>{data.phone}</span>
+                </div>
+              )}
+              {data.email && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  <span>{data.email}</span>
+                </div>
+              )}
+              {data.website && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Globe className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate max-w-[200px]">{data.website}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Description */}
           {data.description && (
@@ -1121,47 +1155,69 @@ function StepSummary({
             </p>
           )}
 
-          {/* Services pills */}
+          {/* Services pills - accesibles */}
           {selectedServiceNames.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {selectedServiceNames.map((name) => {
                 const ps = PREDEFINED_SERVICES.find((s) => s.name === name)
                 return (
-                  <span key={name} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                  <span key={name} className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-900">
                     {ps?.icon} {name}
                   </span>
                 )
               })}
               {data.customServices.map((cs, idx) => (
-                <span key={idx} className="inline-flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-300">
+                <span key={idx} className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-900">
                   {cs.icon || '✨'} {cs.name}
                 </span>
               ))}
             </div>
           )}
 
-          {/* Hours */}
-          {activeHours.length > 0 && (
-            <div className="rounded-lg border border-border/40 p-3 space-y-1">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-semibold">Horarios</span>
-              </div>
-              {activeHours.map((day) => (
-                <div key={day.dayOfWeek} className="flex items-center gap-2 text-xs">
-                  <span className="font-medium w-8">{DAY_LABELS[day.dayOfWeek]}</span>
-                  <span className="text-muted-foreground">
-                    {day.slots.map((s) => `${s.openTime} - ${s.closeTime}`).join(', ')}
-                  </span>
+          {/* Map + Hours en 50/50 */}
+          {(data.lat !== null && data.lng !== null) || activeHours.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {/* Map */}
+              {data.lat !== null && data.lng !== null && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-semibold">Ubicación</span>
+                  </div>
+                  <LocationPickerMap
+                    lat={data.lat}
+                    lng={data.lng}
+                    onChange={() => {}}
+                    mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''}
+                    className="h-32 rounded-lg"
+                  />
                 </div>
-              ))}
-              {closedDays.length > 0 && (
-                <p className="text-[10px] text-muted-foreground pt-0.5">
-                  Cerrado: {closedDays.map((d) => DAY_LABELS_FULL[d.dayOfWeek]).join(', ')}
-                </p>
+              )}
+
+              {/* Hours */}
+              {activeHours.length > 0 && (
+                <div className="rounded-lg border border-border/40 p-3 space-y-1">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-semibold">Horarios</span>
+                  </div>
+                  {activeHours.map((day) => (
+                    <div key={day.dayOfWeek} className="flex items-center gap-2 text-xs">
+                      <span className="font-medium w-8">{DAY_LABELS[day.dayOfWeek]}</span>
+                      <span className="text-muted-foreground">
+                        {day.slots.map((s) => `${s.openTime} - ${s.closeTime}`).join(', ')}
+                      </span>
+                    </div>
+                  ))}
+                  {closedDays.length > 0 && (
+                    <p className="text-[10px] text-muted-foreground pt-0.5">
+                      Cerrado: {closedDays.map((d) => DAY_LABELS_FULL[d.dayOfWeek]).join(', ')}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Menu preview */}
           {hasMenu && (
