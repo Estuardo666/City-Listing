@@ -15,10 +15,19 @@ import { JobProgress } from './job-progress'
 import { LogFeed, createLog, type LogEntry } from './log-feed'
 import type { DuplicateCheckResult } from '@/types/google-import'
 
+interface Subcategory {
+  id: string
+  name: string
+  slug: string
+  icon: string | null
+}
+
 interface Category {
   id: string
   name: string
   slug: string
+  icon: string | null
+  subcategories: Subcategory[]
 }
 
 type Step = 'address' | 'radius' | 'categories' | 'results' | 'preview' | 'job'

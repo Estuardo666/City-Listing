@@ -19,7 +19,16 @@ export default async function GoogleImportPage() {
 
   const categories = await prisma.category.findMany({
     where: { type: 'VENUE' },
-    select: { id: true, name: true, slug: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      icon: true,
+      subcategories: {
+        select: { id: true, name: true, slug: true, icon: true },
+        orderBy: { name: 'asc' },
+      },
+    },
     orderBy: { name: 'asc' },
   })
 
