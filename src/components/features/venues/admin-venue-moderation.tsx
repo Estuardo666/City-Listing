@@ -18,19 +18,22 @@ type AdminVenueModerationProps = {
 }
 
 const statusFilters: Array<{ label: string; value: AdminVenueStatusFilterInput }> = [
+  { label: 'Borradores', value: 'DRAFT' },
   { label: 'Pendientes', value: 'PENDING' },
   { label: 'Aprobados', value: 'APPROVED' },
   { label: 'Rechazados', value: 'REJECTED' },
   { label: 'Todos', value: 'ALL' },
 ]
 
-const statusLabel: Record<'PENDING' | 'APPROVED' | 'REJECTED', string> = {
+const statusLabel: Record<string, string> = {
+  DRAFT: 'Borrador',
   PENDING: 'Pendiente',
   APPROVED: 'Aprobado',
   REJECTED: 'Rechazado',
 }
 
-const statusPillStyles: Record<'PENDING' | 'APPROVED' | 'REJECTED', string> = {
+const statusPillStyles: Record<string, string> = {
+  DRAFT: 'bg-gray-100 text-gray-800 border-gray-200',
   PENDING: 'bg-amber-100 text-amber-800 border-amber-200',
   APPROVED: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   REJECTED: 'bg-rose-100 text-rose-800 border-rose-200',
@@ -44,12 +47,13 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
   const statusSummary = useMemo(() => {
     return venues.reduce(
       (acc, venue) => {
-        if (venue.status === 'PENDING' || venue.status === 'APPROVED' || venue.status === 'REJECTED') {
-          acc[venue.status] += 1
+        if (venue.status in acc) {
+          acc[venue.status as keyof typeof acc] += 1
         }
         return acc
       },
       {
+        DRAFT: 0,
         PENDING: 0,
         APPROVED: 0,
         REJECTED: 0,
@@ -80,7 +84,11 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
       <Card>
         <CardHeader className="space-y-4">
           <CardTitle className="text-xl">Moderación de locales</CardTitle>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900">
+              <p className="font-semibold">Borradores</p>
+              <p>{statusSummary.DRAFT}</p>
+            </div>
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <p className="font-semibold">Pendientes</p>
               <p>{statusSummary.PENDING}</p>
@@ -124,10 +132,7 @@ export function AdminVenueModeration({ venues, selectedStatus }: AdminVenueModer
 
       <div className="grid grid-cols-1 gap-4">
         {venues.map((venue) => {
-          const venueStatus =
-            venue.status === 'PENDING' || venue.status === 'APPROVED' || venue.status === 'REJECTED'
-              ? venue.status
-              : 'PENDING'
+          const venueStatus = venue.status in statusPillStyles ? venue.status : 'PENDING'
 
           const isUpdatingCurrent = isPending && updatingVenueId === venue.id
 

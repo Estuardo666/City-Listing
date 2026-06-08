@@ -1032,12 +1032,20 @@ model GoogleImportJob {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  pausedAt         DateTime?
+  currentBatchIndex Int     @default(0)
+  batchData        String?
+  jobType          String   @default("IMPORT")
+  duplicateAction  String   @default("skip")
+  delayMs          Int      @default(0)
+
   user User             @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   logs GoogleImportLog[]
 
   @@index([status])
   @@index([createdAt])
   @@index([createdBy])
+  @@index([jobType])
 }
 
 model GoogleImportLog {

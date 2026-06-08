@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const venueStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED'])
+export const venueStatusSchema = z.enum(['DRAFT', 'PENDING', 'APPROVED', 'REJECTED'])
 
 const optionalNullableTextSchema = z.preprocess((value) => {
   if (value === '' || value === null || value === undefined) {
@@ -88,7 +88,7 @@ export const venueStatusUpdateSchema = z.object({
 })
 
 export const adminVenueStatusFilterSchema = z
-  .enum(['ALL', 'PENDING', 'APPROVED', 'REJECTED'])
+  .enum(['ALL', 'DRAFT', 'PENDING', 'APPROVED', 'REJECTED'])
   .optional()
   .default('PENDING')
 

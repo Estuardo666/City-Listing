@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
 
 const TABS = [
   { href: '/admin/imports/google', label: 'Importador', key: 'import' },
+  { href: '/admin/imports/google/slow', label: 'Importación lenta', key: 'slow' },
+  { href: '/admin/imports/google/drafts', label: 'Borradores', key: 'drafts' },
   { href: '/admin/imports/google/jobs', label: 'Historial', key: 'jobs' },
   { href: '/admin/imports/google/sync', label: 'Sincronizar', key: 'sync' },
 ]
