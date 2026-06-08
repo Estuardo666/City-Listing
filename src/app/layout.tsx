@@ -10,6 +10,7 @@ import { SiteHeader, SiteFooter } from '@/components/layout'
 import { CommandPalette } from '@/components/features/search/command-palette'
 import { PageTransition } from '@/components/layout/page-transition'
 import { ServiceWorkerRegister } from '@/components/providers/service-worker-register'
+import { ScrollLockFix } from '@/components/ui/scroll-lock-fix'
 
 const googleSans = localFont({
   src: [
@@ -83,6 +84,7 @@ document.addEventListener('touchend', function(e) {
         />
       </head>
       <body className={`${googleSans.variable} font-sans antialiased`}>
+        <ScrollLockFix />
         <MapboxWorkerSetup />
         <ServiceWorkerRegister />
         <QueryProvider>

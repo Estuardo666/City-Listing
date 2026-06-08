@@ -35,6 +35,16 @@ const optionalNullableUrlSchema = z.preprocess((value) => {
     return null
   }
 
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed === '') return null
+    // Auto-add https:// if no protocol
+    if (!/^https?:\/\//i.test(trimmed)) {
+      return `https://${trimmed}`
+    }
+    return trimmed
+  }
+
   return value
 }, z.string().url('URL inválida').nullable())
 

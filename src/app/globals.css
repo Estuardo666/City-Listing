@@ -296,12 +296,19 @@ html body {
   scrollbar-gutter: stable !important;
   overflow-y: scroll !important;
   padding-right: 0 !important;
+  margin-right: 0 !important;
 }
 
 /* When Radix locks scroll, keep our overrides */
 html body[data-scroll-locked] {
   overflow-y: scroll !important;
   padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Prevent Radix portals from affecting body scroll */
+body [data-radix-portal] ~ [data-scroll-locked] {
+  overflow: visible !important;
 }
 
 /* Themed scrollbar */
