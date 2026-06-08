@@ -3,11 +3,22 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CalendarDays, CheckCircle2, FileText, User2, XCircle } from 'lucide-react'
+import { CalendarDays, CheckCircle2, FileText, Pencil, Trash2, User2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { updatePostStatusAction } from '@/actions/posts'
+import { updatePostStatusAction, deletePostAction } from '@/actions/posts'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import type { AdminPostStatusFilterInput } from '@/schemas/post.schema'
 import type { PostAdminListItem } from '@/types/post'
@@ -49,6 +60,7 @@ export function AdminBlogModeration({ posts, selectedStatus }: AdminBlogModerati
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [updatingPostId, setUpdatingPostId] = useState<string | null>(null)
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
 
   const statusSummary = useMemo(() => {
     return posts.reduce(
@@ -74,6 +86,21 @@ export function AdminBlogModeration({ posts, selectedStatus }: AdminBlogModerati
       toast.success(status === 'APPROVED' ? 'Artículo aprobado y publicado.' : 'Artículo rechazado.')
       router.refresh()
       setUpdatingPostId(null)
+    })
+  }
+
+  const handleDelete = (postId: string) => {
+    setDeletingPostId(postId)
+    startTransition(async () => {
+      const result = await deletePostAction(postId)
+      if (!result.success) {
+        toast.error(result.error ?? 'No se pudo eliminar el artículo.')
+        setDeletingPostId(null)
+        return
+      }
+      toast.success('Artículo eliminado correctamente.')
+      router.refresh()
+      setDeletingPostId(null)
     })
   }
 
@@ -132,6 +159,7 @@ export function AdminBlogModeration({ posts, selectedStatus }: AdminBlogModerati
               : 'PENDING'
 
           const isUpdatingCurrent = isPending && updatingPostId === post.id
+          const isDeletingCurrent = isPending && deletingPostId === post.id
 
           return (
             <Card key={post.id} className="border-border/70">
@@ -167,19 +195,26 @@ export function AdminBlogModeration({ posts, selectedStatus }: AdminBlogModerati
               </CardHeader>
 
               <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                {postStatus === 'APPROVED' ? (
+                <div className="flex flex-wrap gap-2">
+                  {postStatus === 'APPROVED' ? (
+                    <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
+                      <Link href={`/blog/${post.slug}`}>Ver artículo</Link>
+                    </Button>
+                  ) : null}
+
                   <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
-                    <Link href={`/blog/${post.slug}`}>Ver artículo</Link>
+                    <Link href={`/admin/blog/${post.id}/editar`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </Link>
                   </Button>
-                ) : (
-                  <div />
-                )}
+                </div>
 
                 <div className="flex flex-wrap gap-2">
                   {postStatus !== 'APPROVED' ? (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent}
                       onClick={() => handleStatusUpdate(post.id, 'APPROVED')}
                       className="h-9 bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:opacity-60"
                     >
@@ -191,7 +226,7 @@ export function AdminBlogModeration({ posts, selectedStatus }: AdminBlogModerati
                   {postStatus !== 'REJECTED' ? (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent}
                       onClick={() => handleStatusUpdate(post.id, 'REJECTED')}
                       className="h-9 bg-rose-600 px-4 text-white hover:bg-rose-700 disabled:opacity-60"
                     >
@@ -199,6 +234,37 @@ export function AdminBlogModeration({ posts, selectedStatus }: AdminBlogModerati
                       Rechazar
                     </Button>
                   ) : null}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        disabled={isUpdatingCurrent || isDeletingCurrent}
+                        className="h-9 bg-rose-700 px-4 text-white hover:bg-rose-800 disabled:opacity-60"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar artículo?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminará permanentemente el artículo
+                          <span className="font-semibold"> {post.title}</span> y todos sus datos asociados.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(post.id)}
+                          className="bg-rose-600 text-white hover:bg-rose-700"
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>

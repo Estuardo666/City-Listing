@@ -15,9 +15,21 @@ import {
   ExternalLink,
   MessageSquareWarning,
   Filter,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { updateReviewStatusAction, bulkUpdateReviewsAction } from '@/actions/reviews'
+import { updateReviewStatusAction, bulkUpdateReviewsAction, deleteReviewAction } from '@/actions/reviews'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -92,6 +104,7 @@ export function AdminReviewModeration({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [searchInput, setSearchInput] = useState(currentFilters.search)
   const [showFilters, setShowFilters] = useState(false)
@@ -131,6 +144,26 @@ export function AdminReviewModeration({
       router.refresh()
     })
   }, [selectedIds, router])
+
+  const handleDelete = useCallback((reviewId: string) => {
+    setDeletingId(reviewId)
+    startTransition(async () => {
+      const result = await deleteReviewAction(reviewId)
+      if (!result.success) {
+        toast.error(result.error ?? 'No se pudo eliminar la reseña.')
+        setDeletingId(null)
+        return
+      }
+      toast.success('Reseña eliminada correctamente.')
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(reviewId)
+        return next
+      })
+      router.refresh()
+      setDeletingId(null)
+    })
+  }, [router])
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -427,6 +460,7 @@ export function AdminReviewModeration({
       <div className="grid grid-cols-1 gap-4">
         {reviews.map((review) => {
           const isUpdatingCurrent = isPending && updatingId === review.id
+          const isDeletingCurrent = isPending && deletingId === review.id
           const isSelected = selectedIds.has(review.id)
           const entityName = review.venue?.name ?? review.event?.title ?? 'Desconocido'
           const entitySlug = review.venue?.slug ?? review.event?.slug
@@ -562,7 +596,7 @@ export function AdminReviewModeration({
                   {review.status !== 'APPROVED' && (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent}
                       onClick={() => handleStatusUpdate(review.id, 'APPROVED')}
                       className="h-9 bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:opacity-60"
                     >
@@ -574,7 +608,7 @@ export function AdminReviewModeration({
                   {review.status !== 'REJECTED' && (
                     <Button
                       type="button"
-                      disabled={isUpdatingCurrent}
+                      disabled={isUpdatingCurrent || isDeletingCurrent}
                       onClick={() => handleStatusUpdate(review.id, 'REJECTED')}
                       className="h-9 bg-rose-600 px-4 text-white hover:bg-rose-700 disabled:opacity-60"
                     >
@@ -582,6 +616,37 @@ export function AdminReviewModeration({
                       Rechazar
                     </Button>
                   )}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        disabled={isUpdatingCurrent || isDeletingCurrent}
+                        className="h-9 bg-rose-700 px-4 text-white hover:bg-rose-800 disabled:opacity-60"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar reseña?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminará permanentemente la reseña
+                          y se recalculará la calificación del {review.venue ? 'local' : 'evento'}.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(review.id)}
+                          className="bg-rose-600 text-white hover:bg-rose-700"
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>

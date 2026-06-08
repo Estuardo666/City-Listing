@@ -39,6 +39,76 @@ type VenuesResponse = {
 
 const PAGE_SIZE = 10
 
+function UserVenueRow({ venue }: { venue: UserVenueListItem }) {
+  const cfg = statusConfig[venue.status] ?? statusConfig.PENDING
+  const StatusIcon = cfg.icon
+  const [imageError, setImageError] = useState(false)
+
+  return (
+    <div className="flex items-start gap-4 rounded-2xl border border-border/60 bg-card p-4 transition-colors hover:border-border">
+      <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-accent">
+        {venue.image && !imageError ? (
+          <Image
+            src={venue.image}
+            alt={venue.name}
+            fill
+            className="object-cover"
+            sizes="80px"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <CategoryIconFallback
+              category={{
+                id: venue.venueCategories[0]?.category.name ?? '',
+                name: venue.venueCategories[0]?.category.name ?? '',
+                slug: (venue.venueCategories[0]?.category.name ?? '').toLowerCase().replace(/\s+/g, '-'),
+                icon: venue.venueCategories[0]?.category.icon ?? null,
+                color: null
+              }}
+              size="sm"
+              className="opacity-50"
+            />
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{venue.name}</h3>
+          <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold', cfg.pill)}>
+            <StatusIcon className="h-3 w-3" />
+            {cfg.label}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+          <span>{venue.venueCategories[0]?.category.icon ?? '🏪'} {venue.venueCategories[0]?.category.name ?? ''}</span>
+          {venue.address && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              {venue.address}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Button asChild className="h-8 border border-border/80 bg-background px-3 text-xs text-foreground hover:bg-accent">
+          <Link href={`/dashboard/locales/${venue.slug}/editar`}>
+            <Edit2 className="mr-1.5 h-3.5 w-3.5" />
+            Editar
+          </Link>
+        </Button>
+        {venue.status === 'APPROVED' && (
+          <Button asChild className="h-8 border border-border/80 bg-background px-3 text-xs text-foreground hover:bg-accent">
+            <Link href={`/locales/${venue.slug}`} target="_blank">
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function UserVenuesList() {
   const [filter, setFilter] = useState<StatusFilter>('ALL')
   const [search, setSearch] = useState('')
@@ -167,75 +237,9 @@ export function UserVenuesList() {
         </div>
       ) : (
         <div className="space-y-3">
-          {venues.map((venue) => {
-            const cfg = statusConfig[venue.status] ?? statusConfig.PENDING
-            const StatusIcon = cfg.icon
-            const [imageError, setImageError] = useState(false)
-            
-            return (
-              <div key={venue.id} className="flex items-start gap-4 rounded-2xl border border-border/60 bg-card p-4 transition-colors hover:border-border">
-                <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-accent">
-                  {venue.image && !imageError ? (
-                    <Image 
-                      src={venue.image} 
-                      alt={venue.name} 
-                      fill 
-                      className="object-cover" 
-                      sizes="80px" 
-                      onError={() => setImageError(true)}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <CategoryIconFallback 
-                        category={{
-                          id: venue.venueCategories[0]?.category.name ?? '',
-                          name: venue.venueCategories[0]?.category.name ?? '',
-                          slug: (venue.venueCategories[0]?.category.name ?? '').toLowerCase().replace(/\s+/g, '-'),
-                          icon: venue.venueCategories[0]?.category.icon ?? null,
-                          color: null
-                        }} 
-                        size="sm"
-                        className="opacity-50"
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{venue.name}</h3>
-                    <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold', cfg.pill)}>
-                      <StatusIcon className="h-3 w-3" />
-                      {cfg.label}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    <span>{venue.venueCategories[0]?.category.icon ?? '🏪'} {venue.venueCategories[0]?.category.name ?? ''}</span>
-                    {venue.address && (
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {venue.address}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Button asChild className="h-8 border border-border/80 bg-background px-3 text-xs text-foreground hover:bg-accent">
-                    <Link href={`/dashboard/locales/${venue.slug}/editar`}>
-                      <Edit2 className="mr-1.5 h-3.5 w-3.5" />
-                      Editar
-                    </Link>
-                  </Button>
-                  {venue.status === 'APPROVED' && (
-                    <Button asChild className="h-8 border border-border/80 bg-background px-3 text-xs text-foreground hover:bg-accent">
-                      <Link href={`/locales/${venue.slug}`} target="_blank">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+          {venues.map((venue) => (
+            <UserVenueRow key={venue.id} venue={venue} />
+          ))}
 
           <div ref={sentinelRef} className="h-4" />
 
