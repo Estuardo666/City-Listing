@@ -1,3 +1,4 @@
+import 'server-only'
 import { sendTransactionalEmail, emailLayout, BASE_URL } from '../send'
 
 export async function sendNewMessageEmail(

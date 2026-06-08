@@ -1,3 +1,4 @@
+import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { googlePlacesService } from '@/lib/google-places'
 import { normalizeOpeningHours } from './google-places-importer'

@@ -1,3 +1,4 @@
+import 'server-only'
 import { sendEmail, EMAIL_FROM } from './resend'
 
 export async function sendNewReviewEmail(

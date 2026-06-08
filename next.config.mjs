@@ -30,7 +30,7 @@ const nextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ['lucide-react', 'date-fns'],
+    optimizePackageImports: ['lucide-react', 'date-fns', 'framer-motion', 'recharts'],
   },
   async headers() {
     return [

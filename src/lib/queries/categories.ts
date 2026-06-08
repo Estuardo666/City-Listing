@@ -1,3 +1,4 @@
+import 'server-only'
 import { prisma } from '@/lib/prisma'
 
 const CATEGORY_SLUGS_TO_SKIP = [

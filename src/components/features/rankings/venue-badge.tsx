@@ -1,4 +1,4 @@
-import { getBadgeInfo, type VenueBadgeType } from '@/lib/rankings'
+import { getBadgeInfo, type VenueBadgeType } from '@/lib/badges'
 import { cn } from '@/lib/utils'
 
 type VenueBadgeProps = {

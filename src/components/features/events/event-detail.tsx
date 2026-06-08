@@ -1,18 +1,23 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
   Building2, CalendarDays, Clock3, DollarSign, Edit, ExternalLink, Info, LogIn,
   ImageIcon, MapPin, Map, Repeat, ShieldCheck, Sparkles, Star, UserCircle2
 } from 'lucide-react'
-import { EventsMap } from '@/components/features/events/events-map'
 import { MediaGallery } from '@/components/media/media-gallery'
 import { ReviewForm } from '@/components/review/review-form'
 import { ReviewList } from '@/components/review/review-list'
 import { ShareButton } from '@/components/share/share-button'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
+
+const EventsMap = dynamic(
+  () => import('@/components/features/events/events-map').then((mod) => mod.EventsMap),
+  { ssr: false, loading: () => <div className="h-[300px] animate-pulse rounded-lg bg-muted" /> }
+)
 import { UberIcon } from '@/components/ui/uber-icon'
 import { generateUberLink } from '@/lib/transport/uber-link'
 import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'

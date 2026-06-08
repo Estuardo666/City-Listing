@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import {
   MousePointerClick,
   Eye,
@@ -13,9 +14,13 @@ import {
   FileText,
 } from 'lucide-react'
 import type { SearchConsoleData, DateRangePreset } from '@/lib/queries/search-console'
-import { SearchConsoleCharts } from '@/components/features/admin/search-console/search-console-charts'
 import { TopQueriesTable } from '@/components/features/admin/search-console/top-queries-table'
 import { TopPagesTable } from '@/components/features/admin/search-console/top-pages-table'
+
+const SearchConsoleCharts = dynamic(
+  () => import('@/components/features/admin/search-console/search-console-charts').then((mod) => mod.SearchConsoleCharts),
+  { ssr: false, loading: () => <div className="h-[300px] animate-pulse rounded-lg bg-muted" /> }
+)
 
 type SearchConsoleDashboardProps = {
   data: SearchConsoleData

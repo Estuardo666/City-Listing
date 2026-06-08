@@ -5,12 +5,10 @@ import { AuthProvider } from '@/components/auth/auth-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { SonnerToaster } from '@/components/ui/sonner'
 import { MapboxWorkerSetup } from '@/components/features/map/mapbox-worker-setup'
-import { NotificationCenter } from '@/components/features/notifications/notification-center'
 import { SiteHeader, SiteFooter } from '@/components/layout'
-import { CommandPalette } from '@/components/features/search/command-palette'
 import { PageTransition } from '@/components/layout/page-transition'
-import { ServiceWorkerRegister } from '@/components/providers/service-worker-register'
 import { ScrollLockFix } from '@/components/ui/scroll-lock-fix'
+import { LazyGlobals } from '@/components/providers/lazy-globals'
 
 const googleSans = localFont({
   src: [
@@ -55,16 +53,6 @@ export default function RootLayout({
     const stored = localStorage.getItem('theme');
     const theme = stored === 'dark' || stored === 'light' ? stored : 'light';
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        regs.forEach((reg) => reg.unregister());
-      });
-    }
-    if ('caches' in window) {
-      caches.keys().then((keys) => {
-        keys.forEach((key) => caches.delete(key));
-      });
-    }
   } catch {}
 })();
 
@@ -85,12 +73,10 @@ document.addEventListener('touchend', function(e) {
       <body className={`${googleSans.variable} font-sans antialiased`}>
         <ScrollLockFix />
         <MapboxWorkerSetup />
-        <ServiceWorkerRegister />
         <QueryProvider>
           <AuthProvider>
             <SiteHeader />
-            <NotificationCenter />
-            <CommandPalette />
+            <LazyGlobals />
             <PageTransition>{children}</PageTransition>
             <SiteFooter />
           </AuthProvider>

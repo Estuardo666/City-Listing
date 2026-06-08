@@ -23,7 +23,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { getUserTagsWithCount } from '@/lib/queries/tags'
 import type { UserPostListItem } from '@/types/post'
 
 type StatusFilter = 'ALL' | 'APPROVED' | 'PENDING' | 'REJECTED'

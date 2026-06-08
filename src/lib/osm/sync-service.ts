@@ -1,3 +1,4 @@
+import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { overpassService } from './overpass-service'
 import type { OsmPlace } from '@/types/osm-import'

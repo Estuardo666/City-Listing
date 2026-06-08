@@ -1,3 +1,4 @@
+import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { googlePlacesImporter } from './google-places-importer'
 import type { GooglePlaceNormalized, GoogleImportJobStatus } from '@/types/google-import'

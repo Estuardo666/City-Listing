@@ -1,3 +1,4 @@
+import 'server-only'
 import { format, subDays } from 'date-fns'
 import {
   getSearchAnalytics,

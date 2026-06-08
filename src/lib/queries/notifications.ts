@@ -1,3 +1,4 @@
+import 'server-only'
 import { prisma } from '@/lib/prisma'
 import type { NotificationPreferenceRow } from '@/types/notification'
 import type { UpcomingEventNotification } from '@/types/event'

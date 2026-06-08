@@ -1,10 +1,15 @@
 'use client'
 
 import { useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { MapPin, Clock } from 'lucide-react'
-import { VenuesMap } from '@/components/features/venues/venues-map'
 import type { VenueBusinessHours } from '@prisma/client'
 import type { VenueMapItem } from '@/types/venue'
+
+const VenuesMap = dynamic(
+  () => import('@/components/features/venues/venues-map').then((mod) => mod.VenuesMap),
+  { ssr: false, loading: () => <div className="h-[300px] animate-pulse rounded-lg bg-muted" /> }
+)
 
 const DAY_LABELS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 

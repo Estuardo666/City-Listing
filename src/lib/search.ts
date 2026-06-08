@@ -1,3 +1,4 @@
+import 'server-only'
 import { Search } from '@upstash/search'
 
 // Configuración de Upstash Search - usar fromEnv() para leer variables automáticamente

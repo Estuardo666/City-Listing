@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import {
   Calendar,
   Eye,
@@ -10,7 +11,11 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import type { AuthorAnalytics } from '@/lib/queries/analytics'
-import { AnalyticsCharts } from '@/components/features/dashboard/analytics-charts'
+
+const AnalyticsCharts = dynamic(
+  () => import('@/components/features/dashboard/analytics-charts').then((mod) => mod.AnalyticsCharts),
+  { loading: () => <div className="h-[300px] animate-pulse rounded-lg bg-muted" /> }
+)
 
 type AnalyticsDashboardProps = {
   analytics: AuthorAnalytics

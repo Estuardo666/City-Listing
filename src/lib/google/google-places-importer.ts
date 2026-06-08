@@ -1,3 +1,4 @@
+import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { googlePlacesService } from '@/lib/google-places'
 import type { GooglePlaceNormalized, DuplicateCheckResult } from '@/types/google-import'

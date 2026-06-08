@@ -1,3 +1,4 @@
+import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { indexDocuments, type SearchDocument } from '@/lib/search'
 

@@ -1,3 +1,4 @@
+import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { getSearchAnalytics } from '@/lib/google/search-console'
 import { isSearchConsoleConfigured } from '@/lib/queries/search-console'

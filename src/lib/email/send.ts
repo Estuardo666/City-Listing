@@ -1,3 +1,4 @@
+import 'server-only'
 import { sendEmail } from '@/lib/resend'
 import { emailLayout } from './layout'
 
