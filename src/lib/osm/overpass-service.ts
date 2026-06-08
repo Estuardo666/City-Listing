@@ -11,6 +11,7 @@ interface BuildQueryParams {
   radius: number
   categories: string[]
   coordinates?: { lat: number; lon: number }
+  areaId?: number
 }
 
 class OverpassService {
@@ -31,15 +32,23 @@ class OverpassService {
   }
 
   buildQuery(params: BuildQueryParams): string {
-    const { city, country, radius, categories, coordinates } = params
+    const { radius, categories, coordinates, areaId } = params
 
     const categoryFilters = categories
       .map((key) => {
         const cat = OSM_CATEGORIES[key]
         if (!cat) return ''
         const [tagKey, tagValue] = cat.overpassTag.split('=')
+        
+        if (areaId) {
+          return `  node["${tagKey}"="${tagValue}"](area.searchArea);
+  way["${tagKey}"="${tagValue}"](area.searchArea);
+  relation["${tagKey}"="${tagValue}"](area.searchArea);`
+        }
+        
         return `  node["${tagKey}"="${tagValue}"](around:${radius},\${LAT},\${LON});
-  way["${tagKey}"="${tagValue}"](around:${radius},\${LAT},\${LON});`
+  way["${tagKey}"="${tagValue}"](around:${radius},\${LAT},\${LON});
+  relation["${tagKey}"="${tagValue}"](around:${radius},\${LAT},\${LON});`
       })
       .filter(Boolean)
       .join('\n')
@@ -47,11 +56,17 @@ class OverpassService {
     const lat = coordinates?.lat ?? 0
     const lon = coordinates?.lon ?? 0
 
-    const query = `[out:json][timeout:${this.timeout}];
-(
-${categoryFilters.replace(/\$\{LAT\}/g, String(lat)).replace(/\$\{LON\}/g, String(lon))}
-);
-out center;`
+    let query = `[out:json][timeout:${this.timeout}];\n`
+
+    if (areaId) {
+      query += `area(${areaId})->.searchArea;\n`
+    }
+
+    query += `(\n${categoryFilters}\n);\nout center;`
+
+    if (!areaId) {
+      query = query.replace(/\$\{LAT\}/g, String(lat)).replace(/\$\{LON\}/g, String(lon))
+    }
 
     return query
   }
@@ -130,9 +145,9 @@ out center;`
     return selectedCategories[0] ?? 'other'
   }
 
-  async geocodeCity(city: string, country: string): Promise<{ lat: number; lon: number } | null> {
+  async geocodeCity(city: string, country: string): Promise<{ lat: number; lon: number; areaId?: number } | null> {
     const query = encodeURIComponent(`${city}, ${country}`)
-    const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`
+    const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=5&addressdetails=1`
 
     const response = await fetch(url, {
       headers: {
@@ -145,10 +160,23 @@ out center;`
     const results = await response.json()
     if (!results || results.length === 0) return null
 
-    return {
-      lat: parseFloat(results[0].lat),
-      lon: parseFloat(results[0].lon),
+    const cityResult = results.find((r: any) => 
+      r.type === 'administrative' && 
+      (r.class === 'boundary' || r.class === 'place') &&
+      (r.address?.city === city || r.address?.town === city || r.address?.village === city)
+    ) ?? results[0]
+
+    const lat = parseFloat(cityResult.lat)
+    const lon = parseFloat(cityResult.lon)
+
+    let areaId: number | undefined
+    if (cityResult.osm_type === 'relation') {
+      areaId = 3600000000 + parseInt(cityResult.osm_id)
+    } else if (cityResult.osm_type === 'way') {
+      areaId = 2400000000 + parseInt(cityResult.osm_id)
     }
+
+    return { lat, lon, areaId }
   }
 }
 

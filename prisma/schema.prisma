@@ -97,6 +97,7 @@ model User {
   collections Collection[]
   pushSubscriptions PushSubscription[]
   osmImports  OsmImport[]
+  googleImportJobs GoogleImportJob[]
   badges      UserBadge[]
   
   sentMessages      Message[]    @relation("SentMessages")
@@ -930,5 +931,47 @@ model VenueService {
 
   @@unique([venueId, name])
   @@index([venueId])
+}
+
+model GoogleImportJob {
+  id               String   @id @default(cuid())
+  status           String   @default("PENDING")
+  country          String
+  province         String
+  city             String
+  categories       String
+  radius           Int
+  totalRecords     Int      @default(0)
+  processedRecords Int      @default(0)
+  importedRecords  Int      @default(0)
+  duplicateRecords Int      @default(0)
+  errorRecords     Int      @default(0)
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  createdBy        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User             @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  logs GoogleImportLog[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([createdBy])
+}
+
+model GoogleImportLog {
+  id        String   @id @default(cuid())
+  jobId     String
+  level     String   @default("INFO")
+  message   String
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  job GoogleImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([level])
+  @@index([createdAt])
 }
 

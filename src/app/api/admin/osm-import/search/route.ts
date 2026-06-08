@@ -37,7 +37,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: `No se pudo geolocalizar: ${parsed.data.city}, ${parsed.data.country}` }, { status: 400 })
     }
 
-    const places = await overpassService.searchPlaces({ ...parsed.data, coordinates })
+    const places = await overpassService.searchPlaces({ 
+      ...parsed.data, 
+      coordinates: { lat: coordinates.lat, lon: coordinates.lon },
+      areaId: coordinates.areaId 
+    })
 
     const duplicateChecks = await Promise.all(places.map((p) => importService.checkDuplicate(p)))
     const placesWithDupStatus = places.map((place, i) => ({
@@ -67,7 +71,8 @@ export async function GET(request: NextRequest) {
       total: places.length,
       duplicates,
       importId: importRecord.id,
-      coordinates,
+      coordinates: { lat: coordinates.lat, lon: coordinates.lon },
+      areaId: coordinates.areaId,
     })
   } catch (error) {
     console.error('Error searching OSM:', error)

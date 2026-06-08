@@ -1,0 +1,226 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { ChevronLeft, ChevronRight, Check, X, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+
+export interface PlaceResult {
+  google_place_id: string
+  name: string
+  category: string
+  address: string
+  phone: string | null
+  lat: number
+  lng: number
+  alreadyImported?: boolean
+  existingVenue?: {
+    id: string
+    name: string
+    slug: string
+  } | null
+}
+
+interface GoogleImportResultsProps {
+  places: PlaceResult[]
+  onSelectForImport: (places: PlaceResult[]) => void
+  onImportAll: () => void
+  onCancel: () => void
+}
+
+export function GoogleImportResults({
+  places,
+  onSelectForImport,
+  onImportAll,
+  onCancel,
+}: GoogleImportResultsProps) {
+  const [page, setPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const perPage = 20
+  const totalPages = Math.ceil(places.length / perPage)
+  const paged = places.slice((page - 1) * perPage, page * perPage)
+
+  const selectedCount = selectedIds.size
+  const totalAvailable = places.filter((p) => !p.alreadyImported).length
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAllPage = () => {
+    const pageIds = paged.filter((p) => !p.alreadyImported).map((p) => p.google_place_id)
+    const allSelected = pageIds.every((id) => selectedIds.has(id))
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (allSelected) {
+        pageIds.forEach((id) => next.delete(id))
+      } else {
+        pageIds.forEach((id) => next.add(id))
+      }
+      return next
+    })
+  }
+
+  const handleImportSelected = () => {
+    const selected = places.filter(
+      (p) => selectedIds.has(p.google_place_id) && !p.alreadyImported
+    )
+    onSelectForImport(selected)
+  }
+
+  const handleImportAll = () => {
+    onImportAll()
+  }
+
+  const allPageSelected =
+    paged.filter((p) => !p.alreadyImported).length > 0 &&
+    paged
+      .filter((p) => !p.alreadyImported)
+      .every((p) => selectedIds.has(p.google_place_id))
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle>Resultados de búsqueda</CardTitle>
+          <div className="flex flex-wrap gap-3 text-sm">
+            <Badge variant="outline">Total: {places.length}</Badge>
+            <Badge variant="secondary">Mostrados: {paged.length}</Badge>
+            <Badge variant="default">Seleccionados: {selectedCount}</Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Checkbox checked={allPageSelected} onCheckedChange={toggleSelectAllPage} />
+          <Label className="text-sm cursor-pointer" onClick={toggleSelectAllPage}>
+            Seleccionar todos de esta página
+          </Label>
+        </div>
+
+        <div className="border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="w-10 px-3 py-2"></th>
+                  <th className="px-3 py-2 text-left font-medium">Nombre</th>
+                  <th className="px-3 py-2 text-left font-medium">Categoría</th>
+                  <th className="px-3 py-2 text-left font-medium hidden md:table-cell">
+                    Dirección
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium hidden lg:table-cell">Teléfono</th>
+                  <th className="px-3 py-2 text-left font-medium hidden xl:table-cell">Lat</th>
+                  <th className="px-3 py-2 text-left font-medium hidden xl:table-cell">Lng</th>
+                  <th className="px-3 py-2 text-left font-medium">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((place) => {
+                  const isSelected = selectedIds.has(place.google_place_id)
+                  return (
+                    <tr
+                      key={place.google_place_id}
+                      className={`border-t ${place.alreadyImported ? 'bg-muted/30 opacity-60' : isSelected ? 'bg-primary/5' : 'hover:bg-muted/20'}`}
+                    >
+                      <td className="px-3 py-2">
+                        {!place.alreadyImported && (
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleSelect(place.google_place_id)}
+                          />
+                        )}
+                      </td>
+                      <td className="px-3 py-2 font-medium max-w-[200px] truncate">
+                        {place.name}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{place.category}</td>
+                      <td className="px-3 py-2 text-muted-foreground hidden md:table-cell max-w-[250px] truncate">
+                        {place.address}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground hidden lg:table-cell">
+                        {place.phone || '-'}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground hidden xl:table-cell font-mono text-xs">
+                        {place.lat.toFixed(6)}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground hidden xl:table-cell font-mono text-xs">
+                        {place.lng.toFixed(6)}
+                      </td>
+                      <td className="px-3 py-2">
+                        {place.alreadyImported ? (
+                          <Badge variant="secondary" className="text-xs">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Duplicado
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-green-600">
+                            Nuevo
+                          </Badge>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Anterior
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Página {page} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              Siguiente
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleImportSelected}
+              disabled={selectedCount === 0}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Importar seleccionados ({selectedCount})
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleImportAll}>
+              Importar todos ({totalAvailable})
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onCancel}>
+              <X className="h-4 w-4 mr-1" />
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

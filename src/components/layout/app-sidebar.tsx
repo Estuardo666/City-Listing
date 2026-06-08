@@ -71,6 +71,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/ofertas', label: 'Ofertas', icon: Tag, adminOnly: true },
   { href: '/admin/categorias', label: 'Categorías', icon: FolderTree, adminOnly: true },
   { href: '/admin/osm-imports', label: 'Importaciones OSM', icon: Globe, adminOnly: true },
+  { href: '/admin/imports/google', label: 'Importador Google', icon: MapPin, adminOnly: true },
 ]
 
 interface AppSidebarProps {
