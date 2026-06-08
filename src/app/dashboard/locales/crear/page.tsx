@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
-import { VenueForm } from '@/components/features/venues'
+import { VenueWizard } from '@/components/features/venues/venue-wizard'
 import { getVenueCategories } from '@/lib/queries/venues'
 
 export default async function DashboardCreateVenuePage() {
@@ -23,11 +23,11 @@ export default async function DashboardCreateVenuePage() {
               Publica tu local en Vive Loja
             </h1>
             <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Registra tu negocio y llega a más personas. Todos los locales son revisados antes de publicarse.
+              Registra tu negocio paso a paso. Podrás configurar la información básica, horarios, servicios y menú en un solo flujo.
             </p>
           </div>
 
-          <VenueForm categories={categories} />
+          <VenueWizard categories={categories} />
         </div>
       </section>
     </div>

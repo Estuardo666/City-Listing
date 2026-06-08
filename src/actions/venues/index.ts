@@ -1,3 +1,4 @@
 export { createVenueAction } from '@/actions/venues/create-venue'
+export { createVenueCompleteAction, type VenueCompleteInput } from '@/actions/venues/create-venue-complete'
 export { updateVenueAction } from '@/actions/venues/update-venue'
 export { updateVenueStatusAction } from '@/actions/venues/update-venue-status'

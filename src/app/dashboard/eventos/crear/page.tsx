@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
-import { EventForm } from '@/components/features/events/event-form'
+import { EventWizard } from '@/components/features/events/event-wizard'
 import { getEventCategories } from '@/lib/queries/events'
 import { getApprovedVenuesForEventForm } from '@/lib/queries/venues'
 
@@ -27,11 +27,11 @@ export default async function DashboardCreateEventPage() {
               Publica tu evento en Loja
             </h1>
             <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Comparte tu evento con la comunidad. Todos los eventos son revisados antes de ser publicados.
+              Crea tu evento paso a paso. Configura la información, fechas y ubicación en un solo flujo.
             </p>
           </div>
 
-          <EventForm categories={categories} venues={venues} />
+          <EventWizard categories={categories} venues={venues} />
         </div>
       </section>
     </div>
