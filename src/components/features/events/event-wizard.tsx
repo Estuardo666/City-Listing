@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MediaUrlInput } from '@/components/features/media/media-url-input'
+import { MediaUrlInputSimple } from '@/components/features/media/media-url-input-simple'
 import { Calendar, MapPin, Info, Package } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import type { EventCategory } from '@/types/event'
@@ -271,12 +271,9 @@ function StepEventInfo({
           <Label>Imagen destacada</Label>
           <WizardTooltip content="URL de la imagen de tu evento. Esta imagen aparecerá en las tarjetas y en la parte superior de la página del evento." />
         </div>
-        <MediaUrlInput
-          label=""
+        <MediaUrlInputSimple
           value={data.image}
           onChange={(v) => onChange('image', v)}
-          onBlur={() => {}}
-          name="image"
           placeholder="https://..."
         />
       </div>

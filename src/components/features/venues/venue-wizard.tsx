@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MediaUrlInput } from '@/components/features/media/media-url-input'
+import { MediaUrlInputSimple } from '@/components/features/media/media-url-input-simple'
 import { Plus, Trash2, Check, MapPin, Clock, Utensils, Package, Info } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import type { VenueCategory } from '@/types/venue'
@@ -421,12 +421,9 @@ function StepBasicInfo({
           <Label>Imagen destacada</Label>
           <WizardTooltip content="URL de la imagen principal de tu local. Esta imagen aparecerá en las tarjetas de búsqueda y en la parte superior de tu ficha." />
         </div>
-        <MediaUrlInput
-          label=""
+        <MediaUrlInputSimple
           value={data.image}
           onChange={(v) => onChange('image', v)}
-          onBlur={() => {}}
-          name="image"
           placeholder="https://..."
         />
       </div>

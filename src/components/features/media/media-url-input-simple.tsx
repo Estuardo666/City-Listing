@@ -16,25 +16,21 @@ type UploadMediaApiResponse = {
   error?: string
 }
 
-type MediaUrlInputProps = {
-  label: string
+type MediaUrlInputSimpleProps = {
+  label?: string
   value: string
   onChange: (value: string) => void
-  onBlur: () => void
-  name: string
   placeholder?: string
   description?: string
 }
 
-export function MediaUrlInput({
+export function MediaUrlInputSimple({
   label,
   value,
   onChange,
-  onBlur,
-  name,
   placeholder,
   description,
-}: MediaUrlInputProps) {
+}: MediaUrlInputSimpleProps) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
@@ -79,19 +75,36 @@ export function MediaUrlInput({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        {label ? <Label>{label}</Label> : null}
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={handleSelectFile}
-          disabled={isUploading}
-        >
-          {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-          {isUploading ? 'Subiendo...' : 'Subir archivo'}
-        </Button>
-      </div>
+      {label && (
+        <div className="flex items-center justify-between gap-2">
+          <Label>{label}</Label>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={handleSelectFile}
+            disabled={isUploading}
+          >
+            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+            {isUploading ? 'Subiendo...' : 'Subir archivo'}
+          </Button>
+        </div>
+      )}
+
+      {!label && (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={handleSelectFile}
+            disabled={isUploading}
+          >
+            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+            {isUploading ? 'Subiendo...' : 'Subir archivo'}
+          </Button>
+        </div>
+      )}
 
       <input
         ref={inputRef}
@@ -105,11 +118,11 @@ export function MediaUrlInput({
         placeholder={placeholder ?? 'https://...'}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
-        name={name}
       />
 
-      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+      {description && (
+        <p className="text-xs text-muted-foreground">{description}</p>
+      )}
     </div>
   )
 }
