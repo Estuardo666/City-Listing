@@ -234,19 +234,26 @@ class GooglePlacesService {
       maxResultCount?: number;
     } = {}
   ): Promise<GooglePlace[]> {
-    const searchParams = new URLSearchParams({
+    const url = `${this.baseUrl}/places:searchText`;
+
+    // Construir el cuerpo de la solicitud
+    const body: any = {
       textQuery: query,
       languageCode: 'es',
-      maxResultCount: (options.maxResultCount || 20).toString(),
-    });
+      maxResultCount: options.maxResultCount || 20,
+    };
 
-    // Añadir filtros de ubicación si se proporcionan
     if (options.location) {
-      searchParams.set('locationBias', `circle:${options.radius || 5000}@${options.location.lat},${options.location.lng}`);
+      body.locationBias = {
+        circle: {
+          center: {
+            latitude: options.location.lat,
+            longitude: options.location.lng,
+          },
+          radius: options.radius || 5000,
+        },
+      };
     }
-
-    // Construir el cuerpo de la solicitud para filtros avanzados
-    const body: any = {};
 
     if (options.minRating) {
       body.minRating = options.minRating;
@@ -268,12 +275,10 @@ class GooglePlacesService {
       body.excludedTypes = options.excludedTypes;
     }
 
-    const url = `${this.baseUrl}/places:searchText?${searchParams.toString()}`;
-    
     try {
       const response = await this.makeRequest(url, {
         method: 'POST',
-        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        body: JSON.stringify(body),
       });
 
       const validated = GooglePlacesResponseSchema.parse(response);
@@ -302,12 +307,14 @@ class GooglePlacesService {
       'editorialSummary'
     ].join(',');
     
-    const url = `${this.baseUrl}/places/${placeId}?languageCode=${language}&fields=${fields}`;
+    const url = `${this.baseUrl}/places/${placeId}?languageCode=${language}`;
 
     try {
       const response = await this.makeRequest<any>(url, {
         method: 'GET',
-        // GET requests cannot have a body
+        headers: {
+          'X-Goog-FieldMask': fields,
+        },
       });
 
       const validated = GooglePlaceDetailsSchema.parse({
