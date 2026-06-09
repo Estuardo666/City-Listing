@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useSession, signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,33 +29,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// ── Animation variants ────────────────────────────────────────────
 const iosSpring = [0.16, 1, 0.3, 1] as const
-
-const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 280 : -280,
-    opacity: 0,
-    scale: 0.96,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.4, ease: iosSpring },
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? 280 : -280,
-    opacity: 0,
-    scale: 0.96,
-    transition: { duration: 0.3, ease: iosSpring },
-  }),
-}
-
-const fadeUp = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: iosSpring } },
-}
 
 // ── Types ─────────────────────────────────────────────────────────
 interface ClaimWizardProps {
@@ -179,30 +153,24 @@ function CodeInput({
   return (
     <div className="flex justify-center gap-2 sm:gap-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <motion.div
+        <input
           key={i}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: i * 0.05, duration: 0.25, ease: iosSpring }}
-        >
-          <input
-            ref={(el) => { inputsRef.current[i] = el }}
-            type="text"
-            inputMode="numeric"
-            maxLength={1}
-            value={value[i] ?? ''}
-            onChange={(e) => handleChange(i, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(i, e)}
-            onPaste={handlePaste}
-            disabled={disabled}
-            className={cn(
-              'h-12 w-10 rounded-xl border-2 bg-background text-center text-xl font-bold',
-              'transition-all duration-200 focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20',
-              'disabled:opacity-50 sm:h-14 sm:w-12 sm:text-2xl',
-              value[i] ? 'border-foreground' : 'border-border',
-            )}
-          />
-        </motion.div>
+          ref={(el) => { inputsRef.current[i] = el }}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={value[i] ?? ''}
+          onChange={(e) => handleChange(i, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          onPaste={handlePaste}
+          disabled={disabled}
+          className={cn(
+            'h-12 w-10 rounded-xl border-2 bg-background text-center text-xl font-bold',
+            'transition-all duration-200 focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20',
+            'disabled:opacity-50 sm:h-14 sm:w-12 sm:text-2xl',
+            value[i] ? 'border-foreground' : 'border-border',
+          )}
+        />
       ))}
     </div>
   )
@@ -218,7 +186,6 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
 
   // Wizard step: 0 = auth (if needed), then form, code, evidence, done
   const [step, setStep] = useState<Step>(needsAuth ? 0 : 0)
-  const [direction, setDirection] = useState(1)
   const [loading, setLoading] = useState(false)
   const [claimId, setClaimId] = useState<string | null>(null)
 
@@ -251,11 +218,9 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
   }, [])
 
   const goNext = () => {
-    setDirection(1)
     setStep((s) => Math.min(s + 1, maxStep) as Step)
   }
   const goBack = () => {
-    setDirection(-1)
     setStep((s) => Math.max(s - 1, 0) as Step)
   }
 
@@ -487,12 +452,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
 
   // ── Render ──────────────────────────────────────────────────
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="mx-auto w-full max-w-lg"
-    >
+    <div className="mx-auto w-full max-w-lg">
       {/* Header */}
       <div className="mb-5 text-center">
         <h2 className="text-xl font-bold sm:text-2xl">Reclamar negocio</h2>
@@ -506,20 +466,11 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
 
       {/* Steps content */}
       <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={step}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            className="p-5 sm:p-6"
-          >
+        <div key={step} className="p-5 sm:p-6">
             {/* ── STEP 0 (auth): Crear cuenta / Iniciar sesión ── */}
             {needsAuth && step === 0 && (
               <div className="space-y-5">
-                <motion.div {...fadeUp} className="text-center">
+                <div className="text-center">
                   <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
                     <UserPlus className="h-7 w-7 text-muted-foreground" />
                   </div>
@@ -531,10 +482,10 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                       ? 'Necesitas una cuenta para reclamar un negocio.'
                       : 'Ingresa con tu cuenta existente.'}
                   </p>
-                </motion.div>
+                </div>
 
                 {/* Mode toggle */}
-                <motion.div {...fadeUp} className="flex rounded-xl border border-border bg-muted p-1">
+                <div className="flex rounded-xl border border-border bg-muted p-1">
                   <button
                     type="button"
                     onClick={() => setAuthMode('register')}
@@ -561,18 +512,12 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                     <LogIn className="h-3.5 w-3.5" />
                     Iniciar sesión
                   </button>
-                </motion.div>
+                </div>
 
                 {/* Form */}
                 <div className="space-y-3">
                   {authMode === 'register' && (
-                    <motion.div
-                      key="auth-name"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-1.5"
-                    >
+                    <div className="space-y-1.5">
                       <Label htmlFor="auth-name" className="flex items-center gap-1.5">
                         <User className="h-3.5 w-3.5" />
                         Nombre completo
@@ -584,10 +529,10 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                         onChange={(e) => setAuthName(e.target.value)}
                         maxLength={120}
                       />
-                    </motion.div>
+                    </div>
                   )}
 
-                  <motion.div {...fadeUp} className="space-y-1.5">
+                  <div className="space-y-1.5">
                     <Label htmlFor="auth-email" className="flex items-center gap-1.5">
                       <Mail className="h-3.5 w-3.5" />
                       Correo electrónico
@@ -600,9 +545,9 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                       onChange={(e) => setAuthEmail(e.target.value)}
                       maxLength={200}
                     />
-                  </motion.div>
+                  </div>
 
-                  <motion.div {...fadeUp} className="space-y-1.5">
+                  <div className="space-y-1.5">
                     <Label htmlFor="auth-password" className="flex items-center gap-1.5">
                       <Lock className="h-3.5 w-3.5" />
                       Contraseña
@@ -624,10 +569,10 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
 
-                <motion.div {...fadeUp}>
+                <div>
                   <Button
                     className="w-full"
                     onClick={authMode === 'register' ? handleRegister : handleLogin}
@@ -647,9 +592,9 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                       </>
                     )}
                   </Button>
-                </motion.div>
+                </div>
 
-                <motion.p {...fadeUp} className="text-center text-xs text-muted-foreground">
+                <p className="text-center text-xs text-muted-foreground">
                   {authMode === 'register' ? (
                     <>
                       ¿Ya tienes cuenta?{' '}
@@ -665,21 +610,19 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                       </button>
                     </>
                   )}
-                </motion.p>
+                </p>
               </div>
             )}
 
             {/* ── STEP: Datos del solicitante ──────────────── */}
             {((needsAuth && step === 1) || (!needsAuth && step === 0)) && (
               <div className="space-y-4">
-                <motion.div {...fadeUp}>
-                  <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
-                    <Shield className="h-4 w-4" />
-                    <span>Tu información será verificada antes de aprobar el reclamo.</span>
-                  </div>
-                </motion.div>
+                <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Shield className="h-4 w-4" />
+                  <span>Tu información será verificada antes de aprobar el reclamo.</span>
+                </div>
 
-                <motion.div {...fadeUp} className="space-y-1.5">
+                <div className="space-y-1.5">
                   <Label htmlFor="name" className="flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5" />
                     Nombre completo *
@@ -691,9 +634,9 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                     onChange={(e) => updateForm('claimerName', e.target.value)}
                     maxLength={120}
                   />
-                </motion.div>
+                </div>
 
-                <motion.div {...fadeUp} className="space-y-1.5">
+                <div className="space-y-1.5">
                   <Label htmlFor="email" className="flex items-center gap-1.5">
                     <Mail className="h-3.5 w-3.5" />
                     Correo electrónico *
@@ -706,9 +649,9 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                     onChange={(e) => updateForm('claimerEmail', e.target.value)}
                     maxLength={200}
                   />
-                </motion.div>
+                </div>
 
-                <motion.div {...fadeUp} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="phone" className="flex items-center gap-1.5">
                       <Phone className="h-3.5 w-3.5" />
@@ -736,9 +679,9 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                       maxLength={80}
                     />
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.div {...fadeUp} className="space-y-1.5">
+                <div className="space-y-1.5">
                   <Label htmlFor="message" className="flex items-center gap-1.5">
                     <MessageSquare className="h-3.5 w-3.5" />
                     Mensaje (opcional)
@@ -751,14 +694,14 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                     maxLength={500}
                     rows={3}
                   />
-                </motion.div>
+                </div>
               </div>
             )}
 
             {/* ── STEP: Verificación de código ─────────────── */}
             {((needsAuth && step === 2) || (!needsAuth && step === 1)) && (
               <div className="space-y-5">
-                <motion.div {...fadeUp} className="text-center">
+                <div className="text-center">
                   <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
                     <Mail className="h-7 w-7 text-muted-foreground" />
                   </div>
@@ -767,13 +710,11 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                     Enviamos un código de 6 dígitos a{' '}
                     <span className="font-medium text-foreground">{form.claimerEmail}</span>
                   </p>
-                </motion.div>
+                </div>
 
-                <motion.div {...fadeUp}>
-                  <CodeInput value={code} onChange={setCode} disabled={loading} />
-                </motion.div>
+                <CodeInput value={code} onChange={setCode} disabled={loading} />
 
-                <motion.div {...fadeUp} className="text-center text-xs text-muted-foreground">
+                <div className="text-center text-xs text-muted-foreground">
                   <p>El código expira en 15 minutos.</p>
                   <button
                     type="button"
@@ -783,14 +724,14 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                   >
                     ¿No recibiste el código? Reenviar
                   </button>
-                </motion.div>
+                </div>
               </div>
             )}
 
             {/* ── STEP: Evidencia ──────────────────────────── */}
             {((needsAuth && step === 3) || (!needsAuth && step === 2)) && (
               <div className="space-y-4">
-                <motion.div {...fadeUp} className="text-center">
+                <div className="text-center">
                   <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
                     <FileText className="h-7 w-7 text-muted-foreground" />
                   </div>
@@ -798,9 +739,9 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                   <p className="mt-1 text-sm text-muted-foreground">
                     Sube un documento que demuestre la propiedad del negocio.
                   </p>
-                </motion.div>
+                </div>
 
-                <motion.div {...fadeUp} className="space-y-3">
+                <div className="space-y-3">
                   <div className="rounded-xl border-2 border-dashed border-border p-5 text-center transition-colors hover:border-foreground/30">
                     <input
                       type="file"
@@ -829,14 +770,14 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                       <li>Foto del local con rotulación</li>
                     </ul>
                   </div>
-                </motion.div>
+                </div>
               </div>
             )}
 
             {/* ── STEP: Resumen / Éxito ────────────────────── */}
             {((needsAuth && step === 4) || (!needsAuth && step === 3)) && (
               <div className="space-y-4">
-                <motion.div {...fadeUp} className="text-center">
+                <div className="text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -849,15 +790,10 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                   <p className="mt-1 text-sm text-muted-foreground">
                     Tu solicitud será revisada por un administrador.
                   </p>
-                </motion.div>
+                </div>
 
                 {/* Confidence score */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="rounded-xl border border-border/60 bg-muted/30 p-4"
-                >
+                <div className="rounded-xl border border-border/60 bg-muted/30 p-4">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-medium">Puntuación de confianza</span>
                     <span className="text-sm font-bold">{confidenceScore}/100</span>
@@ -884,15 +820,10 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                         ? 'Buena. Puedes mejorarla subiendo evidencia.'
                         : 'Puedes mejorarla verificando tu correo y subiendo evidencia.'}
                   </p>
-                </motion.div>
+                </div>
 
                 {/* Summary */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="space-y-2 text-sm"
-                >
+                <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Solicitante</span>
                     <span className="font-medium">{form.claimerName}</span>
@@ -911,11 +842,10 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                       <span className="font-medium text-emerald-500">✓ Subida</span>
                     </div>
                   )}
-                </motion.div>
+                </div>
               </div>
             )}
-          </motion.div>
-        </AnimatePresence>
+        </div>
 
         {/* Footer with navigation */}
         <div className="border-t border-border/60 px-5 py-3 sm:px-6 sm:py-4">
@@ -988,6 +918,6 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
