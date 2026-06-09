@@ -21,6 +21,8 @@ import { CheckInButton } from '@/components/checkin/checkin-button'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
 import { MessageVenueButton } from '@/components/messaging/message-venue-button'
 import { AddToCollectionButton } from '@/components/collections/add-to-collection-button'
+import { ClaimVenueWizard } from '@/components/venue-claim/claim-venue-wizard'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { UberIcon } from '@/components/ui/uber-icon'
 import { generateUberLink } from '@/lib/transport/uber-link'
 import { formatDateTime } from '@/lib/utils'
@@ -396,6 +398,33 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
               hasMenu={menu.length > 0}
               acceptsReservations={acceptsReservations}
             />
+          )}
+
+          {/* Claim Business */}
+          {!venue.claimed && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900">
+                  <ShieldCheck className="h-4 w-4" />
+                  Reclamar este negocio
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                <ClaimVenueWizard
+                  venueId={venue.id}
+                  venueName={venue.name}
+                  onSuccess={() => window.location.reload()}
+                />
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {/* Venue already claimed badge */}
+          {venue.claimed && (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              <ShieldCheck className="h-4 w-4" />
+              Negocio reclamado y verificado
+            </div>
           )}
 
           {/* Uber */}

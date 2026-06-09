@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSession, signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,11 @@ import {
   Shield,
   Loader2,
   FileText,
+  LogIn,
+  UserPlus,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -59,7 +65,7 @@ interface ClaimWizardProps {
   onCancel?: () => void
 }
 
-type Step = 0 | 1 | 2 | 3
+type Step = 0 | 1 | 2 | 3 | 4
 
 interface FormData {
   claimerName: string
@@ -70,17 +76,26 @@ interface FormData {
 }
 
 // ── Step indicators ───────────────────────────────────────────────
-const STEPS = [
+const STEPS_AUTH = [
+  { label: 'Cuenta', icon: UserPlus },
   { label: 'Datos', icon: User },
-  { label: 'Verificación', icon: Mail },
+  { label: 'Código', icon: Mail },
   { label: 'Evidencia', icon: Upload },
   { label: 'Listo', icon: CheckCircle2 },
 ]
 
-function StepIndicator({ current }: { current: Step }) {
+const STEPS_NO_AUTH = [
+  { label: 'Datos', icon: User },
+  { label: 'Código', icon: Mail },
+  { label: 'Evidencia', icon: Upload },
+  { label: 'Listo', icon: CheckCircle2 },
+]
+
+function StepIndicator({ current, hasAuth }: { current: Step; hasAuth: boolean }) {
+  const steps = hasAuth ? STEPS_AUTH : STEPS_NO_AUTH
   return (
     <div className="flex items-center justify-center gap-2">
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const Icon = step.icon
         const isActive = i === current
         const isDone = i < current
@@ -89,7 +104,7 @@ function StepIndicator({ current }: { current: Step }) {
             {i > 0 && (
               <div
                 className={cn(
-                  'h-px w-6 transition-colors duration-300 sm:w-10',
+                  'h-px w-4 transition-colors duration-300 sm:w-8',
                   isDone ? 'bg-emerald-500' : 'bg-border',
                 )}
               />
@@ -98,7 +113,7 @@ function StepIndicator({ current }: { current: Step }) {
               <motion.div
                 layout
                 className={cn(
-                  'flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors duration-300',
+                  'flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors duration-300 sm:h-9 sm:w-9',
                   isActive
                     ? 'border-foreground bg-foreground text-background'
                     : isDone
@@ -106,11 +121,11 @@ function StepIndicator({ current }: { current: Step }) {
                       : 'border-border bg-background text-muted-foreground',
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-3.5 w-3.5" />
               </motion.div>
               <span
                 className={cn(
-                  'text-[10px] font-medium transition-colors sm:text-xs',
+                  'text-[9px] font-medium transition-colors sm:text-[10px]',
                   isActive ? 'text-foreground' : 'text-muted-foreground',
                 )}
               >
@@ -142,7 +157,6 @@ function CodeInput({
     chars[index] = digit
     const newVal = chars.join('').padEnd(6, '').slice(0, 6)
     onChange(newVal)
-
     if (digit && index < 5) {
       inputsRef.current[index + 1]?.focus()
     }
@@ -182,9 +196,9 @@ function CodeInput({
             onPaste={handlePaste}
             disabled={disabled}
             className={cn(
-              'h-14 w-11 rounded-xl border-2 bg-background text-center text-2xl font-bold',
+              'h-12 w-10 rounded-xl border-2 bg-background text-center text-xl font-bold',
               'transition-all duration-200 focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20',
-              'disabled:opacity-50 sm:h-16 sm:w-13',
+              'disabled:opacity-50 sm:h-14 sm:w-12 sm:text-2xl',
               value[i] ? 'border-foreground' : 'border-border',
             )}
           />
@@ -196,12 +210,27 @@ function CodeInput({
 
 // ── Main Wizard ───────────────────────────────────────────────────
 export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: ClaimWizardProps) {
-  const [step, setStep] = useState<Step>(0)
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === 'authenticated'
+
+  // If auth status is still loading, start at auth step (will redirect)
+  const needsAuth = status === 'unauthenticated'
+
+  // Wizard step: 0 = auth (if needed), then form, code, evidence, done
+  const [step, setStep] = useState<Step>(needsAuth ? 0 : 0)
   const [direction, setDirection] = useState(1)
   const [loading, setLoading] = useState(false)
   const [claimId, setClaimId] = useState<string | null>(null)
 
-  // Form data
+  // Auth form
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('register')
+  const [authName, setAuthName] = useState('')
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [authLoading, setAuthLoading] = useState(false)
+
+  // Claim form data
   const [form, setForm] = useState<FormData>({
     claimerName: '',
     claimerEmail: '',
@@ -213,20 +242,116 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
   const [confidenceScore, setConfidenceScore] = useState(0)
 
+  // Steps count: auth + 4 = 5 total, no auth = 4 total
+  const totalSteps = needsAuth ? 5 : 4
+  const maxStep = (totalSteps - 1) as Step
+
   const updateForm = useCallback((field: keyof FormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
   }, [])
 
   const goNext = () => {
     setDirection(1)
-    setStep((s) => Math.min(s + 1, 3) as Step)
+    setStep((s) => Math.min(s + 1, maxStep) as Step)
   }
   const goBack = () => {
     setDirection(-1)
     setStep((s) => Math.max(s - 1, 0) as Step)
   }
 
-  // ── Step 1: Submit form ─────────────────────────────────────
+  // ── Auth: Register ──────────────────────────────────────────
+  const handleRegister = async () => {
+    if (!authName.trim() || !authEmail.trim() || !authPassword.trim()) {
+      toast.error('Todos los campos son obligatorios.')
+      return
+    }
+    if (authPassword.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres.')
+      return
+    }
+
+    setAuthLoading(true)
+    try {
+      // 1. Register
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: authName.trim(),
+          email: authEmail.trim(),
+          password: authPassword,
+        }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data.error ?? 'Error al registrar.')
+        return
+      }
+
+      // 2. Auto-login
+      const signInResult = await signIn('credentials', {
+        email: authEmail.trim(),
+        password: authPassword,
+        redirect: false,
+      })
+
+      if (signInResult?.error) {
+        toast.success('Cuenta creada. Ahora inicia sesión.')
+        setAuthMode('login')
+        return
+      }
+
+      toast.success('Cuenta creada y sesión iniciada.')
+      // Pre-fill claim form with auth data
+      setForm((prev) => ({
+        ...prev,
+        claimerName: authName.trim(),
+        claimerEmail: authEmail.trim(),
+      }))
+      goNext()
+    } catch {
+      toast.error('Error de conexión.')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  // ── Auth: Login ─────────────────────────────────────────────
+  const handleLogin = async () => {
+    if (!authEmail.trim() || !authPassword.trim()) {
+      toast.error('Correo y contraseña son obligatorios.')
+      return
+    }
+
+    setAuthLoading(true)
+    try {
+      const result = await signIn('credentials', {
+        email: authEmail.trim(),
+        password: authPassword,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        toast.error('Correo o contraseña incorrectos.')
+        return
+      }
+
+      toast.success('Sesión iniciada.')
+      // Pre-fill claim form with auth data
+      setForm((prev) => ({
+        ...prev,
+        claimerEmail: authEmail.trim(),
+      }))
+      goNext()
+    } catch {
+      toast.error('Error de conexión.')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  // ── Step: Submit claim form ─────────────────────────────────
   const handleSubmitForm = async () => {
     if (!form.claimerName.trim() || !form.claimerEmail.trim()) {
       toast.error('Nombre y correo son obligatorios.')
@@ -253,7 +378,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
         return
       }
       setClaimId(data.data.claimId)
-      setConfidenceScore(20) // usuario registrado = +20
+      setConfidenceScore(20)
       toast.success('Código enviado a tu correo.')
       goNext()
     } catch {
@@ -263,7 +388,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
     }
   }
 
-  // ── Step 2: Verify code ─────────────────────────────────────
+  // ── Step: Verify code ──────────────────────────────────────
   const handleVerifyCode = async () => {
     if (code.length !== 6) {
       toast.error('Ingresa los 6 dígitos.')
@@ -292,14 +417,10 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
     }
   }
 
-  // ── Step 3: Upload evidence ─────────────────────────────────
+  // ── Step: Upload evidence ──────────────────────────────────
   const handleUploadEvidence = async (skip = false) => {
     if (!claimId) return
-
-    if (skip) {
-      goNext()
-      return
-    }
+    if (skip) { goNext(); return }
 
     if (!evidenceFile) {
       toast.error('Selecciona un archivo.')
@@ -330,6 +451,15 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
     }
   }
 
+  // Loading session
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   // ── Render ──────────────────────────────────────────────────
   return (
     <motion.div
@@ -339,14 +469,14 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
       className="mx-auto w-full max-w-lg"
     >
       {/* Header */}
-      <div className="mb-6 text-center">
+      <div className="mb-5 text-center">
         <h2 className="text-xl font-bold sm:text-2xl">Reclamar negocio</h2>
         <p className="mt-1 text-sm text-muted-foreground">{venueName}</p>
       </div>
 
       {/* Step indicator */}
-      <div className="mb-8">
-        <StepIndicator current={step} />
+      <div className="mb-6">
+        <StepIndicator current={step} hasAuth={needsAuth} />
       </div>
 
       {/* Steps content */}
@@ -359,13 +489,166 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
             initial="enter"
             animate="center"
             exit="exit"
-            className="p-6"
+            className="p-5 sm:p-6"
           >
-            {/* ── STEP 0: Datos del solicitante ──────────── */}
-            {step === 0 && (
+            {/* ── STEP 0 (auth): Crear cuenta / Iniciar sesión ── */}
+            {needsAuth && step === 0 && (
+              <div className="space-y-5">
+                <motion.div {...fadeUp} className="text-center">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                    <UserPlus className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold">
+                    {authMode === 'register' ? 'Crea tu cuenta' : 'Inicia sesión'}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {authMode === 'register'
+                      ? 'Necesitas una cuenta para reclamar un negocio.'
+                      : 'Ingresa con tu cuenta existente.'}
+                  </p>
+                </motion.div>
+
+                {/* Mode toggle */}
+                <motion.div {...fadeUp} className="flex rounded-xl border border-border bg-muted p-1">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('register')}
+                    className={cn(
+                      'flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-all',
+                      authMode === 'register'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Registrarse
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('login')}
+                    className={cn(
+                      'flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-all',
+                      authMode === 'login'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    <LogIn className="h-3.5 w-3.5" />
+                    Iniciar sesión
+                  </button>
+                </motion.div>
+
+                {/* Form */}
+                <div className="space-y-3">
+                  {authMode === 'register' && (
+                    <motion.div
+                      key="auth-name"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-1.5"
+                    >
+                      <Label htmlFor="auth-name" className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5" />
+                        Nombre completo
+                      </Label>
+                      <Input
+                        id="auth-name"
+                        placeholder="Tu nombre"
+                        value={authName}
+                        onChange={(e) => setAuthName(e.target.value)}
+                        maxLength={120}
+                      />
+                    </motion.div>
+                  )}
+
+                  <motion.div {...fadeUp} className="space-y-1.5">
+                    <Label htmlFor="auth-email" className="flex items-center gap-1.5">
+                      <Mail className="h-3.5 w-3.5" />
+                      Correo electrónico
+                    </Label>
+                    <Input
+                      id="auth-email"
+                      type="email"
+                      placeholder="tu@correo.com"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      maxLength={200}
+                    />
+                  </motion.div>
+
+                  <motion.div {...fadeUp} className="space-y-1.5">
+                    <Label htmlFor="auth-password" className="flex items-center gap-1.5">
+                      <Lock className="h-3.5 w-3.5" />
+                      Contraseña
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="auth-password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Mínimo 6 caracteres"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+
+                <motion.div {...fadeUp}>
+                  <Button
+                    className="w-full"
+                    onClick={authMode === 'register' ? handleRegister : handleLogin}
+                    disabled={authLoading}
+                  >
+                    {authLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : authMode === 'register' ? (
+                      <>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Crear cuenta
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Entrar
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+
+                <motion.p {...fadeUp} className="text-center text-xs text-muted-foreground">
+                  {authMode === 'register' ? (
+                    <>
+                      ¿Ya tienes cuenta?{' '}
+                      <button onClick={() => setAuthMode('login')} className="underline hover:text-foreground">
+                        Inicia sesión
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      ¿No tienes cuenta?{' '}
+                      <button onClick={() => setAuthMode('register')} className="underline hover:text-foreground">
+                        Regístrate
+                      </button>
+                    </>
+                  )}
+                </motion.p>
+              </div>
+            )}
+
+            {/* ── STEP: Datos del solicitante ──────────────── */}
+            {((needsAuth && step === 1) || (!needsAuth && step === 0)) && (
               <div className="space-y-4">
                 <motion.div {...fadeUp}>
-                  <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
                     <Shield className="h-4 w-4" />
                     <span>Tu información será verificada antes de aprobar el reclamo.</span>
                   </div>
@@ -447,12 +730,12 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
               </div>
             )}
 
-            {/* ── STEP 1: Verificación de código ─────────── */}
-            {step === 1 && (
-              <div className="space-y-6">
+            {/* ── STEP: Verificación de código ─────────────── */}
+            {((needsAuth && step === 2) || (!needsAuth && step === 1)) && (
+              <div className="space-y-5">
                 <motion.div {...fadeUp} className="text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                    <Mail className="h-8 w-8 text-muted-foreground" />
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                    <Mail className="h-7 w-7 text-muted-foreground" />
                   </div>
                   <h3 className="text-lg font-semibold">Revisa tu correo</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -481,12 +764,12 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
               </div>
             )}
 
-            {/* ── STEP 2: Evidencia ──────────────────────── */}
-            {step === 2 && (
-              <div className="space-y-5">
+            {/* ── STEP: Evidencia ──────────────────────────── */}
+            {((needsAuth && step === 3) || (!needsAuth && step === 2)) && (
+              <div className="space-y-4">
                 <motion.div {...fadeUp} className="text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                    <FileText className="h-8 w-8 text-muted-foreground" />
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                    <FileText className="h-7 w-7 text-muted-foreground" />
                   </div>
                   <h3 className="text-lg font-semibold">Evidencia (opcional)</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -495,7 +778,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                 </motion.div>
 
                 <motion.div {...fadeUp} className="space-y-3">
-                  <div className="rounded-xl border-2 border-dashed border-border p-6 text-center transition-colors hover:border-foreground/30">
+                  <div className="rounded-xl border-2 border-dashed border-border p-5 text-center transition-colors hover:border-foreground/30">
                     <input
                       type="file"
                       id="evidence"
@@ -504,7 +787,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                       className="hidden"
                     />
                     <label htmlFor="evidence" className="cursor-pointer">
-                      <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                      <Upload className="mx-auto h-7 w-7 text-muted-foreground" />
                       <p className="mt-2 text-sm font-medium">
                         {evidenceFile ? evidenceFile.name : 'Seleccionar archivo'}
                       </p>
@@ -527,20 +810,17 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
               </div>
             )}
 
-            {/* ── STEP 3: Resumen / Éxito ────────────────── */}
-            {step === 3 && (
-              <div className="space-y-5">
-                <motion.div
-                  {...fadeUp}
-                  className="text-center"
-                >
+            {/* ── STEP: Resumen / Éxito ────────────────────── */}
+            {((needsAuth && step === 4) || (!needsAuth && step === 3)) && (
+              <div className="space-y-4">
+                <motion.div {...fadeUp} className="text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.1 }}
-                    className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10"
+                    className="mx-auto mb-3 flex h-18 w-18 items-center justify-center rounded-full bg-emerald-500/10"
                   >
-                    <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+                    <CheckCircle2 className="h-9 w-9 text-emerald-500" />
                   </motion.div>
                   <h3 className="text-lg font-semibold">¡Reclamo enviado!</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -615,21 +895,23 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
         </AnimatePresence>
 
         {/* Footer with navigation */}
-        <div className="border-t border-border/60 px-6 py-4">
+        <div className="border-t border-border/60 px-5 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center justify-between">
-            {step < 3 ? (
+            {step < maxStep ? (
               <>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={step === 0 ? onCancel : goBack}
-                  disabled={loading}
+                  disabled={loading || authLoading}
                 >
                   <ArrowLeft className="mr-1.5 h-4 w-4" />
                   {step === 0 ? 'Cancelar' : 'Atrás'}
                 </Button>
 
-                {step === 0 && (
+                {/* Auth step: button handled inside the step content */}
+                {/* Form step */}
+                {((needsAuth && step === 1) || (!needsAuth && step === 0)) && (
                   <Button size="sm" onClick={handleSubmitForm} disabled={loading}>
                     {loading ? (
                       <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -642,7 +924,8 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                   </Button>
                 )}
 
-                {step === 1 && (
+                {/* Code step */}
+                {((needsAuth && step === 2) || (!needsAuth && step === 1)) && (
                   <Button size="sm" onClick={handleVerifyCode} disabled={loading || code.length !== 6}>
                     {loading ? (
                       <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -655,7 +938,8 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                   </Button>
                 )}
 
-                {step === 2 && (
+                {/* Evidence step */}
+                {((needsAuth && step === 3) || (!needsAuth && step === 2)) && (
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => handleUploadEvidence(true)} disabled={loading}>
                       Omitir
@@ -665,7 +949,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                         <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                       ) : (
                         <>
-                          Subir evidencia
+                          Subir
                           <Upload className="ml-1.5 h-4 w-4" />
                         </>
                       )}
