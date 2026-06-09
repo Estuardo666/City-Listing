@@ -22,14 +22,13 @@ import { WhatsAppButton } from '@/components/venues/whatsapp-button'
 import { MessageVenueButton } from '@/components/messaging/message-venue-button'
 import { AddToCollectionButton } from '@/components/collections/add-to-collection-button'
 import { ClaimVenueWizard } from '@/components/venue-claim/claim-venue-wizard'
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog'
+import { AnimatedModal } from '@/components/ui/animated-modal'
 import { UberIcon } from '@/components/ui/uber-icon'
 import { generateUberLink } from '@/lib/transport/uber-link'
 import { formatDateTime } from '@/lib/utils'
 import { GASTRONOMIC_CATEGORY_SLUGS } from '@/lib/constants/services'
 import type { VenueWithRelations } from '@/types/venue'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 
 type MenuItem = { id: string; name: string; description: string | null; price: number | null; image: string | null; isAvailable: boolean; isFeatured: boolean }
 type MenuCategory = { id: string; name: string; items: MenuItem[] }
@@ -47,6 +46,7 @@ type VenueDetailProps = {
 export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCollections = [] }: VenueDetailProps) {
   const canEdit = currentUserId && (userRole === 'ADMIN' || currentUserId === venue.userId)
   const [imageError, setImageError] = useState(false)
+  const [showClaimModal, setShowClaimModal] = useState(false)
   
   const mapQuery = encodeURIComponent(venue.address ?? venue.location)
   const mapboxToken =
@@ -403,29 +403,28 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
 
           {/* Claim Business */}
           {!venue.claimed && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 transition-all duration-200 hover:bg-amber-100 hover:scale-[1.02] active:scale-[0.98] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900">
-                  <ShieldCheck className="h-4 w-4" />
-                  Reclamar este negocio
-                </button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] overflow-y-auto border-none bg-transparent p-0 shadow-none sm:max-w-lg">
-                <DialogTitle className="sr-only">Reclamar negocio</DialogTitle>
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                >
-                  <ClaimVenueWizard
-                    venueId={venue.id}
-                    venueName={venue.name}
-                    onSuccess={() => window.location.reload()}
-                  />
-                </motion.div>
-              </DialogContent>
-            </Dialog>
+            <>
+              <button
+                onClick={() => setShowClaimModal(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 transition-all duration-200 hover:bg-amber-100 hover:scale-[1.02] active:scale-[0.98] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Reclamar este negocio
+              </button>
+
+              <AnimatedModal
+                open={showClaimModal}
+                onClose={() => setShowClaimModal(false)}
+                className="sm:max-w-lg"
+              >
+                <ClaimVenueWizard
+                  venueId={venue.id}
+                  venueName={venue.name}
+                  onSuccess={() => window.location.reload()}
+                  onCancel={() => setShowClaimModal(false)}
+                />
+              </AnimatedModal>
+            </>
           )}
 
           {/* Venue already claimed badge */}
