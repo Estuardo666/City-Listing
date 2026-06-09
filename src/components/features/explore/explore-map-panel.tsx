@@ -623,14 +623,14 @@ export function ExploreMapPanel({
     const map = event?.target
     if (!map) return
 
+    ensureAllEmojiImages(map)
+
     if (!emojiMissingListenerAttached.has(map)) {
       map.on('styleimagemissing', (e: { id: string }) => {
         ensureEmojiImage(map, e.id)
       })
       emojiMissingListenerAttached.add(map)
     }
-
-    ensureAllEmojiImages(map)
 
     // Apply color scheme via CSS filter on the canvas
     const canvas = map.getCanvas()

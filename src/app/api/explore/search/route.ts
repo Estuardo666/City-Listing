@@ -282,6 +282,7 @@ export async function GET(request: NextRequest) {
             const { events: _e, venueCategories, ...rest } = v as any
             return {
               ...rest,
+              venueCategories,
               categories: venueCategories?.map((vc: any) => vc.category) ?? [],
             }
           })
@@ -360,6 +361,7 @@ export async function GET(request: NextRequest) {
             const { eventCategories, ...rest } = e as any
             return {
               ...rest,
+              eventCategories,
               categories: eventCategories?.map((ec: any) => ec.category) ?? [],
             }
           })

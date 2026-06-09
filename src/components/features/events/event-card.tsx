@@ -44,7 +44,7 @@ export function EventCard({ event }: EventCardProps) {
           />
         ) : (
           <CategoryGradientBg
-            categorySlug={event.eventCategories[0]?.category.slug}
+            categorySlug={event.eventCategories?.[0]?.category.slug}
             name={event.title}
             showInitials
             className="h-full w-full"
@@ -73,7 +73,7 @@ export function EventCard({ event }: EventCardProps) {
       {/* Content */}
       <div className="flex flex-1 flex-col p-5">
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
-          {resolveIconEmoji(event.eventCategories[0]?.category.icon, 'event')} {event.eventCategories[0]?.category.name}
+          {resolveIconEmoji(event.eventCategories?.[0]?.category.icon, 'event')} {event.eventCategories?.[0]?.category.name}
         </span>
 
         <h3 className="mt-3 text-[1.38rem] font-medium leading-snug text-foreground transition-colors duration-150 group-hover:text-primary">
