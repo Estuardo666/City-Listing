@@ -524,22 +524,46 @@ model Review {
 }
 
 model VenueClaim {
-  id          String   @id @default(cuid())
-  venueId     String
-  userId      String
-  status      String   @default("PENDING")
-  proof       String?
-  message     String?
-  adminNotes  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  venueId         String
+  userId          String
+  status          String   @default("PENDING")   // PENDING | VERIFIED | APPROVED | REJECTED
+
+  // Claimer info (snapshot del formulario)
+  claimerName     String
+  claimerEmail    String
+  claimerPhone    String?
+  claimerRole     String?                          // Cargo
+
+  // Verification
+  verificationCode String?
+  codeExpiresAt    DateTime?
+  attempts         Int      @default(0)
+  verified         Boolean  @default(false)
+
+  // Evidence
+  evidenceUrl      String?                          // S3 URL
+  evidenceName     String?                          // Nombre original del archivo
+
+  // Trust score
+  confidenceScore  Int      @default(0)             // 0-100
+
+  // Legacy / admin
+  proof           String?
+  message         String?
+  adminNotes      String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([venueId])
+  @@index([venueId])
   @@index([userId])
   @@index([status])
+  @@index([claimerEmail])
+  @@index([verified])
 }
 
 model Promotion {
