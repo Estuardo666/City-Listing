@@ -14,7 +14,7 @@ export async function sendNewReservationOwnerEmail(
     title: 'Nueva reserva',
     previewText: `${customerName} reservó en ${venueName}`,
     content: `
-      <p style="margin:0 0 20px;">Hola ${ownerName}, tenés una nueva reserva.</p>
+      <p style="margin:0 0 20px;">Hola ${ownerName}, tienes una nueva reserva.</p>
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FAFAFA;border-radius:8px;padding:16px;margin:0 0 20px;">
         <tr>
           <td style="padding:4px 0;font-size:13px;color:#737373;">Cliente</td>

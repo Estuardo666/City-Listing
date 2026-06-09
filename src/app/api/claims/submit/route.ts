@@ -64,6 +64,9 @@ export async function POST(request: Request) {
     const code = generateCode()
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15 minutos
 
+    console.log(`📧 Creating claim for ${claimerName} <${claimerEmail}> on venue ${venue.name}`)
+    console.log(`🔑 Generated verification code: ${code}`)
+
     const claim = await prisma.venueClaim.create({
       data: {
         venueId,
@@ -85,21 +88,34 @@ export async function POST(request: Request) {
     await recalculateConfidenceScore(claim.id)
 
     // Enviar email de verificación
+    console.log(`📤 Sending verification email to ${claimerEmail}...`)
     const emailResult = await sendClaimVerificationEmail(claimerEmail, claimerName, code)
+
     if (!emailResult.success) {
-      console.error('Error sending verification email:', emailResult.error)
-      // No fallar el request, el usuario puede reintentar
+      console.error('❌ Failed to send verification email:', JSON.stringify(emailResult.error, null, 2))
+      // Still return success - user can resend later
+      return NextResponse.json({
+        success: true,
+        data: {
+          claimId: claim.id,
+          message: 'Reclamo creado. Si no recibes el correo, puedes reenviarlo.',
+          emailSent: false,
+        },
+      })
     }
+
+    console.log(`✅ Verification email sent successfully to ${claimerEmail}`)
 
     return NextResponse.json({
       success: true,
       data: {
         claimId: claim.id,
         message: 'Código de verificación enviado a tu correo.',
+        emailSent: true,
       },
     })
   } catch (error) {
-    console.error('Error in claim submit:', error)
+    console.error('❌ Error in claim submit:', error)
     return NextResponse.json(
       { success: false, error: 'Error interno del servidor.' },
       { status: 500 },

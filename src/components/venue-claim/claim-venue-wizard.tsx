@@ -388,6 +388,31 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
     }
   }
 
+  // ── Resend code ────────────────────────────────────────────
+  const handleResendCode = async () => {
+    if (!claimId) return
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/claims/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claimId }),
+      })
+      const data = await res.json()
+      if (!data.success) {
+        toast.error(data.error ?? 'Error al reenviar.')
+        return
+      }
+      setCode('')
+      toast.success('Nuevo código enviado a tu correo.')
+    } catch {
+      toast.error('Error de conexión.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // ── Step: Verify code ──────────────────────────────────────
   const handleVerifyCode = async () => {
     if (code.length !== 6) {
@@ -752,11 +777,9 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                   <p>El código expira en 15 minutos.</p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setCode('')
-                      toast.info('Funcionalidad de reenvío próximamente.')
-                    }}
-                    className="mt-2 underline underline-offset-2 hover:text-foreground"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                    className="mt-2 underline underline-offset-2 hover:text-foreground disabled:opacity-50"
                   >
                     ¿No recibiste el código? Reenviar
                   </button>

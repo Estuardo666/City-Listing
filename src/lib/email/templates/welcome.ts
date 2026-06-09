@@ -7,8 +7,8 @@ export async function sendWelcomeEmail(to: string, name: string | null) {
     title: `Bienvenido, ${displayName}`,
     previewText: 'Tu cuenta en Vive Loja está lista',
     content: `
-      <p style="margin:0 0 16px;">Tu cuenta ya está activa. Podés explorar locales, hacer reservas, dejar reseñas y guardar tus favoritos.</p>
-      <p style="margin:0;">Si tenés un negocio, podés registrarlo desde tu panel y empezar a recibir clientes.</p>
+      <p style="margin:0 0 16px;">Tu cuenta ya está activa. Puedes explorar locales, hacer reservas, dejar reseñas y guardar tus favoritos.</p>
+      <p style="margin:0;">Si tienes un negocio, puedes registrarlo desde tu panel y empezar a recibir clientes.</p>
     `,
     ctaText: 'Explorar locales',
     ctaUrl: `${BASE_URL}/explorar`,
