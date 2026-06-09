@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
 import { googleImportJobs } from '@/lib/google/google-import-jobs'
 import { GoogleBulkImportSchema } from '@/schemas/google-import'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const session = await requireAdmin()
+    if (!session) return unauthorized()
 
     const { searchParams } = new URL(request.url)
     const page = Number(searchParams.get('page') || '1')
@@ -24,10 +22,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const session = await requireAdmin()
+    if (!session) return unauthorized()
 
     const body = await request.json()
     const validated = GoogleBulkImportSchema.safeParse(body)

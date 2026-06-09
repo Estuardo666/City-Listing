@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
 import { prisma } from '@/lib/prisma'
 import { overpassService } from '@/lib/osm/overpass-service'
 import { importService } from '@/lib/osm/import-service'
@@ -7,10 +7,8 @@ import { OsmSearchSchema } from '@/schemas/osm-import'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const session = await requireAdmin()
+    if (!session) return unauthorized()
 
     const { searchParams } = new URL(request.url)
     const city = searchParams.get('city')

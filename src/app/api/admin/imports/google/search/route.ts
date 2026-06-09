@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
 import { prisma } from '@/lib/prisma'
 import { googlePlacesImporter } from '@/lib/google/google-places-importer'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const session = await requireAdmin()
+    if (!session) return unauthorized()
 
     const { searchParams } = new URL(request.url)
     const lat = searchParams.get('lat')

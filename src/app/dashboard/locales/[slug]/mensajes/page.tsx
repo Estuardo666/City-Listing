@@ -89,7 +89,7 @@ export default function VenueMessagesPage({ params }: VenueMessagesPageProps) {
   const loadMessages = async () => {
     if (!selectedConversation) return
     try {
-      const response = await fetch(`/api/conversations/${selectedConversation}/messages`)
+      const response = await fetch(`/api/messages/conversations/${selectedConversation}`)
       if (response.ok) {
         const data = await response.json()
         setMessages(data.messages)

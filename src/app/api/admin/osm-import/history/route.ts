@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const session = await requireAdmin()
+    if (!session) return unauthorized()
 
     const { searchParams } = new URL(request.url)
     const page = Math.max(1, Number(searchParams.get('page') ?? '1'))
@@ -40,10 +38,8 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const session = await requireAdmin()
+    if (!session) return unauthorized()
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchDocuments } from '@/lib/search'
+import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
 
 export async function GET(request: NextRequest) {
+  const session = await requireAdmin()
+  if (!session) return unauthorized()
+
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q') || 'restaurantes'
   

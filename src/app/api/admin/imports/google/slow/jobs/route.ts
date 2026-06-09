@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
 import { googleSlowImport, type SlowPlaceData } from '@/lib/google/google-slow-import'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const session = await requireAdmin()
+    if (!session) return unauthorized()
 
     const host = request.headers.get('host') || ''
     if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
@@ -43,10 +41,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    const session = await requireAdmin()
+    if (!session) return unauthorized()
 
     const { searchParams } = new URL(request.url)
     const page = Number(searchParams.get('page') || '1')

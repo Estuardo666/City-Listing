@@ -1,14 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
 import { getTokensFromCode } from '@/lib/google/search-console'
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-
-  if (!session?.user?.id || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
-  }
+  const session = await requireAdmin()
+  if (!session) return unauthorized()
 
   const code = request.nextUrl.searchParams.get('code')
 

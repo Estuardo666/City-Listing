@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { syncAllDataToSearch, syncEventsToSearch, syncVenuesToSearch, syncPostsToSearch } from '@/lib/search-sync'
+import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
 
 // Sincronizar todos los datos con Upstash Search
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAdmin()
+    if (!session) return unauthorized()
+
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
 
