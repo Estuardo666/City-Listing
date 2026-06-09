@@ -140,6 +140,7 @@ export function LocationHoursSection({
               }] as VenueMapItem[]}
               mapboxToken={mapboxToken}
               mapStyle={mapStyle}
+              zoom={16}
               className="h-full [&>div]:h-full [&>div>div]:h-full [&_.rounded-2xl]:rounded-none [&_.rounded-2xl]:border-0"
             />
           ) : (
@@ -159,8 +160,8 @@ export function LocationHoursSection({
             <span
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                 status.isOpen
-                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/70 dark:text-emerald-400'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900/70 dark:text-red-400'
               }`}
             >
               <span className={`w-1.5 h-1.5 rounded-full ${status.isOpen ? 'bg-emerald-500' : 'bg-red-500'}`} />

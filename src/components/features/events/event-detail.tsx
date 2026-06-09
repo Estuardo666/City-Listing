@@ -20,7 +20,6 @@ const EventsMap = dynamic(
 )
 import { UberIcon } from '@/components/ui/uber-icon'
 import { generateUberLink } from '@/lib/transport/uber-link'
-import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import { formatDateTime } from '@/lib/utils'
 import type { EventWithRelations } from '@/types/event'
@@ -57,8 +56,8 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
     <article className="space-y-0">
 
       {/* ── Hero full-bleed ── */}
-      <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px] mb-6">
-        {event.image && !imageError ? (
+      {event.image && !imageError ? (
+        <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px] mb-6">
           <Image
             src={event.image}
             alt={event.title}
@@ -68,43 +67,83 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
             sizes="(max-width: 768px) 100vw, 90vw"
             onError={() => setImageError(true)}
           />
-        ) : (
-          <CategoryGradientBg
-            categorySlug={event.eventCategories[0]?.category.slug}
-            name={event.title}
-            showInitials
-            className="h-full w-full"
-            initialsClassName="text-6xl sm:text-8xl"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-        {/* Badges over hero */}
-        <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
-            {resolveIconEmoji(event.eventCategories[0]?.category.icon, 'event')} {event.eventCategories[0]?.category.name}
-          </span>
-          {event.featured && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
-              <Sparkles className="h-3.5 w-3.5" /> Destacado
+          {/* Badges over hero */}
+          <div className="absolute left-5 top-5 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
+              {resolveIconEmoji(event.eventCategories[0]?.category.icon, 'event')} {event.eventCategories[0]?.category.name}
             </span>
-          )}
-          {hasRecurrence && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/90 px-3 py-1 text-sm font-semibold text-white">
-              <Repeat className="h-3.5 w-3.5" /> Recurrente
-            </span>
-          )}
+            {event.featured && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
+                <Sparkles className="h-3.5 w-3.5" /> Destacado
+              </span>
+            )}
+            {hasRecurrence && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/90 px-3 py-1 text-sm font-semibold text-white">
+                <Repeat className="h-3.5 w-3.5" /> Recurrente
+              </span>
+            )}
+          </div>
+
+          {/* Title over hero bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
+            <h1 className="font-medium leading-tight text-white drop-shadow-sm" style={{ fontSize: 'clamp(2.16rem, 6vw, 3.24rem)' }}>
+              {event.title}
+            </h1>
+            <p className="mt-2 line-clamp-2 text-sm text-white/75 sm:text-base">
+              {event.description}
+            </p>
+            {/* Rating in hero */}
+            {event.avgRating !== null && event.reviewCount > 0 && (
+              <div className="mt-2 flex items-center gap-2">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`h-4 w-4 ${
+                        star <= Math.round(event.avgRating ?? 0)
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'fill-white/30 text-white/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-medium text-white/90">
+                  {(event.avgRating ?? 0).toFixed(1)}
+                </span>
+                <span className="text-xs text-white/60">
+                  ({event.reviewCount} {event.reviewCount === 1 ? 'reseña' : 'reseñas'})
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Title over hero bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-          <h1 className="font-medium leading-tight text-white drop-shadow-sm" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.7rem)' }}>
+      ) : (
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2 mb-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-accent px-3 py-1 text-sm font-semibold text-foreground">
+              {resolveIconEmoji(event.eventCategories[0]?.category.icon, 'event')} {event.eventCategories[0]?.category.name}
+            </span>
+            {event.featured && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
+                <Sparkles className="h-3.5 w-3.5" /> Destacado
+              </span>
+            )}
+            {hasRecurrence && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/90 px-3 py-1 text-sm font-semibold text-white">
+                <Repeat className="h-3.5 w-3.5" /> Recurrente
+              </span>
+            )}
+          </div>
+          <h1 className="font-medium leading-tight text-foreground" style={{ fontSize: 'clamp(2.16rem, 6vw, 3.24rem)' }}>
             {event.title}
           </h1>
-          <p className="mt-2 line-clamp-2 text-sm text-white/75 sm:text-base">
-            {event.description}
-          </p>
-          {/* Rating in hero */}
+          {event.description && (
+            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground sm:text-base">
+              {event.description}
+            </p>
+          )}
           {event.avgRating !== null && event.reviewCount > 0 && (
             <div className="mt-2 flex items-center gap-2">
               <div className="flex items-center gap-0.5">
@@ -114,21 +153,21 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
                     className={`h-4 w-4 ${
                       star <= Math.round(event.avgRating ?? 0)
                         ? 'fill-amber-400 text-amber-400'
-                        : 'fill-white/30 text-white/30'
+                        : 'fill-muted-foreground/30 text-muted-foreground/30'
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-sm font-medium text-white/90">
+              <span className="text-sm font-medium text-foreground">
                 {(event.avgRating ?? 0).toFixed(1)}
               </span>
-              <span className="text-xs text-white/60">
+              <span className="text-xs text-muted-foreground">
                 ({event.reviewCount} {event.reviewCount === 1 ? 'reseña' : 'reseñas'})
               </span>
             </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* ── Media Gallery ── */}
       {hasMedia && (
@@ -275,6 +314,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
                 }]}
                 mapboxToken={mapboxToken}
                 mapStyle={mapStyle}
+                zoom={16}
               />
             </div>
           )}

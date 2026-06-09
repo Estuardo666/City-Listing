@@ -14,6 +14,7 @@ type VenuesMapProps = {
   mapboxToken: string
   mapStyle?: string
   className?: string
+  zoom?: number
 }
 
 const defaultCenter = {
@@ -26,7 +27,7 @@ function hasCoordinates(venue: VenueMapItem): venue is VenueMapItem & { lat: num
   return venue.lat !== null && venue.lng !== null
 }
 
-export function VenuesMap({ venues, mapboxToken, mapStyle, className }: VenuesMapProps) {
+export function VenuesMap({ venues, mapboxToken, mapStyle, className, zoom = 12 }: VenuesMapProps) {
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null)
   const themedMapStyle = useMapThemeStyle(mapStyle)
 
@@ -43,7 +44,7 @@ export function VenuesMap({ venues, mapboxToken, mapStyle, className }: VenuesMa
     return {
       latitude,
       longitude,
-      zoom: 12,
+      zoom,
     }
   }, [points])
 

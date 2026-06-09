@@ -14,6 +14,7 @@ type EventsMapProps = {
   mapboxToken: string
   mapStyle?: string
   className?: string
+  zoom?: number
 }
 
 const defaultCenter = {
@@ -26,7 +27,7 @@ function hasCoordinates(event: EventMapItem): event is EventMapItem & { lat: num
   return event.lat !== null && event.lng !== null
 }
 
-export function EventsMap({ events, mapboxToken, mapStyle, className }: EventsMapProps) {
+export function EventsMap({ events, mapboxToken, mapStyle, className, zoom = 12 }: EventsMapProps) {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const themedMapStyle = useMapThemeStyle(mapStyle)
 
@@ -43,7 +44,7 @@ export function EventsMap({ events, mapboxToken, mapStyle, className }: EventsMa
     return {
       latitude,
       longitude,
-      zoom: 12,
+      zoom,
     }
   }, [points])
 

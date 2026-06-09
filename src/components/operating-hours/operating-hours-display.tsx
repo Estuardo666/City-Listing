@@ -69,8 +69,8 @@ export function OpenStatusBadge({ hours, className = '' }: OpenStatusBadgeProps)
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
         open
-          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/70 dark:text-emerald-400'
+          : 'bg-red-100 text-red-800 dark:bg-red-900/70 dark:text-red-400'
       } ${className}`}
     >
       <span

@@ -6,7 +6,6 @@ import {
   CalendarDays, Edit, ExternalLink, Globe, Info, Link2, LogIn,
   ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star, Tag, Ticket, UserCircle2, DollarSign, Clock, Map
 } from 'lucide-react'
-import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import { MediaGallery } from '@/components/media/media-gallery'
 import { LocationHoursSection } from '@/components/features/venues/location-hours-section'
@@ -66,8 +65,8 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
     <article className="space-y-0">
 
       {/* ── Hero full-bleed ── */}
-      <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px] mb-6">
-        {venue.image && !imageError ? (
+      {venue.image && !imageError ? (
+        <div className="relative h-72 w-full overflow-hidden rounded-3xl bg-accent sm:h-[420px] mb-6">
           <Image
             src={venue.image}
             alt={venue.name}
@@ -77,48 +76,93 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
             sizes="(max-width: 768px) 100vw, 90vw"
             onError={() => setImageError(true)}
           />
-        ) : (
-          <CategoryGradientBg
-            categorySlug={venue.venueCategories[0]?.category.slug ?? ''}
-            name={venue.name}
-            showInitials
-            className="h-full w-full"
-            initialsClassName="text-6xl sm:text-8xl"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-        {/* Badges */}
-        <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
-            {resolveIconEmoji(venue.venueCategories[0]?.category.icon, 'venue')} {venue.venueCategories[0]?.category.name}
-          </span>
-          {venue.verified && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300 backdrop-blur-md">
-              <ShieldCheck className="h-3.5 w-3.5" /> Verificado
+          {/* Badges */}
+          <div className="absolute left-5 top-5 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
+              {resolveIconEmoji(venue.venueCategories[0]?.category.icon, 'venue')} {venue.venueCategories[0]?.category.name}
             </span>
-          )}
-          {venue.featured && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
-              <Sparkles className="h-3.5 w-3.5" /> Destacado
-            </span>
-          )}
-          {venue.priceRange && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-medium text-emerald-300 backdrop-blur-md">
-              <DollarSign className="h-3.5 w-3.5" /> {venue.priceRange}
-            </span>
-          )}
+            {venue.verified && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-300 backdrop-blur-md">
+                <ShieldCheck className="h-3.5 w-3.5" /> Verificado
+              </span>
+            )}
+            {venue.featured && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
+                <Sparkles className="h-3.5 w-3.5" /> Destacado
+              </span>
+            )}
+            {venue.priceRange && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-medium text-emerald-300 backdrop-blur-md">
+                <DollarSign className="h-3.5 w-3.5" /> {venue.priceRange}
+              </span>
+            )}
+          </div>
+
+          {/* Title over hero bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
+            <h1 className="font-medium leading-tight text-white drop-shadow-sm" style={{ fontSize: 'clamp(2.16rem, 6vw, 3.24rem)' }}>
+              {venue.name}
+            </h1>
+            <p className="mt-2 line-clamp-2 text-sm text-white/75 sm:text-base">
+              {venue.description}
+            </p>
+            {/* Rating in hero */}
+            {venue.avgRating !== null && venue.reviewCount > 0 && (
+              <div className="mt-2 flex items-center gap-2">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`h-4 w-4 ${
+                        star <= Math.round(venue.avgRating ?? 0)
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'fill-white/30 text-white/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-medium text-white/90">
+                  {(venue.avgRating ?? 0).toFixed(1)}
+                </span>
+                <span className="text-xs text-white/60">
+                  ({venue.reviewCount} {venue.reviewCount === 1 ? 'reseña' : 'reseñas'})
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Title over hero bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-          <h1 className="font-medium leading-tight text-white drop-shadow-sm" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.7rem)' }}>
+      ) : (
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2 mb-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-accent px-3 py-1 text-sm font-semibold text-foreground">
+              {resolveIconEmoji(venue.venueCategories[0]?.category.icon, 'venue')} {venue.venueCategories[0]?.category.name}
+            </span>
+            {venue.verified && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="h-3.5 w-3.5" /> Verificado
+              </span>
+            )}
+            {venue.featured && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
+                <Sparkles className="h-3.5 w-3.5" /> Destacado
+              </span>
+            )}
+            {venue.priceRange && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-accent px-3 py-1 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                <DollarSign className="h-3.5 w-3.5" /> {venue.priceRange}
+              </span>
+            )}
+          </div>
+          <h1 className="font-medium leading-tight text-foreground" style={{ fontSize: 'clamp(2.16rem, 6vw, 3.24rem)' }}>
             {venue.name}
           </h1>
-          <p className="mt-2 line-clamp-2 text-sm text-white/75 sm:text-base">
-            {venue.description}
-          </p>
-          {/* Rating in hero */}
+          {venue.description && (
+            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground sm:text-base">
+              {venue.description}
+            </p>
+          )}
           {venue.avgRating !== null && venue.reviewCount > 0 && (
             <div className="mt-2 flex items-center gap-2">
               <div className="flex items-center gap-0.5">
@@ -128,21 +172,21 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
                     className={`h-4 w-4 ${
                       star <= Math.round(venue.avgRating ?? 0)
                         ? 'fill-amber-400 text-amber-400'
-                        : 'fill-white/30 text-white/30'
+                        : 'fill-muted-foreground/30 text-muted-foreground/30'
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-sm font-medium text-white/90">
+              <span className="text-sm font-medium text-foreground">
                 {(venue.avgRating ?? 0).toFixed(1)}
               </span>
-              <span className="text-xs text-white/60">
+              <span className="text-xs text-muted-foreground">
                 ({venue.reviewCount} {venue.reviewCount === 1 ? 'reseña' : 'reseñas'})
               </span>
             </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* ── Media Gallery ── */}
       {hasMedia && (
