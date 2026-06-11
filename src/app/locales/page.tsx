@@ -10,7 +10,24 @@ import type { VenueListItem } from '@/types/venue'
 
 export const metadata = {
   title: 'Locales en Loja',
-  description: 'Descubre locales verificados en Loja con mapa interactivo.',
+  description:
+    'Directorio de restaurantes, cafés, bares y servicios verificados en Loja, Ecuador. Reseñas reales, mapa interactivo, promociones activas y los locales mejor valorados por la comunidad.',
+  openGraph: {
+    title: 'Locales Verificados en Loja | Vive Loja',
+    description: 'Restaurantes, cafés, bares y servicios con reseñas reales y mapa interactivo en Loja, Ecuador.',
+    url: 'https://viveloja.com/locales',
+    siteName: 'Vive Loja',
+    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Locales en Loja - Vive Loja' }],
+    locale: 'es_EC',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Locales Verificados en Loja',
+    description: 'Restaurantes, cafés, bares y servicios con reseñas reales y mapa interactivo en Loja, Ecuador.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+  alternates: { canonical: 'https://viveloja.com/locales' },
 }
 
 const FEATURED_TAKE = 6

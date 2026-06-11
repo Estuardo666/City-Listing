@@ -6,7 +6,24 @@ import { RouteCard } from '@/components/route/route-card'
 
 export const metadata = {
   title: 'Rutas turísticas - Vive Loja',
-  description: 'Descubre las mejores rutas turísticas en Loja, Ecuador',
+  description:
+    'Explora Loja a través de rutas turísticas temáticas con paradas verificadas. Descubre senderos, puntos de interés y recorridos guiados por la ciudad y sus alrededores.',
+  openGraph: {
+    title: 'Rutas Turísticas en Loja | Vive Loja',
+    description: 'Rutas temáticas con paradas verificadas para explorar Loja, Ecuador.',
+    url: 'https://viveloja.com/rutas',
+    siteName: 'Vive Loja',
+    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Rutas turísticas en Loja - Vive Loja' }],
+    locale: 'es_EC',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Rutas Turísticas en Loja',
+    description: 'Rutas temáticas con paradas verificadas para explorar Loja, Ecuador.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+  alternates: { canonical: 'https://viveloja.com/rutas' },
 }
 
 export const dynamic = 'force-dynamic'

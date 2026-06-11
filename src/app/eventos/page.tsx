@@ -10,7 +10,24 @@ import type { EventListItem } from '@/types/event'
 
 export const metadata = {
   title: 'Eventos en Loja',
-  description: 'Descubre eventos verificados en Loja con mapa interactivo.',
+  description:
+    'Agenda completa de eventos en Loja, Ecuador: conciertos, cultura, deportes, vida nocturna y actividades gratuitas. Encuentra ubicaciones en el mapa y filtra por categoría.',
+  openGraph: {
+    title: 'Eventos en Loja | Vive Loja',
+    description: 'Conciertos, cultura, deportes y actividades verificadas en Loja, Ecuador. Ubicaciones en mapa.',
+    url: 'https://viveloja.com/eventos',
+    siteName: 'Vive Loja',
+    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Eventos en Loja - Vive Loja' }],
+    locale: 'es_EC',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Eventos en Loja',
+    description: 'Conciertos, cultura, deportes y actividades verificadas en Loja, Ecuador.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+  alternates: { canonical: 'https://viveloja.com/eventos' },
 }
 
 const FEATURED_TAKE = 6

@@ -2,7 +2,24 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Acerca de | Vive Loja',
-  description: 'Conoce más sobre Vive Loja, la plataforma local para descubrir planes, lugares y oportunidades en Loja.',
+  description:
+    'Vive Loja es la plataforma local para descubrir planes, lugares y oportunidades reales en Loja, Ecuador. Conectamos a locales y visitantes con lo mejor de la ciudad.',
+  openGraph: {
+    title: 'Acerca de Vive Loja',
+    description: 'La plataforma local para descubrir planes, lugares y oportunidades en Loja, Ecuador.',
+    url: 'https://viveloja.com/about',
+    siteName: 'Vive Loja',
+    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Acerca de Vive Loja' }],
+    locale: 'es_EC',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Acerca de Vive Loja',
+    description: 'La plataforma local para descubrir planes, lugares y oportunidades en Loja, Ecuador.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+  alternates: { canonical: 'https://viveloja.com/about' },
 }
 
 export default function AboutPage() {

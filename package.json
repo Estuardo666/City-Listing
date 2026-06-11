@@ -13,6 +13,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "sync:google": "tsx scripts/sync-google-hours.ts",
+    "purge:seo": "tsx scripts/purge-seo-cache.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

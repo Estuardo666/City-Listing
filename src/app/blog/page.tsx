@@ -12,7 +12,24 @@ import { MotionDiv, fadeInUp, staggerContainer } from '@/components/ui/motion'
 
 export const metadata = {
   title: 'Blog — Vive Loja',
-  description: 'Artículos, guías y entrevistas sobre Loja, Ecuador.',
+  description:
+    'Guías, entrevistas y artículos sobre la vida, cultura, gastronomía y turismo en Loja, Ecuador. Descubre historias locales, recomendaciones y novedades de tu ciudad.',
+  openGraph: {
+    title: 'Blog de Vive Loja | Historias de Loja',
+    description: 'Guías, entrevistas y artículos sobre cultura, gastronomía y turismo en Loja, Ecuador.',
+    url: 'https://viveloja.com/blog',
+    siteName: 'Vive Loja',
+    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Blog Vive Loja' }],
+    locale: 'es_EC',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Blog de Vive Loja',
+    description: 'Guías, entrevistas y artículos sobre cultura, gastronomía y turismo en Loja, Ecuador.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+  alternates: { canonical: 'https://viveloja.com/blog' },
 }
 
 type BlogPageProps = {

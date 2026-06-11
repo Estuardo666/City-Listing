@@ -2,7 +2,24 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Política de Privacidad | Vive Loja',
-  description: 'Conoce cómo Vive Loja protege y maneja tus datos personales.',
+  description:
+    'Conoce cómo Vive Loja recopila, usa y protege tus datos personales. Tu privacidad es importante para nosotros.',
+  openGraph: {
+    title: 'Política de Privacidad | Vive Loja',
+    description: 'Cómo Vive Loja protege y maneja tus datos personales.',
+    url: 'https://viveloja.com/privacy',
+    siteName: 'Vive Loja',
+    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Privacidad - Vive Loja' }],
+    locale: 'es_EC',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Política de Privacidad | Vive Loja',
+    description: 'Cómo Vive Loja protege y maneja tus datos personales.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+  alternates: { canonical: 'https://viveloja.com/privacy' },
 }
 
 export default function PrivacyPage() {

@@ -3,7 +3,27 @@ import { Folder, User } from 'lucide-react'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
-export const metadata = { title: 'Colecciones — Vive Loja' }
+export const metadata = {
+  title: 'Colecciones — Vive Loja',
+  description:
+    'Listas curadas por la comunidad de Loja: los mejores locales, eventos y planes organizados por temas. Descubre recomendaciones personalizadas de tu ciudad.',
+  openGraph: {
+    title: 'Colecciones de Locales y Eventos | Vive Loja',
+    description: 'Listas curadas por la comunidad de Loja con los mejores locales, eventos y planes.',
+    url: 'https://viveloja.com/colecciones',
+    siteName: 'Vive Loja',
+    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Colecciones - Vive Loja' }],
+    locale: 'es_EC',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Colecciones de Locales y Eventos',
+    description: 'Listas curadas por la comunidad de Loja con los mejores locales, eventos y planes.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+  alternates: { canonical: 'https://viveloja.com/colecciones' },
+}
 export const dynamic = 'force-dynamic'
 
 export default async function CollectionsExplorePage() {

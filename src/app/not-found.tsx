@@ -1,4 +1,10 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Página no encontrada | Vive Loja',
+  description: 'La página que buscas no existe o fue movida. Vuelve al inicio para explorar Loja.',
+}
 
 export default function NotFound() {
   return (

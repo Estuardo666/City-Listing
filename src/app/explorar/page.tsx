@@ -6,7 +6,24 @@ import type { ExploreVenue, ExploreEvent } from '@/types/explore'
 
 export const metadata = {
   title: 'Explorar — Locales y Eventos en Loja',
-  description: 'Descubre locales y eventos verificados en Loja con mapa interactivo.',
+  description:
+    'Explora restaurantes, bares, cafés, eventos y servicios en Loja, Ecuador. Mapa interactivo con locales verificados, reseñas de la comunidad y planes para disfrutar tu ciudad.',
+  openGraph: {
+    title: 'Explorar Locales y Eventos en Loja',
+    description: 'Mapa interactivo con restaurantes, bares, eventos y servicios verificados en Loja, Ecuador.',
+    url: 'https://viveloja.com/explorar',
+    siteName: 'Vive Loja',
+    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Explorar Loja - Vive Loja' }],
+    locale: 'es_EC',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Explorar Locales y Eventos en Loja',
+    description: 'Mapa interactivo con restaurantes, bares, eventos y servicios verificados en Loja, Ecuador.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+  alternates: { canonical: 'https://viveloja.com/explorar' },
 }
 
 const INITIAL_EXPLORE_LIMIT = 60

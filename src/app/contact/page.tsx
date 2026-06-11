@@ -2,7 +2,24 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Contacto | Vive Loja',
-  description: 'Ponte en contacto con el equipo de Vive Loja.',
+  description:
+    '¿Preguntas, sugerencias o quieres colaborar? Ponte en contacto con el equipo de Vive Loja. Estamos aquí para ayudarte.',
+  openGraph: {
+    title: 'Contacto | Vive Loja',
+    description: '¿Preguntas o sugerencias? Ponte en contacto con el equipo de Vive Loja.',
+    url: 'https://viveloja.com/contact',
+    siteName: 'Vive Loja',
+    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Contacto - Vive Loja' }],
+    locale: 'es_EC',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contacto | Vive Loja',
+    description: '¿Preguntas o sugerencias? Ponte en contacto con el equipo de Vive Loja.',
+    images: ['https://viveloja.com/viveloja.png'],
+  },
+  alternates: { canonical: 'https://viveloja.com/contact' },
 }
 
 export default function ContactPage() {
