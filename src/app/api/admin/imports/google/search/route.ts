@@ -49,7 +49,10 @@ export async function GET(request: NextRequest) {
     const existingVenues =
       placeIds.length > 0
         ? await prisma.venue.findMany({
-            where: { googlePlaceId: { in: placeIds } } as any,
+            where: {
+              googlePlaceId: { in: placeIds },
+              status: { in: ['APPROVED', 'PENDING'] },
+            } as any,
             select: { id: true, name: true, slug: true, googlePlaceId: true } as any,
           })
         : []

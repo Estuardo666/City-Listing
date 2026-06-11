@@ -294,7 +294,10 @@ class GooglePlacesImporter {
   async detectDuplicate(place: GooglePlaceNormalized): Promise<DuplicateCheckResult> {
     if (place.google_place_id) {
       const byPlaceId = await prisma.venue.findFirst({
-        where: { googlePlaceId: place.google_place_id } as any,
+        where: {
+          googlePlaceId: place.google_place_id,
+          status: { in: ['APPROVED', 'PENDING'] },
+        } as any,
         select: { id: true, name: true, slug: true, googlePlaceId: true },
       })
       if (byPlaceId) {
@@ -311,7 +314,10 @@ class GooglePlacesImporter {
       const normalizedPhone = place.phone.replace(/[^0-9+]/g, '')
       if (normalizedPhone.length >= 7) {
         const byPhone = await prisma.venue.findFirst({
-          where: { phone: normalizedPhone },
+          where: {
+            phone: normalizedPhone,
+            status: { in: ['APPROVED', 'PENDING'] },
+          },
           select: { id: true, name: true, slug: true, googlePlaceId: true },
         })
         if (byPhone) {
@@ -339,6 +345,7 @@ class GooglePlacesImporter {
       WHERE lat IS NOT NULL AND lng IS NOT NULL
         AND ABS(lat - ${place.lat}) < 0.001
         AND ABS(lng - ${place.lng}) < 0.001
+        AND status IN ('APPROVED', 'PENDING')
     `
 
     const normalizedName = normalizeString(place.name)
@@ -365,7 +372,10 @@ class GooglePlacesImporter {
 
     if (placeIds.length > 0) {
       const existing = await prisma.venue.findMany({
-        where: { googlePlaceId: { in: placeIds } } as any,
+        where: {
+          googlePlaceId: { in: placeIds },
+          status: { in: ['APPROVED', 'PENDING'] },
+        } as any,
         select: { id: true, name: true, slug: true, googlePlaceId: true },
       })
       const existingMap = new Map(existing.map((v: any) => [v.googlePlaceId, v]))
