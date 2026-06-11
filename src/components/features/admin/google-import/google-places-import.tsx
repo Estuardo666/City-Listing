@@ -57,7 +57,8 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
   const [isCreatingJob, setIsCreatingJob] = useState(false)
   const [showBulkConfirm, setShowBulkConfirm] = useState(false)
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
-  const [searchPage, setSearchPage] = useState(0)
+  const [variationIndex, setVariationIndex] = useState(0)
+  const [pageToken, setPageToken] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
@@ -96,7 +97,8 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
       setSelectedCategories(cats)
       setIsSearching(true)
       clearLogs()
-      setSearchPage(0)
+      setVariationIndex(0)
+      setPageToken(null)
       setHasMore(false)
 
       addLog(createLog('info', `Iniciando búsqueda en: ${geoResult.formattedAddress}`))
@@ -114,7 +116,7 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
           radius: radius.toString(),
           categories: cats.join(','),
           address: geoResult.formattedAddress,
-          page: '0',
+          variationIndex: '0',
         })
 
         addLog(createLog('info', 'Consultando Google Places API...'))
@@ -129,7 +131,8 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
         const result = await res.json()
         setSearchResults(result.data)
         setHasMore(result.hasMore)
-        setSearchPage(0)
+        setPageToken(result.nextPageToken || null)
+        setVariationIndex(0)
 
         addLog(createLog('success', `${result.data.length} resultados encontrados`))
 
@@ -190,11 +193,10 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
   }, [searchResults])
 
   const handleLoadMore = useCallback(async () => {
-    if (!geoResult || isLoadingMore) return
+    if (!geoResult || isLoadingMore || !hasMore) return
 
-    const nextPage = searchPage + 1
     setIsLoadingMore(true)
-    addLog(createLog('info', `Cargando página ${nextPage + 1}...`))
+    addLog(createLog('info', `Cargando más resultados...`))
 
     try {
       const params = new URLSearchParams({
@@ -203,8 +205,14 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
         radius: radius.toString(),
         categories: selectedCategories.join(','),
         address: geoResult.formattedAddress,
-        page: nextPage.toString(),
+        variationIndex: variationIndex.toString(),
       })
+
+      if (pageToken) {
+        params.set('pageToken', pageToken)
+      } else {
+        params.set('variationIndex', (variationIndex + 1).toString())
+      }
 
       const res = await fetch(`/api/admin/imports/google/search?${params.toString()}`)
       if (!res.ok) {
@@ -219,8 +227,12 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
       )
 
       setSearchResults((prev) => [...prev, ...newResults])
-      setSearchPage(nextPage)
       setHasMore(result.hasMore)
+      setPageToken(result.nextPageToken || null)
+
+      if (!pageToken) {
+        setVariationIndex((prev) => prev + 1)
+      }
 
       addLog(
         createLog(
@@ -234,7 +246,7 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
     } finally {
       setIsLoadingMore(false)
     }
-  }, [geoResult, searchPage, isLoadingMore, searchResults, radius, selectedCategories, addLog])
+  }, [geoResult, isLoadingMore, hasMore, searchResults, radius, selectedCategories, variationIndex, pageToken, addLog])
 
   // Direct import (≤500 records)
   const handleDirectImport = useCallback(

@@ -30,6 +30,7 @@ const GooglePlaceSchema = z.object({
 
 const GooglePlacesResponseSchema = z.object({
   places: z.array(GooglePlaceSchema).default([]),
+  nextPageToken: z.string().optional(),
 });
 
 const GooglePlaceDetailsSchema = z.object({
@@ -166,6 +167,7 @@ class GooglePlacesService {
 
     // Fields para la nueva Places API (v1)
     const PLACE_SEARCH_FIELDS = [
+      'nextPageToken',
       'places.id',
       'places.displayName.text', // Cambiado de name a displayName.text
       'places.formattedAddress',
@@ -232,8 +234,9 @@ class GooglePlacesService {
       excludedTypes?: string[];
       language?: string;
       maxResultCount?: number;
+      pageToken?: string;
     } = {}
-  ): Promise<GooglePlace[]> {
+  ): Promise<{ places: GooglePlace[]; nextPageToken?: string }> {
     const url = `${this.baseUrl}/places:searchText`;
 
     // Construir el cuerpo de la solicitud
@@ -275,6 +278,10 @@ class GooglePlacesService {
       body.excludedTypes = options.excludedTypes;
     }
 
+    if (options.pageToken) {
+      body.pageToken = options.pageToken;
+    }
+
     try {
       const response = await this.makeRequest(url, {
         method: 'POST',
@@ -282,7 +289,7 @@ class GooglePlacesService {
       });
 
       const validated = GooglePlacesResponseSchema.parse(response);
-      return validated.places;
+      return { places: validated.places, nextPageToken: validated.nextPageToken };
     } catch (error) {
       console.error('Error searching places:', error);
       throw error;

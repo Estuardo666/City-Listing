@@ -180,7 +180,7 @@ class GooglePlacesImporter {
         const typeQuery = buildQuery(cat.label)
 
         try {
-          const results = await googlePlacesService.searchPlaces(typeQuery, {
+          const { places: results } = await googlePlacesService.searchPlaces(typeQuery, {
             location,
             radius,
             maxResultCount: 20,
@@ -205,10 +205,10 @@ class GooglePlacesImporter {
     query: string,
     location: { lat: number; lng: number },
     radius: number,
-    page: number,
+    variationIndex: number,
     categoryKeys?: string[],
-    pageSize: number = 20
-  ): Promise<{ data: any[]; hasMore: boolean }> {
+    pageToken?: string
+  ): Promise<{ data: any[]; nextPageToken?: string; hasMore: boolean }> {
     const typesToSearch = categoryKeys && categoryKeys.length > 0
       ? categoryKeys
       : ['restaurant']
@@ -218,50 +218,42 @@ class GooglePlacesImporter {
       (label: string) => `${label} cerca de ${query}`,
     ]
 
-    const allCombos: Array<{ key: string; buildQuery: (label: string) => string }> = []
+    const allCombos: Array<{ key: string; label: string; buildQuery: (label: string) => string }> = []
     for (const key of typesToSearch) {
       const cat = GOOGLE_CATEGORIES[key]
       if (!cat) continue
       for (const buildQuery of variations) {
-        allCombos.push({ key, buildQuery })
+        allCombos.push({ key, label: cat.label, buildQuery })
       }
     }
 
-    const combosPerPage = Math.ceil(pageSize / 20)
-    const startCombo = page * combosPerPage
-    const endCombo = startCombo + combosPerPage
-
-    if (startCombo >= allCombos.length) {
+    if (variationIndex >= allCombos.length) {
       return { data: [], hasMore: false }
     }
 
-    const seenIds = new Set<string>()
-    const results: any[] = []
+    const combo = allCombos[variationIndex]
+    const typeQuery = combo.buildQuery(combo.label)
 
-    for (let i = startCombo; i < endCombo && i < allCombos.length; i++) {
-      const combo = allCombos[i]
-      const cat = GOOGLE_CATEGORIES[combo.key]
-      if (!cat) continue
-
-      try {
-        const places = await googlePlacesService.searchPlaces(combo.buildQuery(cat.label), {
-          location,
-          radius,
-          maxResultCount: 20,
-        })
-
-        for (const place of places) {
-          if (place.id && !seenIds.has(place.id)) {
-            seenIds.add(place.id)
-            results.push(place)
-          }
-        }
-      } catch (error) {
-        console.error(`Error searching page for ${combo.key}:`, error)
+    try {
+      if (pageToken) {
+        await new Promise((r) => setTimeout(r, 1000))
       }
-    }
 
-    return { data: results, hasMore: endCombo < allCombos.length }
+      const { places, nextPageToken } = await googlePlacesService.searchPlaces(typeQuery, {
+        location,
+        radius,
+        maxResultCount: 20,
+        pageToken,
+      })
+
+      const hasMoreVariations = variationIndex < allCombos.length - 1
+      const hasMore = !!nextPageToken || hasMoreVariations
+
+      return { data: places, nextPageToken, hasMore }
+    } catch (error) {
+      console.error(`Error searching variation ${variationIndex}:`, error)
+      return { data: [], hasMore: variationIndex < allCombos.length - 1 }
+    }
   }
 
   async getPlaceDetails(placeId: string): Promise<GooglePlaceNormalized | null> {

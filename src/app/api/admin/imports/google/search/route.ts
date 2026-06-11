@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
     const categoriesParam = searchParams.get('categories')
     const radius = searchParams.get('radius')
     const address = searchParams.get('address')
-    const page = Number(searchParams.get('page') || '0')
+    const variationIndex = Number(searchParams.get('variationIndex') || '0')
+    const pageToken = searchParams.get('pageToken') || undefined
 
     if (!lat || !lng || !categoriesParam || !radius) {
       return NextResponse.json(
@@ -37,9 +38,9 @@ export async function GET(request: NextRequest) {
       locationQuery,
       location,
       Number(radius),
-      page,
+      variationIndex,
       categories,
-      20
+      pageToken
     )
 
     const normalized = googlePlacesImporter.normalizePlaces(result.data)
@@ -64,10 +65,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: placesWithStatus,
-      page,
+      nextPageToken: result.nextPageToken || null,
       hasMore: result.hasMore,
-      total: placesWithStatus.length,
-      alreadyImported: existingVenues.length,
+      variationIndex,
     })
   } catch (error) {
     console.error('Error searching Google Places:', error)

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Dirección requerida' }, { status: 400 })
     }
 
-    const results = await googlePlacesService.searchPlaces(address, {
+    const { places: results } = await googlePlacesService.searchPlaces(address, {
       maxResultCount: 1,
     })
 
