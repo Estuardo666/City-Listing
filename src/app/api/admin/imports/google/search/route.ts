@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { googlePlacesImporter } from '@/lib/google/google-places-importer'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireAdmin()
-    if (!session) return unauthorized()
+    const session = await auth()
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
 
     const { searchParams } = new URL(request.url)
     const lat = searchParams.get('lat')
@@ -14,7 +16,7 @@ export async function GET(request: NextRequest) {
     const categoriesParam = searchParams.get('categories')
     const radius = searchParams.get('radius')
     const address = searchParams.get('address')
-    const maxResults = Number(searchParams.get('maxResults') || '20')
+    const page = Number(searchParams.get('page') || '0')
 
     if (!lat || !lng || !categoriesParam || !radius) {
       return NextResponse.json(
@@ -31,15 +33,16 @@ export async function GET(request: NextRequest) {
     const location = { lat: Number(lat), lng: Number(lng) }
     const locationQuery = address || `${lat}, ${lng}`
 
-    const results = await googlePlacesImporter.searchPlaces(
+    const result = await googlePlacesImporter.searchPlacesPage(
       locationQuery,
       location,
       Number(radius),
+      page,
       categories,
-      Math.min(maxResults, 500)
+      20
     )
 
-    const normalized = googlePlacesImporter.normalizePlaces(results)
+    const normalized = googlePlacesImporter.normalizePlaces(result.data)
 
     const placeIds = normalized.map((p) => p.google_place_id).filter(Boolean)
     const existingVenues =
@@ -61,6 +64,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: placesWithStatus,
+      page,
+      hasMore: result.hasMore,
       total: placesWithStatus.length,
       alreadyImported: existingVenues.length,
     })

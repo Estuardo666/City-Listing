@@ -57,6 +57,9 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
   const [isCreatingJob, setIsCreatingJob] = useState(false)
   const [showBulkConfirm, setShowBulkConfirm] = useState(false)
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
+  const [searchPage, setSearchPage] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const addLog = useCallback((log: LogEntry) => {
     setLogs((prev) => [...prev, log])
@@ -93,6 +96,8 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
       setSelectedCategories(cats)
       setIsSearching(true)
       clearLogs()
+      setSearchPage(0)
+      setHasMore(false)
 
       addLog(createLog('info', `Iniciando búsqueda en: ${geoResult.formattedAddress}`))
       addLog(
@@ -109,6 +114,7 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
           radius: radius.toString(),
           categories: cats.join(','),
           address: geoResult.formattedAddress,
+          page: '0',
         })
 
         addLog(createLog('info', 'Consultando Google Places API...'))
@@ -122,6 +128,8 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
 
         const result = await res.json()
         setSearchResults(result.data)
+        setHasMore(result.hasMore)
+        setSearchPage(0)
 
         addLog(createLog('success', `${result.data.length} resultados encontrados`))
 
@@ -180,6 +188,53 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
     setSelectedForImport(available)
     setStep('preview')
   }, [searchResults])
+
+  const handleLoadMore = useCallback(async () => {
+    if (!geoResult || isLoadingMore) return
+
+    const nextPage = searchPage + 1
+    setIsLoadingMore(true)
+    addLog(createLog('info', `Cargando página ${nextPage + 1}...`))
+
+    try {
+      const params = new URLSearchParams({
+        lat: geoResult.lat.toString(),
+        lng: geoResult.lng.toString(),
+        radius: radius.toString(),
+        categories: selectedCategories.join(','),
+        address: geoResult.formattedAddress,
+        page: nextPage.toString(),
+      })
+
+      const res = await fetch(`/api/admin/imports/google/search?${params.toString()}`)
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Error al buscar')
+      }
+
+      const result = await res.json()
+      const existingIds = new Set(searchResults.map((p) => p.google_place_id))
+      const newResults = result.data.filter(
+        (p: PlaceResult) => !existingIds.has(p.google_place_id)
+      )
+
+      setSearchResults((prev) => [...prev, ...newResults])
+      setSearchPage(nextPage)
+      setHasMore(result.hasMore)
+
+      addLog(
+        createLog(
+          'success',
+          `+${newResults.length} resultados nuevos (${searchResults.length + newResults.length} total)`
+        )
+      )
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Error al cargar más'
+      addLog(createLog('error', msg))
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [geoResult, searchPage, isLoadingMore, searchResults, radius, selectedCategories, addLog])
 
   // Direct import (≤500 records)
   const handleDirectImport = useCallback(
@@ -381,6 +436,9 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
       {step === 'results' && (
         <WizardResults
           places={searchResults}
+          hasMore={hasMore}
+          isLoadingMore={isLoadingMore}
+          onLoadMore={handleLoadMore}
           onSelectForImport={handleSelectForImport}
           onImportAll={handleImportAll}
           onBack={() => setStep('categories')}

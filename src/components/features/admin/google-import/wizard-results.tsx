@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Check, X, AlertCircle, ArrowLeft } from 'lucide-react'
+import { Check, X, AlertCircle, ArrowLeft, Loader2, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +21,9 @@ export interface PlaceResult {
 
 interface WizardResultsProps {
   places: PlaceResult[]
+  hasMore: boolean
+  isLoadingMore: boolean
+  onLoadMore: () => void
   onSelectForImport: (places: PlaceResult[]) => void
   onImportAll: () => void
   onBack: () => void
@@ -28,15 +31,14 @@ interface WizardResultsProps {
 
 export function WizardResults({
   places,
+  hasMore,
+  isLoadingMore,
+  onLoadMore,
   onSelectForImport,
   onImportAll,
   onBack,
 }: WizardResultsProps) {
-  const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const perPage = 20
-  const totalPages = Math.ceil(places.length / perPage)
-  const paged = places.slice((page - 1) * perPage, page * perPage)
 
   const selectedCount = selectedIds.size
   const totalAvailable = places.filter((p) => !p.alreadyImported).length
@@ -51,16 +53,16 @@ export function WizardResults({
     })
   }
 
-  const toggleSelectAllPage = () => {
-    const pageIds = paged.filter((p) => !p.alreadyImported).map((p) => p.google_place_id)
-    const allSelected = pageIds.every((id) => selectedIds.has(id))
+  const toggleSelectAll = () => {
+    const available = places.filter((p) => !p.alreadyImported).map((p) => p.google_place_id)
+    const allSelected = available.every((id) => selectedIds.has(id))
 
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (allSelected) {
-        pageIds.forEach((id) => next.delete(id))
+        available.forEach((id) => next.delete(id))
       } else {
-        pageIds.forEach((id) => next.add(id))
+        available.forEach((id) => next.add(id))
       }
       return next
     })
@@ -73,9 +75,9 @@ export function WizardResults({
     onSelectForImport(selected)
   }
 
-  const allPageSelected =
-    paged.filter((p) => !p.alreadyImported).length > 0 &&
-    paged.filter((p) => !p.alreadyImported).every((p) => selectedIds.has(p.google_place_id))
+  const allSelected =
+    places.filter((p) => !p.alreadyImported).length > 0 &&
+    places.filter((p) => !p.alreadyImported).every((p) => selectedIds.has(p.google_place_id))
 
   return (
     <div className="space-y-4">
@@ -93,16 +95,16 @@ export function WizardResults({
       </div>
 
       <div className="flex items-center gap-2">
-        <Checkbox checked={allPageSelected} onCheckedChange={toggleSelectAllPage} />
-        <Label className="text-sm cursor-pointer" onClick={toggleSelectAllPage}>
-          Seleccionar todos de esta página
+        <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
+        <Label className="text-sm cursor-pointer" onClick={toggleSelectAll}>
+          Seleccionar todos
         </Label>
       </div>
 
       <div className="border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead className="bg-muted/50">
+            <thead className="bg-muted/50 sticky top-0 z-10">
               <tr>
                 <th className="w-10 px-3 py-2"></th>
                 <th className="px-3 py-2 text-left font-medium">Nombre</th>
@@ -117,7 +119,7 @@ export function WizardResults({
               </tr>
             </thead>
             <tbody>
-              {paged.map((place) => {
+              {places.map((place) => {
                 const isSelected = selectedIds.has(place.google_place_id)
                 return (
                   <tr
@@ -172,49 +174,45 @@ export function WizardResults({
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+      {hasMore && (
+        <div className="flex justify-center">
           <Button
             variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Anterior
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Página {page} de {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-          >
-            Siguiente
-            <ChevronRight className="h-4 w-4 ml-1" />
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Cargando...
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4 mr-2" />
+                Cargar más resultados
+              </>
+            )}
           </Button>
         </div>
+      )}
 
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Nueva búsqueda
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleImportSelected}
-            disabled={selectedCount === 0}
-          >
-            <Check className="h-4 w-4 mr-1" />
-            Importar seleccionados ({selectedCount})
-          </Button>
-          <Button variant="secondary" size="sm" onClick={onImportAll}>
-            Importar todos ({totalAvailable})
-          </Button>
-        </div>
+      <div className="flex flex-wrap gap-2 justify-end">
+        <Button variant="outline" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Nueva búsqueda
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={handleImportSelected}
+          disabled={selectedCount === 0}
+        >
+          <Check className="h-4 w-4 mr-1" />
+          Importar seleccionados ({selectedCount})
+        </Button>
+        <Button variant="secondary" size="sm" onClick={onImportAll}>
+          Importar todos ({totalAvailable})
+        </Button>
       </div>
     </div>
   )

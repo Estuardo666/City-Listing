@@ -201,6 +201,69 @@ class GooglePlacesImporter {
     return allResults.slice(0, maxResults)
   }
 
+  async searchPlacesPage(
+    query: string,
+    location: { lat: number; lng: number },
+    radius: number,
+    page: number,
+    categoryKeys?: string[],
+    pageSize: number = 20
+  ): Promise<{ data: any[]; hasMore: boolean }> {
+    const typesToSearch = categoryKeys && categoryKeys.length > 0
+      ? categoryKeys
+      : ['restaurant']
+
+    const variations = [
+      (label: string) => `${label} en ${query}`,
+      (label: string) => `${label} cerca de ${query}`,
+    ]
+
+    const allCombos: Array<{ key: string; buildQuery: (label: string) => string }> = []
+    for (const key of typesToSearch) {
+      const cat = GOOGLE_CATEGORIES[key]
+      if (!cat) continue
+      for (const buildQuery of variations) {
+        allCombos.push({ key, buildQuery })
+      }
+    }
+
+    const combosPerPage = Math.ceil(pageSize / 20)
+    const startCombo = page * combosPerPage
+    const endCombo = startCombo + combosPerPage
+
+    if (startCombo >= allCombos.length) {
+      return { data: [], hasMore: false }
+    }
+
+    const seenIds = new Set<string>()
+    const results: any[] = []
+
+    for (let i = startCombo; i < endCombo && i < allCombos.length; i++) {
+      const combo = allCombos[i]
+      const cat = GOOGLE_CATEGORIES[combo.key]
+      if (!cat) continue
+
+      try {
+        const places = await googlePlacesService.searchPlaces(combo.buildQuery(cat.label), {
+          location,
+          radius,
+          maxResultCount: 20,
+        })
+
+        for (const place of places) {
+          if (place.id && !seenIds.has(place.id)) {
+            seenIds.add(place.id)
+            results.push(place)
+          }
+        }
+      } catch (error) {
+        console.error(`Error searching page for ${combo.key}:`, error)
+      }
+    }
+
+    return { data: results, hasMore: endCombo < allCombos.length }
+  }
+
   async getPlaceDetails(placeId: string): Promise<GooglePlaceNormalized | null> {
     try {
       const details = await googlePlacesService.getPlaceDetails(placeId)
