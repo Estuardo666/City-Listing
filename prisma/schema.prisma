@@ -336,6 +336,7 @@ model Venue {
   services       VenueService[]
   venueCategories    VenueCategory[]
   venueSubcategories VenueSubcategory[]
+  watchEventVenues   WatchEventVenue[]
   
   parentId      String?
   parent        Venue?    @relation("VenueBranches", fields: [parentId], references: [id], onDelete: SetNull)
@@ -1157,5 +1158,122 @@ model SearchConsoleOpportunity {
   @@index([status])
   @@index([score])
   @@index([query])
+}
+
+// ──────────────────────────────────────────────
+// Watch Events / Transmisiones
+// ──────────────────────────────────────────────
+
+model WatchEvent {
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique
+  type           String    @default("SPORTS") // SPORTS | CONCERT | THEATER | ESPORTS | OTHER
+  description    String?
+  image          String?
+  matchDate      DateTime
+  matchTime      String?           // "HH:MM"
+  competition    String?
+  performers     String?           // JSON array of performer names (denormalized for fast reads)
+  status         String    @default("ACTIVE") // ACTIVE | CANCELLED | FINISHED
+  featured       Boolean   @default(false)
+  viewCount      Int       @default(0)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  venues        WatchEventVenue[]
+  performersList WatchEventPerformerLink[]
+  processingLogs AIProcessingLog[]
+
+  @@index([status])
+  @@index([matchDate])
+  @@index([type])
+  @@index([viewCount])
+}
+
+model WatchEventPerformer {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  type      String   @default("TEAM") // TEAM | ARTIST | BAND | OTHER
+  logo      String?
+  createdAt DateTime @default(now())
+
+  watchEvents WatchEventPerformerLink[]
+
+  @@index([type])
+}
+
+model WatchEventPerformerLink {
+  watchEventId     String
+  performerId      String
+  role             String?  // HOME | AWAY | HEADLINER | SUPPORT | etc.
+  createdAt        DateTime @default(now())
+
+  watchEvent  WatchEvent           @relation(fields: [watchEventId], references: [id], onDelete: Cascade)
+  performer   WatchEventPerformer  @relation(fields: [performerId], references: [id], onDelete: Cascade)
+
+  @@id([watchEventId, performerId])
+  @@index([performerId])
+}
+
+model WatchEventVenue {
+  id             String   @id @default(cuid())
+  watchEventId   String
+  venueId        String
+  flyerUrl       String?
+  promotion      String?
+  hasBigScreen   Boolean  @default(false)
+  hasFreeEntry   Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  watchEvent WatchEvent @relation(fields: [watchEventId], references: [id], onDelete: Cascade)
+  venue      Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([watchEventId, venueId])
+  @@index([venueId])
+  @@index([watchEventId])
+}
+
+// ──────────────────────────────────────────────
+// AI Configuration & Processing
+// ──────────────────────────────────────────────
+
+model AIConfig {
+  id                String   @id @default(cuid())
+  provider          String   @default("openai") // openai | anthropic | google | groq | deepseek | together | fireworks | ollama | custom
+  apiKey            String?  // encrypted
+  baseUrl           String?  // override URL
+  modelVision       String?  // model for image analysis (OCR)
+  modelText         String?  // model for text extraction
+  timeout           Int      @default(30)
+  temperature       Float    @default(0.1)
+  maxTokens         Int      @default(4096)
+  updatedAt         DateTime @updatedAt
+}
+
+model AIProcessingLog {
+  id              String    @id @default(cuid())
+  sourceType      String    // IMAGE | PDF | TEXT
+  sourceUrl       String?   // R2 URL of uploaded file
+  inputText       String?   // raw text input (for TEXT source type)
+  extractedData   String?   // JSON of extracted event data
+  watchEventId    String?   // linked watch event (null if not yet confirmed)
+  tokensUsed      Int?
+  costEstimate    Float?    // in USD
+  processingTimeMs Int?
+  status          String    @default("PENDING") // PENDING | COMPLETED | FAILED | CONFIRMED
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+
+  watchEvent WatchEvent? @relation(fields: [watchEventId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([watchEventId])
 }
 

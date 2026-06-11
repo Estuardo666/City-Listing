@@ -32,6 +32,8 @@ import {
   FolderTree,
   ExternalLink,
   Search,
+  Sparkles,
+  Tv,
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -74,6 +76,8 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/reclamos', label: 'Reclamos', icon: ClipboardList, adminOnly: true },
   { href: '/admin/ofertas', label: 'Ofertas', icon: Tag, adminOnly: true },
   { href: '/admin/categorias', label: 'Categorías', icon: FolderTree, adminOnly: true },
+  { href: '/admin/transmisiones', label: 'Transmisiones', icon: Tv, adminOnly: true },
+  { href: '/admin/ia', label: 'IA Config', icon: Sparkles, adminOnly: true },
   { href: '/admin/google-types', label: 'Google Types', icon: ExternalLink, adminOnly: true },
   { href: '/admin/osm-imports', label: 'Importaciones OSM', icon: Globe, adminOnly: true },
   { href: '/admin/imports/google', label: 'Importador Google', icon: MapPin, adminOnly: true },
