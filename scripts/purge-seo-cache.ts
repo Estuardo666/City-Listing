@@ -62,7 +62,7 @@ async function main() {
     if (!clientId || !clientSecret || !refreshToken) {
       console.log('   ⚠️  Google Search Console no configurado (GOOGLE_CLIENT_ID/SECRET/REFRESH_TOKEN)')
     } else {
-      const { submitSitemap } = await import('./src/lib/google/search-console')
+      const { submitSitemap } = await import('../src/lib/google/search-console')
       await submitSitemap(undefined, 'https://viveloja.com/sitemap.xml')
       console.log('   ✅ Sitemap re-subido a Google Search Console')
     }
