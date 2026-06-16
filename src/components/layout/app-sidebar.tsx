@@ -34,6 +34,7 @@ import {
   Search,
   Sparkles,
   Tv,
+  Star,
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -81,6 +82,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/google-types', label: 'Google Types', icon: ExternalLink, adminOnly: true },
   { href: '/admin/osm-imports', label: 'Importaciones OSM', icon: Globe, adminOnly: true },
   { href: '/admin/imports/google', label: 'Importador Google', icon: MapPin, adminOnly: true },
+  { href: '/admin/reputation', label: 'Reputación', icon: Star, adminOnly: true },
   { href: '/admin/search-console', label: 'Search Console', icon: Search, adminOnly: true },
 ]
 

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
+import { motion, useInView } from 'framer-motion'
 import {
   Building2, CalendarDays, Clock3, DollarSign, Edit, ExternalLink, Info, LogIn,
   ImageIcon, MapPin, Map, Repeat, ShieldCheck, Sparkles, Star, UserCircle2
@@ -40,6 +41,8 @@ const RECURRENCE_LABELS: Record<string, string> = {
 export function EventDetail({ event, currentUserId, userRole }: EventDetailProps) {
   const canEdit = currentUserId && (userRole === 'ADMIN' || currentUserId === event.userId)
   const [imageError, setImageError] = useState(false)
+  const topMetaRef = useRef<HTMLDivElement>(null)
+  const isTopMetaInView = useInView(topMetaRef, { margin: '-50px', once: false })
   const mapQuery = encodeURIComponent(event.address ?? event.location)
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -183,7 +186,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
         <div className="space-y-5">
 
           {/* Quick meta row */}
-          <div className="flex flex-wrap gap-4">
+          <div ref={topMetaRef} className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <CalendarDays className="h-4 w-4 text-primary" />
@@ -367,95 +370,102 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
           )}
 
           {/* Info card */}
-          <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
-            <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Información</h3>
+          <motion.div
+            initial={false}
+            animate={{ height: isTopMetaInView ? 0 : 'auto' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="max-h-[50vh] overflow-y-auto rounded-2xl border border-border/50 bg-card p-5 space-y-4">
+              <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Información</h3>
 
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <CalendarDays className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-xs text-muted-foreground">Fecha de inicio</p>
-                  <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.startDate)}</p>
-                </div>
-              </div>
-
-              {event.endDate && (
+              <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Clock3 className="h-4 w-4" />
+                    <CalendarDays className="h-4 w-4" />
                   </span>
                   <div>
-                    <p className="text-xs text-muted-foreground">Fecha de fin</p>
-                    <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.endDate)}</p>
+                    <p className="text-xs text-muted-foreground">Fecha de inicio</p>
+                    <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.startDate)}</p>
                   </div>
                 </div>
-              )}
 
-              {event.price !== null && (
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40">
-                    <DollarSign className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Precio</p>
-                    <p className="text-sm font-semibold text-foreground">
-                      {event.price === 0 ? 'Gratis' : `$${event.price.toFixed(2)}`}
-                    </p>
+                {event.endDate && (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Clock3 className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Fecha de fin</p>
+                      <p className="text-sm font-semibold text-foreground" suppressHydrationWarning>{formatDateTime(event.endDate)}</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40 text-rose-500">
-                  <MapPin className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-xs text-muted-foreground">Ubicación</p>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm font-semibold text-foreground hover:text-primary"
-                  >
-                    {event.address ?? event.location}
-                  </a>
-                </div>
-              </div>
-
-              {event.user.role !== 'ADMIN' && (
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <UserCircle2 className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Publicado por</p>
-                    <p className="text-sm font-semibold text-foreground">
-                      {event.user.name ?? event.user.email ?? 'Usuario'}
-                    </p>
+                {event.price !== null && (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40">
+                      <DollarSign className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Precio</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {event.price === 0 ? 'Gratis' : `$${event.price.toFixed(2)}`}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {event.venue && (
                 <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Building2 className="h-4 w-4" />
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40 text-rose-500">
+                    <MapPin className="h-4 w-4" />
                   </span>
                   <div>
-                    <p className="text-xs text-muted-foreground">Local asociado</p>
-                    <Link
-                      href={`/locales/${event.venue.slug}`}
-                      className="text-sm font-semibold text-primary hover:text-primary/80"
+                    <p className="text-xs text-muted-foreground">Ubicación</p>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-semibold text-foreground hover:text-primary"
                     >
-                      {event.venue.name}
-                    </Link>
+                      {event.address ?? event.location}
+                    </a>
                   </div>
                 </div>
-              )}
+
+                {event.user.role !== 'ADMIN' && (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <UserCircle2 className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Publicado por</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {event.user.name ?? event.user.email ?? 'Usuario'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {event.venue && (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Building2 className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Local asociado</p>
+                      <Link
+                        href={`/locales/${event.venue.slug}`}
+                        className="text-sm font-semibold text-primary hover:text-primary/80"
+                      >
+                        {event.venue.name}
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Category pill */}
           <Link

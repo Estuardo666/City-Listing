@@ -310,6 +310,10 @@ model Venue {
   osmId         String?     @unique
   sourceLastSync DateTime?
   hoursLastSync  DateTime?
+  googleRating      Float?
+  googleReviewCount Int         @default(0)
+  googleLastSyncAt  DateTime?
+  reputationScore   Float       @default(0)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 

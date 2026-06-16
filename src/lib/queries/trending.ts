@@ -185,6 +185,7 @@ export async function getUserFavorites(userId: string) {
           id: true, name: true, slug: true, image: true, location: true, address: true,
           priceRange: true, avgRating: true, reviewCount: true, verified: true, badge: true,
           featured: true, status: true, description: true, lat: true, lng: true, phone: true, website: true,
+          googleRating: true, googleReviewCount: true, googlePlaceId: true,
           venueCategories: {
             select: {
               category: { select: { id: true, name: true, slug: true, color: true, icon: true } },

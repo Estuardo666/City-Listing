@@ -16,6 +16,8 @@ export async function GET() {
       neverSynced,
       syncedToday,
       staleSync,
+      withGoogleRating,
+      withoutGoogleRating,
     ] = await Promise.all([
       prisma.venue.count({ where: whereGoogle }),
       prisma.venue.count({
@@ -39,6 +41,12 @@ export async function GET() {
           hoursLastSync: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         },
       }),
+      prisma.venue.count({
+        where: { ...whereGoogle, googleRating: { not: null } },
+      }),
+      prisma.venue.count({
+        where: { ...whereGoogle, googleRating: null },
+      }),
     ])
 
     return NextResponse.json({
@@ -48,6 +56,8 @@ export async function GET() {
       neverSynced,
       syncedToday,
       staleSync,
+      withGoogleRating,
+      withoutGoogleRating,
     })
   } catch (error) {
     console.error('Error fetching quality metrics:', error)

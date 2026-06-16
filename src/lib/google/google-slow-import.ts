@@ -238,6 +238,8 @@ class GoogleSlowImportService {
       const details = await googlePlacesService.getPlaceDetails(place.google_place_id)
       const website = normalizeWebsite(details)
       const hours = normalizeOpeningHours(details)
+      const googleRating = (details as any).rating ?? null
+      const googleReviewCount = (details as any).userRatingCount ?? 0
       const now = new Date()
 
       const existingByPlaceId = await prisma.venue.findFirst({
@@ -257,6 +259,9 @@ class GoogleSlowImportService {
               address: place.address,
               phone: place.phone,
               website,
+              googleRating,
+              googleReviewCount,
+              googleLastSyncAt: now,
               sourceLastSync: now,
               hoursLastSync: hours.length > 0 ? now : undefined,
             } as any,
@@ -313,6 +318,9 @@ class GoogleSlowImportService {
           status: 'DRAFT',
           userId: (await prisma.googleImportJob.findUnique({ where: { id: jobId } }))!.createdBy,
           googlePlaceId: place.google_place_id,
+          googleRating,
+          googleReviewCount,
+          googleLastSyncAt: now,
           sourceLastSync: now,
           hoursLastSync: hours.length > 0 ? now : null,
         } as any,

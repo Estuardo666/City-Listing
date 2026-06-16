@@ -147,6 +147,10 @@ export async function createReviewAction(
 
     if (finalStatus === 'APPROVED') {
       await recalculateAvgRating(entityType, entityId)
+      if (entityType === 'venue') {
+        const { recalculateVenueReputation } = await import('@/lib/reputation')
+        await recalculateVenueReputation(entityId).catch(() => {})
+      }
       await awardPointsAction(session.user.id, POINTS.REVIEW_TEXT, 'review_created')
       if (parsed.data.photos && parsed.data.photos.length > 0) {
         await awardPointsAction(session.user.id, POINTS.REVIEW_PHOTO, 'review_photo')
@@ -211,6 +215,8 @@ export async function deleteReviewAction(reviewId: string): Promise<ActionRespon
 
     if (review.venueId) {
       await recalculateAvgRating('venue', review.venueId)
+      const { recalculateVenueReputation } = await import('@/lib/reputation')
+      await recalculateVenueReputation(review.venueId).catch(() => {})
       const venue = await prisma.venue.findUnique({ where: { id: review.venueId }, select: { slug: true } })
       if (venue) revalidatePath(`/locales/${venue.slug}`)
     } else if (review.eventId) {

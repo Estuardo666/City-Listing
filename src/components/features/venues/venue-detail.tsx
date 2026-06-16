@@ -23,12 +23,15 @@ import { MessageVenueButton } from '@/components/messaging/message-venue-button'
 import { AddToCollectionButton } from '@/components/collections/add-to-collection-button'
 import { ClaimVenueWizard } from '@/components/venue-claim/claim-venue-wizard'
 import { AnimatedModal } from '@/components/ui/animated-modal'
+import { GoogleRatingSection } from '@/components/features/venues/google-rating-section'
+import { getGoogleBadges, getBadgeInfo } from '@/lib/badges'
 import { UberIcon } from '@/components/ui/uber-icon'
 import { generateUberLink } from '@/lib/transport/uber-link'
 import { formatDateTime } from '@/lib/utils'
 import { GASTRONOMIC_CATEGORY_SLUGS } from '@/lib/constants/services'
 import type { VenueWithRelations } from '@/types/venue'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { motion, useInView } from 'framer-motion'
 
 type MenuItem = { id: string; name: string; description: string | null; price: number | null; image: string | null; isAvailable: boolean; isFeatured: boolean }
 type MenuCategory = { id: string; name: string; items: MenuItem[] }
@@ -47,7 +50,9 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
   const canEdit = currentUserId && (userRole === 'ADMIN' || currentUserId === venue.userId)
   const [imageError, setImageError] = useState(false)
   const [showClaimModal, setShowClaimModal] = useState(false)
-  
+  const topMetaRef = useRef<HTMLDivElement>(null)
+  const isTopMetaInView = useInView(topMetaRef, { margin: '-50px', once: false })
+
   const mapQuery = encodeURIComponent(venue.address ?? venue.location)
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -112,28 +117,38 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
               {venue.description}
             </p>
             {/* Rating in hero */}
-            {venue.avgRating !== null && venue.reviewCount > 0 && (
-              <div className="mt-2 flex items-center gap-2">
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`h-4 w-4 ${
-                        star <= Math.round(venue.avgRating ?? 0)
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'fill-white/30 text-white/30'
-                      }`}
-                    />
-                  ))}
+            {(() => {
+              const hasGoogle = (venue as any).googleRating != null && (venue as any).googleRating > 0
+              const hasViveLoja = venue.avgRating !== null && venue.reviewCount > 0
+              const showRating = hasGoogle ? (venue as any).googleRating : venue.avgRating
+              const showCount = hasGoogle ? (venue as any).googleReviewCount : venue.reviewCount
+              const source = hasGoogle ? 'Google' : 'ViveLoja'
+
+              if (!hasGoogle && !hasViveLoja) return null
+
+              return (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-4 w-4 ${
+                          star <= Math.round(showRating ?? 0)
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'fill-white/30 text-white/30'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium text-white/90">
+                    {(showRating ?? 0).toFixed(1)}
+                  </span>
+                  <span className="text-xs text-white/60">
+                    {source} ({showCount})
+                  </span>
                 </div>
-                <span className="text-sm font-medium text-white/90">
-                  {(venue.avgRating ?? 0).toFixed(1)}
-                </span>
-                <span className="text-xs text-white/60">
-                  ({venue.reviewCount} {venue.reviewCount === 1 ? 'reseña' : 'reseñas'})
-                </span>
-              </div>
-            )}
+              )
+            })()}
           </div>
         </div>
       ) : (
@@ -166,28 +181,34 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
               {venue.description}
             </p>
           )}
-          {venue.avgRating !== null && venue.reviewCount > 0 && (
-            <div className="mt-2 flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className={`h-4 w-4 ${
-                      star <= Math.round(venue.avgRating ?? 0)
-                        ? 'fill-amber-400 text-amber-400'
-                        : 'fill-muted-foreground/30 text-muted-foreground/30'
-                    }`}
-                  />
-                ))}
+          <GoogleRatingSection
+            googleRating={(venue as any).googleRating ?? null}
+            googleReviewCount={(venue as any).googleReviewCount ?? 0}
+            avgRating={venue.avgRating}
+            reviewCount={venue.reviewCount}
+          />
+          {(() => {
+            const googleBadges = getGoogleBadges({
+              googleRating: (venue as any).googleRating ?? null,
+              googleReviewCount: (venue as any).googleReviewCount ?? 0,
+            })
+            if (googleBadges.length === 0) return null
+            return (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {googleBadges.map((badge) => {
+                  const info = getBadgeInfo(badge)
+                  return (
+                    <span
+                      key={badge}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200"
+                    >
+                      {info.icon} {info.label}
+                    </span>
+                  )
+                })}
               </div>
-              <span className="text-sm font-medium text-foreground">
-                {(venue.avgRating ?? 0).toFixed(1)}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ({venue.reviewCount} {venue.reviewCount === 1 ? 'reseña' : 'reseñas'})
-              </span>
-            </div>
-          )}
+            )
+          })()}
         </div>
       )}
 
@@ -205,7 +226,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
         <div className="space-y-5">
 
           {/* Quick meta pills */}
-          <div className="flex flex-wrap gap-3">
+          <div ref={topMetaRef} className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <MapPin className="h-4 w-4 text-primary" />
@@ -401,32 +422,6 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
             />
           )}
 
-          {/* Claim Business */}
-          {!venue.claimed && (
-            <>
-              <button
-                onClick={() => setShowClaimModal(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 transition-all duration-200 hover:bg-amber-100 hover:scale-[1.02] active:scale-[0.98] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
-              >
-                <ShieldCheck className="h-4 w-4" />
-                Reclamar este negocio
-              </button>
-
-              <AnimatedModal
-                open={showClaimModal}
-                onClose={() => setShowClaimModal(false)}
-                className="sm:max-w-lg"
-              >
-                <ClaimVenueWizard
-                  venueId={venue.id}
-                  venueName={venue.name}
-                  onSuccess={() => window.location.reload()}
-                  onCancel={() => setShowClaimModal(false)}
-                />
-              </AnimatedModal>
-            </>
-          )}
-
           {/* Venue already claimed badge */}
           {venue.claimed && (
             <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
@@ -479,85 +474,92 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
           )}
 
           {/* Info card */}
-          <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
-            <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Información</h3>
-            <div className="space-y-3">
+          <motion.div
+            initial={false}
+            animate={{ height: isTopMetaInView ? 0 : 'auto' }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="max-h-[50vh] overflow-y-auto rounded-2xl border border-border/50 bg-card p-5 space-y-4">
+              <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">Información</h3>
+              <div className="space-y-3">
 
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <MapPin className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="text-xs text-muted-foreground">Dirección</p>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm font-semibold text-foreground hover:text-primary"
-                  >
-                    {venue.address ?? venue.location}
-                  </a>
-                </div>
-              </div>
-
-              {venue.phone && (
                 <div className="flex items-start gap-3">
                   <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Phone className="h-4 w-4" />
+                    <MapPin className="h-4 w-4" />
                   </span>
                   <div>
-                    <p className="text-xs text-muted-foreground">Teléfono</p>
-                    <p className="text-sm font-semibold text-foreground">{venue.phone}</p>
-                  </div>
-                </div>
-              )}
-
-              {venue.website && (
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Globe className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">Sitio web</p>
+                    <p className="text-xs text-muted-foreground">Dirección</p>
                     <a
-                      href={venue.website}
+                      href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="block truncate text-sm font-semibold text-primary hover:text-primary/80"
+                      className="text-sm font-semibold text-foreground hover:text-primary"
                     >
-                      {venue.website.replace(/^https?:\/\//, '')}
+                      {venue.address ?? venue.location}
                     </a>
                   </div>
                 </div>
-              )}
 
-              {venue.priceRange && (
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <DollarSign className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Rango de precios</p>
-                    <p className="text-sm font-semibold text-foreground">{venue.priceRange}</p>
+                {venue.phone && (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Phone className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Teléfono</p>
+                      <p className="text-sm font-semibold text-foreground">{venue.phone}</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {venue.user.role !== 'ADMIN' && (
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <UserCircle2 className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Publicado por</p>
-                    <p className="text-sm font-semibold text-foreground">
-                      {venue.user.name ?? venue.user.email ?? 'Usuario'}
-                    </p>
+                {venue.website && (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Globe className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">Sitio web</p>
+                      <a
+                        href={venue.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block truncate text-sm font-semibold text-primary hover:text-primary/80"
+                      >
+                        {venue.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {venue.priceRange && (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <DollarSign className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Rango de precios</p>
+                      <p className="text-sm font-semibold text-foreground">{venue.priceRange}</p>
+                    </div>
+                  </div>
+                )}
+
+                {venue.user.role !== 'ADMIN' && (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <UserCircle2 className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Publicado por</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {venue.user.name ?? venue.user.email ?? 'Usuario'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Category pill */}
           <Link
@@ -570,6 +572,31 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
               <p className="text-sm font-medium text-foreground">{venue.venueCategories[0]?.category.name}</p>
             </div>
           </Link>
+
+          {/* Claim link */}
+          {!venue.claimed && (
+            <>
+              <button
+                onClick={() => setShowClaimModal(true)}
+                className="text-[10px] whitespace-nowrap text-muted-foreground hover:text-primary hover:underline"
+              >
+                ¿Eres dueño de este negocio? Reclámalo gratis
+              </button>
+
+              <AnimatedModal
+                open={showClaimModal}
+                onClose={() => setShowClaimModal(false)}
+                className="sm:max-w-lg"
+              >
+                <ClaimVenueWizard
+                  venueId={venue.id}
+                  venueName={venue.name}
+                  onSuccess={() => window.location.reload()}
+                  onCancel={() => setShowClaimModal(false)}
+                />
+              </AnimatedModal>
+            </>
+          )}
         </aside>
       </div>
     </article>

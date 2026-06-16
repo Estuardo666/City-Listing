@@ -107,6 +107,9 @@ export type VenueListItem = Prisma.VenueGetPayload<{
     reviewCount: true
     verified: true
     badge: true
+    googleRating: true
+    googleReviewCount: true
+    googlePlaceId: true
     venueCategories: {
       select: {
         category: {

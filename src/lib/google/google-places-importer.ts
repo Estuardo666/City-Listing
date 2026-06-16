@@ -284,6 +284,8 @@ class GooglePlacesImporter {
       phone: place.nationalPhoneNumber || place.phoneNumber || null,
       lat: place.location?.latitude || 0,
       lng: place.location?.longitude || 0,
+      rating: place.rating ?? null,
+      userRatingCount: place.userRatingCount ?? 0,
     }
   }
 
@@ -432,6 +434,9 @@ class GooglePlacesImporter {
             phone: place.phone,
             website,
             googlePlaceId: place.google_place_id,
+            googleRating: place.rating ?? null,
+            googleReviewCount: place.userRatingCount ?? 0,
+            googleLastSyncAt: now,
             sourceLastSync: now,
             hoursLastSync: hours.length > 0 ? now : undefined,
           } as any,
@@ -475,6 +480,9 @@ class GooglePlacesImporter {
         status: 'APPROVED',
         userId,
         googlePlaceId: place.google_place_id,
+        googleRating: place.rating ?? null,
+        googleReviewCount: place.userRatingCount ?? 0,
+        googleLastSyncAt: now,
         sourceLastSync: now,
         hoursLastSync: hours.length > 0 ? now : null,
       } as any,
@@ -491,6 +499,9 @@ class GooglePlacesImporter {
         data: categoryIds.map((categoryId) => ({ venueId: venue.id, categoryId })),
       })
     }
+
+    const { recalculateVenueReputation } = await import('@/lib/reputation')
+    recalculateVenueReputation(venue.id).catch(() => {})
 
     return { venueId: venue.id, action: 'created' }
   }

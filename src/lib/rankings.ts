@@ -4,14 +4,6 @@ import { MIN_REVIEWS_FOR_RANKING, type VenueBadgeType } from '@/lib/badges'
 
 export { MIN_REVIEWS_FOR_RANKING, type VenueBadgeType }
 
-const WEIGHTS = {
-  avgRating: 0.35,
-  reviewCount: 0.25,
-  viewCount: 0.15,
-  recency: 0.15,
-  interaction: 0.10,
-} as const
-
 export type RankedVenue = {
   id: string
   name: string
@@ -35,61 +27,6 @@ export type RankedVenue = {
   }
 }
 
-type RankedVenueRaw = {
-  id: string
-  name: string
-  slug: string
-  description: string | null
-  image: string | null
-  avgRating: number | null
-  reviewCount: number
-  viewCount: number
-  featured: boolean
-  address: string | null
-  phone: string | null
-  recentReviewCount: number
-  favoriteCount: number
-  checkInCount: number
-  category: {
-    id: string
-    name: string
-    slug: string
-    color: string | null
-    icon: string | null
-  }
-}
-
-function computeScore(
-  venue: RankedVenueRaw,
-  maxReviewCount: number,
-  maxViewCount: number,
-  maxRecentReviews: number,
-  maxInteraction: number
-): number {
-  const ratingScore = (venue.avgRating ?? 0) / 5
-
-  const logReviewScore =
-    maxReviewCount > 0
-      ? Math.log2(venue.reviewCount + 1) / Math.log2(maxReviewCount + 1)
-      : 0
-
-  const viewScore = maxViewCount > 0 ? venue.viewCount / maxViewCount : 0
-
-  const recencyScore =
-    maxRecentReviews > 0 ? venue.recentReviewCount / maxRecentReviews : 0
-
-  const interaction = venue.favoriteCount + venue.checkInCount
-  const interactionScore = maxInteraction > 0 ? interaction / maxInteraction : 0
-
-  return (
-    ratingScore * WEIGHTS.avgRating +
-    logReviewScore * WEIGHTS.reviewCount +
-    viewScore * WEIGHTS.viewCount +
-    recencyScore * WEIGHTS.recency +
-    interactionScore * WEIGHTS.interaction
-  )
-}
-
 function assignBadges(
   venues: RankedVenue[],
   allCategoryVenues: RankedVenue[]
@@ -100,25 +37,19 @@ function assignBadges(
 
   const bestRatedId = sortedByRating[0]?.id
 
-  const sortedByTrending = [...allCategoryVenues].sort((a, b) => {
-    const aIdx = venues.findIndex((v) => v.id === a.id)
-    const bIdx = venues.findIndex((v) => v.id === b.id)
-    return aIdx - bIdx
-  })
+  const top3Ids = allCategoryVenues.slice(0, 3).map((v) => v.id)
 
-  const top3TrendingIds = sortedByTrending.slice(0, 3).map((v) => v.id)
-
-  const sortedByFavorites = [...allCategoryVenues].sort(
+  const sortedByReviewCount = [...allCategoryVenues].sort(
     (a, b) => b.reviewCount - a.reviewCount
   )
-  const communityFavoriteId = sortedByFavorites[0]?.id
+  const communityFavoriteId = sortedByReviewCount[0]?.id
 
   return venues.map((v, index) => {
     const badges: VenueBadgeType[] = []
 
     if (index < 10) badges.push('TOP_10')
     if (v.id === bestRatedId && bestRatedId) badges.push('BEST_RATED')
-    if (top3TrendingIds.includes(v.id)) badges.push('TRENDING')
+    if (top3Ids.includes(v.id)) badges.push('TRENDING')
     if (v.id === communityFavoriteId && communityFavoriteId) badges.push('COMMUNITY_FAVORITE')
 
     return { ...v, badges }
@@ -129,19 +60,18 @@ export async function getRankedVenues(
   categorySlugs: string[],
   take = 20
 ): Promise<RankedVenue[]> {
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
   const venues = await prisma.venue.findMany({
     where: {
       status: 'APPROVED',
+      reputationScore: { gt: 0 },
       venueCategories: {
         some: {
           category: { slug: { in: categorySlugs } },
         },
       },
-      reviewCount: { gte: MIN_REVIEWS_FOR_RANKING },
     },
+    orderBy: { reputationScore: 'desc' },
+    take: take * 2,
     select: {
       id: true,
       name: true,
@@ -154,6 +84,7 @@ export async function getRankedVenues(
       featured: true,
       address: true,
       phone: true,
+      reputationScore: true,
       venueCategories: {
         select: {
           category: {
@@ -167,16 +98,10 @@ export async function getRankedVenues(
           },
         },
       },
-      reviews: {
-        where: { status: 'APPROVED', createdAt: { gte: thirtyDaysAgo } },
-        select: { id: true },
-      },
-      favorites: { select: { id: true } },
-      checkIns: { select: { id: true } },
     },
   })
 
-  const rawVenues: RankedVenueRaw[] = venues.map((v) => ({
+  const ranked: RankedVenue[] = venues.map((v) => ({
     id: v.id,
     name: v.name,
     slug: v.slug,
@@ -188,41 +113,21 @@ export async function getRankedVenues(
     featured: v.featured,
     address: v.address,
     phone: v.phone,
-    recentReviewCount: v.reviews.length,
-    favoriteCount: v.favorites.length,
-    checkInCount: v.checkIns.length,
-    category: v.venueCategories[0]?.category ?? { id: '', name: '', slug: '', color: null, icon: null },
-  }))
-
-  const maxReviewCount = Math.max(...rawVenues.map((v) => v.reviewCount), 1)
-  const maxViewCount = Math.max(...rawVenues.map((v) => v.viewCount), 1)
-  const maxRecentReviews = Math.max(
-    ...rawVenues.map((v) => v.recentReviewCount),
-    1
-  )
-  const maxInteraction = Math.max(
-    ...rawVenues.map(
-      (v) => v.favoriteCount + v.checkInCount
-    ),
-    1
-  )
-
-  const scored: RankedVenue[] = rawVenues.map((v) => ({
-    ...v,
-    score: computeScore(
-      v,
-      maxReviewCount,
-      maxViewCount,
-      maxRecentReviews,
-      maxInteraction
-    ),
+    score: v.reputationScore,
     badges: [] as VenueBadgeType[],
+    category: v.venueCategories[0]?.category ?? {
+      id: '',
+      name: '',
+      slug: '',
+      color: null,
+      icon: null,
+    },
   }))
 
-  scored.sort((a, b) => b.score - a.score)
+  ranked.sort((a, b) => b.score - a.score)
 
-  const allSorted = [...scored]
-  const topVenues = scored.slice(0, take)
+  const allSorted = [...ranked]
+  const topVenues = ranked.slice(0, take)
 
   return assignBadges(topVenues, allSorted)
 }

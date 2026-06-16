@@ -6,6 +6,8 @@ export interface GooglePlaceNormalized {
   phone: string | null
   lat: number
   lng: number
+  rating?: number | null
+  userRatingCount?: number
 }
 
 export interface GoogleSearchParams {

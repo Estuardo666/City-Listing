@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, X, AlertCircle, ArrowLeft, Loader2, ChevronDown } from 'lucide-react'
+import { Check, X, AlertCircle, ArrowLeft, Loader2, ChevronDown, Star, Globe, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,8 @@ export interface PlaceResult {
   phone: string | null
   lat: number
   lng: number
+  rating?: number | null
+  userRatingCount?: number
   alreadyImported?: boolean
   existingVenue?: { id: string; name: string; slug: string } | null
 }
@@ -27,6 +29,14 @@ interface WizardResultsProps {
   onSelectForImport: (places: PlaceResult[]) => void
   onImportAll: () => void
   onBack: () => void
+}
+
+function StatusIcon({ has }: { has: boolean }) {
+  return has ? (
+    <Check className="h-4 w-4 text-green-600" />
+  ) : (
+    <X className="h-4 w-4 text-red-400" />
+  )
 }
 
 export function WizardResults({
@@ -106,15 +116,36 @@ export function WizardResults({
           <table className="w-full text-sm">
             <thead className="bg-muted/50 sticky top-0 z-10">
               <tr>
-                <th className="w-10 px-3 py-2"></th>
-                <th className="px-3 py-2 text-left font-medium">Nombre</th>
+                <th className="w-10 px-3 py-2 sticky left-0 bg-muted/50 z-20"></th>
+                <th className="px-3 py-2 text-left font-medium min-w-[160px] sticky left-10 bg-muted/50 z-20">
+                  Nombre
+                </th>
                 <th className="px-3 py-2 text-left font-medium">Categoría</th>
                 <th className="px-3 py-2 text-left font-medium hidden md:table-cell">
                   Dirección
                 </th>
                 <th className="px-3 py-2 text-left font-medium hidden lg:table-cell">Teléfono</th>
-                <th className="px-3 py-2 text-left font-medium hidden xl:table-cell">Lat</th>
-                <th className="px-3 py-2 text-left font-medium hidden xl:table-cell">Lng</th>
+                <th className="px-3 py-2 text-center font-medium hidden lg:table-cell">
+                  <div className="flex items-center justify-center gap-1">
+                    <Globe className="h-3 w-3" />
+                    Website
+                  </div>
+                </th>
+                <th className="px-3 py-2 text-center font-medium hidden lg:table-cell">
+                  <div className="flex items-center justify-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Horarios
+                  </div>
+                </th>
+                <th className="px-3 py-2 text-center font-medium hidden md:table-cell">
+                  <div className="flex items-center justify-center gap-1">
+                    <Star className="h-3 w-3" />
+                    Rating
+                  </div>
+                </th>
+                <th className="px-3 py-2 text-center font-medium hidden md:table-cell">
+                  Reseñas
+                </th>
                 <th className="px-3 py-2 text-left font-medium">Estado</th>
               </tr>
             </thead>
@@ -132,7 +163,7 @@ export function WizardResults({
                           : 'hover:bg-muted/20'
                     }`}
                   >
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 sticky left-0 bg-inherit z-10">
                       {!place.alreadyImported && (
                         <Checkbox
                           checked={isSelected}
@@ -140,7 +171,9 @@ export function WizardResults({
                         />
                       )}
                     </td>
-                    <td className="px-3 py-2 font-medium max-w-[200px] truncate">{place.name}</td>
+                    <td className="px-3 py-2 font-medium min-w-[160px] sticky left-10 bg-inherit z-10 max-w-[200px] truncate">
+                      {place.name}
+                    </td>
                     <td className="px-3 py-2 text-muted-foreground">{place.category}</td>
                     <td className="px-3 py-2 text-muted-foreground hidden md:table-cell max-w-[250px] truncate">
                       {place.address}
@@ -148,11 +181,24 @@ export function WizardResults({
                     <td className="px-3 py-2 text-muted-foreground hidden lg:table-cell">
                       {place.phone || '-'}
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground hidden xl:table-cell font-mono text-xs">
-                      {place.lat.toFixed(6)}
+                    <td className="px-3 py-2 text-center hidden lg:table-cell">
+                      <StatusIcon has={!!place.phone} />
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground hidden xl:table-cell font-mono text-xs">
-                      {place.lng.toFixed(6)}
+                    <td className="px-3 py-2 text-center hidden lg:table-cell">
+                      <StatusIcon has={false} />
+                    </td>
+                    <td className="px-3 py-2 text-center hidden md:table-cell">
+                      {place.rating ? (
+                        <span className="flex items-center justify-center gap-1">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          {place.rating.toFixed(1)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-center hidden md:table-cell text-muted-foreground">
+                      {place.userRatingCount || '-'}
                     </td>
                     <td className="px-3 py-2">
                       {place.alreadyImported ? (

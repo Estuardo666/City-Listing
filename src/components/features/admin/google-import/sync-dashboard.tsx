@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Loader2,
+  Star,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,8 @@ interface QualityMetrics {
   neverSynced: number
   syncedToday: number
   staleSync: number
+  withGoogleRating: number
+  withoutGoogleRating: number
 }
 
 export function SyncDashboard() {
@@ -85,7 +88,7 @@ export function SyncDashboard() {
     <div className="space-y-6">
       {/* Data Quality Metrics */}
       {metrics && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetricCard
             icon={Globe}
             label="Total Google"
@@ -127,6 +130,20 @@ export function SyncDashboard() {
             value={metrics.staleSync}
             color="text-purple-600"
             bg="bg-purple-50"
+          />
+          <MetricCard
+            icon={Star}
+            label="Con rating Google"
+            value={metrics.withGoogleRating}
+            color="text-emerald-600"
+            bg="bg-emerald-50"
+          />
+          <MetricCard
+            icon={Star}
+            label="Sin rating Google"
+            value={metrics.withoutGoogleRating}
+            color="text-amber-600"
+            bg="bg-amber-50"
           />
         </div>
       )}

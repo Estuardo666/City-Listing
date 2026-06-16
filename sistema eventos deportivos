@@ -1,0 +1,489 @@
+# Sistema Inteligente de Eventos Deportivos y Watch Parties con IA
+
+## Objetivo
+
+Crear un sistema totalmente automatizado que permita a los negocios subir flyers, imágenes, PDFs o textos promocionales relacionados con transmisiones deportivas, y que la plataforma utilice IA para:
+
+* Detectar automáticamente partidos o eventos deportivos.
+* Extraer fecha, hora y participantes.
+* Detectar promociones asociadas.
+* Relacionar negocios con eventos existentes.
+* Crear eventos deportivos nuevos cuando no existan.
+* Generar páginas SEO automáticamente.
+* Mostrar negocios participantes en mapas.
+* Mostrar partidos dentro de los perfiles de negocios.
+* Mostrar negocios participantes dentro de los perfiles de partidos.
+* Integrar reservas, promociones y flyers automáticamente.
+
+La experiencia debe ser similar a:
+
+"Dónde ver Ecuador vs Brasil en Loja"
+
+"Dónde ver la final de Champions en Loja"
+
+"Dónde ver el Mundial en Loja"
+
+sin intervención manual del administrador.
+
+---
+
+# Módulo principal
+
+## Eventos deportivos
+
+Nueva entidad:
+
+Sport Event
+
+Ejemplos:
+
+* Ecuador vs Brasil
+* Barcelona SC vs Emelec
+* Final Champions League
+* Mundial 2026
+* Copa América
+
+Campos:
+
+* Nombre
+* Slug
+* Descripción
+* Fecha
+* Hora
+* Competición
+* Equipos participantes
+* Imagen principal
+* Estado
+* SEO metadata
+* JSON-LD SportsEvent
+
+---
+
+# Relación negocio-evento
+
+Un evento deportivo puede estar asociado a múltiples negocios.
+
+Ejemplo:
+
+Ecuador vs Brasil
+
+↓
+
+Bar Central
+
+↓
+
+Sports Bar Loja
+
+↓
+
+Café Premium
+
+↓
+
+Terraza 593
+
+Mostrar automáticamente todos los negocios participantes.
+
+---
+
+# Ingesta automática mediante IA
+
+## Fuentes de entrada
+
+Permitir subir:
+
+### Imágenes
+
+* JPG
+* PNG
+* WEBP
+
+### Documentos
+
+* PDF
+
+### Texto libre
+
+Ejemplo:
+
+Transmitiremos Ecuador vs Brasil este viernes.
+
+Pantalla gigante.
+
+2x1 en cerveza.
+
+Reserva tu mesa.
+
+---
+
+# Procesamiento IA
+
+La IA debe analizar imágenes mediante OCR y visión.
+
+La IA debe analizar PDFs.
+
+La IA debe analizar texto.
+
+Extraer automáticamente:
+
+* Tipo de evento
+* Equipos
+* Competición
+* Fecha
+* Hora
+* Promociones
+* Nombre del local
+* Capacidad
+* Reservas
+* Condiciones especiales
+
+---
+
+# Detección inteligente de duplicados
+
+Si varios negocios promocionan el mismo partido:
+
+NO crear múltiples eventos.
+
+Ejemplo:
+
+20 bares suben flyers de Ecuador vs Brasil.
+
+Resultado:
+
+1 evento deportivo único.
+
+20 negocios asociados.
+
+---
+
+# Flujo de creación
+
+Negocio sube flyer.
+
+↓
+
+IA procesa.
+
+↓
+
+Extrae información.
+
+↓
+
+Muestra vista previa.
+
+↓
+
+Usuario confirma.
+
+↓
+
+Sistema crea o relaciona automáticamente.
+
+↓
+
+Publica.
+
+---
+
+# Página pública del evento
+
+Ejemplo:
+
+/partidos/ecuador-vs-brasil
+
+Contenido:
+
+* Equipos
+* Fecha
+* Hora
+* Competición
+* Imagen principal
+* Mapa interactivo
+* Negocios participantes
+* Promociones activas
+* Botones de reserva
+* WhatsApp
+* Ranking de negocios
+* Comentarios
+
+---
+
+# Página SEO automática
+
+Generar automáticamente:
+
+Ejemplos:
+
+/donde-ver-ecuador-vs-brasil-en-loja
+
+/donde-ver-barcelona-vs-emelec-en-loja
+
+/donde-ver-la-final-de-champions-en-loja
+
+Contenido:
+
+* Partido
+* Negocios participantes
+* Mapa
+* Promociones
+* Reservas
+* FAQs
+* Eventos relacionados
+
+---
+
+# Perfil del negocio
+
+Nueva sección:
+
+Próximas transmisiones
+
+Ejemplo:
+
+* Ecuador vs Brasil
+* Final Champions
+* Barcelona SC vs Liga de Quito
+
+Cada evento debe mostrar:
+
+* Flyer
+* Fecha
+* Hora
+* Promoción
+* Botón reservar
+
+---
+
+# Mapa
+
+Mostrar negocios participantes mediante pines especiales.
+
+Ejemplo:
+
+⚽ Bar Central
+
+⚽ Sports Bar Loja
+
+⚽ Terraza 593
+
+Permitir filtros:
+
+* Transmite partido
+* Tiene promoción
+* Tiene reservas
+* Pantalla gigante
+* Entrada gratuita
+
+---
+
+# Sistema de reservas
+
+Si el negocio tiene reservas habilitadas:
+
+Mostrar automáticamente:
+
+Reservar mesa
+
+Reservar espacio
+
+Reservar entrada
+
+dentro del evento.
+
+---
+
+# Panel de administración IA
+
+Nueva sección:
+
+Configuración IA
+
+Ruta:
+
+/admin/ia
+
+---
+
+## Gestión de proveedores
+
+Permitir múltiples proveedores.
+
+Ejemplos:
+
+* OpenAI
+* Anthropic
+* Google Gemini
+* OpenRouter
+* Ollama
+* LM Studio
+* DeepSeek
+* Mistral
+* Groq
+* Together AI
+* Fireworks AI
+* OpenAI Compatible API
+
+---
+
+## Configuración
+
+Campos:
+
+Proveedor
+
+API Key
+
+URL Override (opcional)
+
+Modelo por defecto
+
+Timeout
+
+Temperatura
+
+Máximo tokens
+
+Activar OCR
+
+Activar Vision
+
+Activar extracción automática
+
+Activar detección de duplicados
+
+---
+
+## URL Override
+
+Permitir conectar servidores propios.
+
+Ejemplos:
+
+https://api.openai.com
+
+http://localhost:11434
+
+https://mi-servidor-llm.com
+
+https://openrouter.ai/api/v1
+
+---
+
+## Cargar modelos
+
+Botón:
+
+Cargar modelos
+
+La plataforma debe consultar el proveedor y listar modelos disponibles.
+
+Ejemplo:
+
+GPT-5
+
+GPT-4.1
+
+Claude Sonnet
+
+Claude Opus
+
+Gemini 2.5 Pro
+
+DeepSeek V3
+
+Llama 4
+
+Mistral Large
+
+---
+
+## Selección de modelos
+
+Permitir seleccionar:
+
+Modelo OCR
+
+Modelo Vision
+
+Modelo Extracción de Datos
+
+Modelo Clasificación
+
+Modelo Detección de Duplicados
+
+Modelo Generación SEO
+
+---
+
+## Test de conexión
+
+Botón:
+
+Probar conexión
+
+Debe verificar:
+
+* API accesible
+* API Key válida
+* Listado de modelos disponible
+* Respuesta correcta
+
+Mostrar:
+
+✅ Conectado
+
+o
+
+❌ Error de autenticación
+
+❌ Error de conexión
+
+❌ Endpoint inválido
+
+---
+
+# Dashboard IA
+
+Mostrar métricas:
+
+* Flyers procesados
+* PDFs procesados
+* Eventos creados
+* Eventos relacionados
+* Duplicados evitados
+* Tokens consumidos
+* Coste estimado
+* Tiempo promedio de procesamiento
+
+---
+
+# SEO
+
+Generar automáticamente:
+
+* Metadata SEO
+* Open Graph
+* Twitter Cards
+* Canonical URLs
+* JSON-LD SportsEvent
+* JSON-LD LocalBusiness
+* Sitemap automático
+
+---
+
+# Objetivos de negocio
+
+* Incrementar tráfico orgánico.
+* Crear cientos de páginas indexables automáticamente.
+* Aumentar reservas.
+* Aumentar visitas a negocios.
+* Incentivar promociones.
+* Convertir ViveLoja en el punto de referencia para descubrir dónde ver eventos deportivos en Loja.
+* Reutilizar la misma infraestructura para Mundial, Copa América, Champions, LigaPro, eliminatorias y futuros eventos deportivos.
+
+Importante:
+
+Toda la arquitectura debe diseñarse como un sistema genérico de eventos deportivos y watch parties, no como una funcionalidad exclusiva del Mundial, permitiendo crecimiento ilimitado y reutilización durante todo el año.

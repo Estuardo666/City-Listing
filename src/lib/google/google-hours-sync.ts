@@ -53,12 +53,19 @@ class GoogleHoursSyncService {
 
       const website = normalizeWebsite(details)
       const hours = normalizeOpeningHours(details)
+      const phone = (details as any).nationalPhoneNumber || (details as any).phoneNumber || undefined
+      const googleRating = (details as any).rating ?? null
+      const googleReviewCount = (details as any).userRatingCount ?? 0
       const now = new Date()
 
       await prisma.venue.update({
         where: { id: venueId },
         data: {
           website,
+          phone,
+          googleRating,
+          googleReviewCount,
+          googleLastSyncAt: now,
           sourceLastSync: now,
           hoursLastSync: hours.length > 0 ? now : undefined,
         } as any,
@@ -70,6 +77,9 @@ class GoogleHoursSyncService {
           data: hours.map((h) => ({ ...h, venueId })),
         })
       }
+
+      const { recalculateVenueReputation } = await import('@/lib/reputation')
+      recalculateVenueReputation(venueId).catch(() => {})
 
       return {
         venueId,
