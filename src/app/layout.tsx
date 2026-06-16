@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
+import { headers } from 'next/headers'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
@@ -55,16 +56,20 @@ export const viewport = {
   viewportFit: 'cover',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const headersList = await headers()
+  const nonce = headersList.get('x-nonce') || undefined
+
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/png" href="/viveloja.png" />
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `(() => {
   try {
