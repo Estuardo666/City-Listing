@@ -8,7 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { VenueDetail } from '@/components/features/venues'
 import { Button } from '@/components/ui/button'
 import { getVenueBySlug } from '@/lib/queries/venues'
-import { getVenueMenu, getUserCollections } from '@/lib/queries/features'
+import { getVenueMenu, getUserCollections, getVenueCheckIns } from '@/lib/queries/features'
 import { getWatchEventsForVenue } from '@/lib/queries/watch-events'
 import { FavoriteButton } from '@/components/features/favorites/favorite-button'
 import { incrementVenueViewAction } from '@/actions/views'
@@ -76,7 +76,7 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
 
   if (!venue) notFound()
 
-  const [isFavorite, menu, collections, watchEvents] = await Promise.all([
+  const [isFavorite, menu, collections, watchEvents, checkIns] = await Promise.all([
     session?.user?.id
       ? prisma.favorite.findUnique({
           where: { userId_venueId: { userId: session.user.id, venueId: venue.id } },
@@ -88,6 +88,7 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
       ? getUserCollections(session.user.id)
       : Promise.resolve([]),
     getWatchEventsForVenue(venue.id),
+    getVenueCheckIns(venue.id, 50),
   ])
 
   incrementVenueViewAction(venue.id)
@@ -150,6 +151,7 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
           userRole={session?.user?.role}
           menu={menu}
           userCollections={collections.map((c) => ({ id: c.id, name: c.name, icon: c.icon, _count: c._count }))}
+          checkIns={checkIns}
         />
 
         {/* Watch Events / Transmisiones */}

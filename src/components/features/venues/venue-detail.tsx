@@ -18,6 +18,8 @@ import { PromotionCard } from '@/components/promotion/promotion-card'
 import { ReservationForm } from '@/components/reservation/reservation-form'
 import { ShareButton } from '@/components/share/share-button'
 import { CheckInButton } from '@/components/checkin/checkin-button'
+import { CheckInsSection } from '@/components/checkin/checkins-section'
+import type { CheckInWithUser } from '@/types/checkin'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
 import { MessageVenueButton } from '@/components/messaging/message-venue-button'
 import { AddToCollectionButton } from '@/components/collections/add-to-collection-button'
@@ -44,9 +46,10 @@ type VenueDetailProps = {
   userRole?: string
   menu?: MenuCategory[]
   userCollections?: UserCollection[]
+  checkIns?: CheckInWithUser[]
 }
 
-export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCollections = [] }: VenueDetailProps) {
+export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCollections = [], checkIns = [] }: VenueDetailProps) {
   const canEdit = currentUserId && (userRole === 'ADMIN' || currentUserId === venue.userId)
   const [imageError, setImageError] = useState(false)
   const [showClaimModal, setShowClaimModal] = useState(false)
@@ -377,6 +380,9 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
               />
             </div>
           </div>
+
+          {/* Check-in Photos */}
+          <CheckInsSection checkIns={checkIns} />
         </div>
 
         {/* RIGHT: sticky sidebar */}
