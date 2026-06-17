@@ -47,7 +47,7 @@ export function middleware(request: NextRequest) {
   const csp = [
     `default-src 'self'`,
     `script-src 'self' 'nonce-${nonce}' ${SCRIPT_SRC_DOMAINS}`,
-    `style-src 'self' 'nonce-${nonce}' ${STYLE_SRC_DOMAINS}`,
+    `style-src 'self' 'unsafe-inline' ${STYLE_SRC_DOMAINS}`,
     `img-src 'self' data: blob: https:`,
     `font-src 'self' data: https://fonts.gstatic.com`,
     `connect-src 'self' ${CONNECT_SRC_DOMAINS}`,

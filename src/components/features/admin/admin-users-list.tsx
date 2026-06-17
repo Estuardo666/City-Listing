@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Pencil, Search, ShieldCheck, Trash2, User2 } from 'lucide-react'
+import { Pencil, Search, ShieldCheck, Trash2, User2, UserX } from 'lucide-react'
 import { toast } from 'sonner'
-import { deleteUserAction } from '@/actions/user/admin-update-user'
+import { deleteUserAction, anonymizeUserAction } from '@/actions/user/admin-update-user'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -62,6 +62,7 @@ export function AdminUsersList({ users, stats, currentFilters }: AdminUsersListP
   const [isPending, startTransition] = useTransition()
   const [searchInput, setSearchInput] = useState(currentFilters.q)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
+  const [anonymizingUserId, setAnonymizingUserId] = useState<string | null>(null)
 
   const handleSearch = () => {
     router.push(buildFilterUrl(currentFilters, { q: searchInput }))
@@ -79,6 +80,21 @@ export function AdminUsersList({ users, stats, currentFilters }: AdminUsersListP
       toast.success('Usuario eliminado correctamente.')
       router.refresh()
       setDeletingUserId(null)
+    })
+  }
+
+  const handleAnonymize = (userId: string) => {
+    setAnonymizingUserId(userId)
+    startTransition(async () => {
+      const result = await anonymizeUserAction(userId)
+      if (!result.success) {
+        toast.error(result.error ?? 'No se pudo anonimizar el usuario.')
+        setAnonymizingUserId(null)
+        return
+      }
+      toast.success('Usuario anonimizado correctamente.')
+      router.refresh()
+      setAnonymizingUserId(null)
     })
   }
 
@@ -170,6 +186,8 @@ export function AdminUsersList({ users, stats, currentFilters }: AdminUsersListP
       <div className="grid grid-cols-1 gap-4">
         {users.map((user) => {
           const isDeletingCurrent = isPending && deletingUserId === user.id
+          const isAnonymizingCurrent = isPending && anonymizingUserId === user.id
+          const isAnonymized = user.email.startsWith('anonymized_') && user.email.endsWith('@deleted.local')
 
           return (
             <Card key={user.id} className="border-border/70">
@@ -184,14 +202,21 @@ export function AdminUsersList({ users, stats, currentFilters }: AdminUsersListP
                       <p className="text-sm text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
-                  <span className={cn(
-                    'rounded-full border px-3 py-1 text-xs font-semibold',
-                    user.role === 'ADMIN'
-                      ? 'bg-blue-100 text-blue-800 border-blue-200'
-                      : 'bg-gray-100 text-gray-800 border-gray-200'
-                  )}>
-                    {user.role === 'ADMIN' ? 'Administrador' : 'Usuario'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {isAnonymized && (
+                      <span className="rounded-full border px-3 py-1 text-xs font-semibold bg-amber-100 text-amber-800 border-amber-200">
+                        Anonimizado
+                      </span>
+                    )}
+                    <span className={cn(
+                      'rounded-full border px-3 py-1 text-xs font-semibold',
+                      user.role === 'ADMIN'
+                        ? 'bg-blue-100 text-blue-800 border-blue-200'
+                        : 'bg-gray-100 text-gray-800 border-gray-200'
+                    )}>
+                      {user.role === 'ADMIN' ? 'Administrador' : 'Usuario'}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
@@ -211,44 +236,84 @@ export function AdminUsersList({ users, stats, currentFilters }: AdminUsersListP
               </CardHeader>
 
               <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
-                  <Link href={`/admin/usuarios/${user.id}/editar`}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Editar
-                  </Link>
-                </Button>
+                {!isAnonymized && (
+                  <Button asChild className="h-9 border border-border/80 bg-background text-foreground hover:bg-accent">
+                    <Link href={`/admin/usuarios/${user.id}/editar`}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </Link>
+                  </Button>
+                )}
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      type="button"
-                      disabled={isDeletingCurrent}
-                      className="h-9 bg-rose-700 px-4 text-white hover:bg-rose-800 disabled:opacity-60"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Eliminar
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Se eliminará permanentemente el usuario
-                        <span className="font-semibold"> {user.name ?? user.email}</span> y todos sus datos
-                        (locales, eventos, reseñas, artículos, favoritos, etc.).
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDelete(user.id)}
-                        className="bg-rose-600 text-white hover:bg-rose-700"
+                <div className="flex flex-wrap items-center gap-2">
+                  {!isAnonymized && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          type="button"
+                          disabled={isAnonymizingCurrent}
+                          className="h-9 bg-amber-600 px-4 text-white hover:bg-amber-700 disabled:opacity-60"
+                        >
+                          <UserX className="mr-2 h-4 w-4" />
+                          Anonimizar
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Anonimizar usuario?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Se eliminarán los datos personales del usuario
+                            <span className="font-semibold"> {user.name ?? user.email}</span>
+                            (nombre, email, imagen, sesiones). Su contenido (locales, eventos, reseñas, artículos)
+                            se conservará pero aparecerá como &quot;Usuario eliminado&quot;.
+                            Esta acción cumple con GDPR y no se puede deshacer.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleAnonymize(user.id)}
+                            className="bg-amber-600 text-white hover:bg-amber-700"
+                          >
+                            Anonimizar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        disabled={isDeletingCurrent}
+                        className="h-9 bg-rose-700 px-4 text-white hover:bg-rose-800 disabled:opacity-60"
                       >
+                        <Trash2 className="mr-2 h-4 w-4" />
                         Eliminar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminará permanentemente el usuario
+                          <span className="font-semibold"> {user.name ?? user.email}</span> y todos sus datos
+                          (locales, eventos, reseñas, artículos, favoritos, etc.).
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(user.id)}
+                          className="bg-rose-600 text-white hover:bg-rose-700"
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardContent>
             </Card>
           )

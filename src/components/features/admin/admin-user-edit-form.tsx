@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { updateUserRoleAction, adminUpdateUserNameAction, deleteUserAction } from '@/actions/user/admin-update-user'
+import { updateUserRoleAction, adminUpdateUserNameAction, deleteUserAction, anonymizeUserAction } from '@/actions/user/admin-update-user'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -39,8 +39,10 @@ export function AdminUserEditForm({ user, currentUserId }: AdminUserEditFormProp
   const [name, setName] = useState(user.name ?? '')
   const [role, setRole] = useState(user.role)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isAnonymizing, setIsAnonymizing] = useState(false)
 
   const isSelf = user.id === currentUserId
+  const isAnonymized = user.email.startsWith('anonymized_') && user.email.endsWith('@deleted.local')
 
   const handleNameUpdate = () => {
     startTransition(async () => {
@@ -78,6 +80,20 @@ export function AdminUserEditForm({ user, currentUserId }: AdminUserEditFormProp
         return
       }
       toast.success('Usuario eliminado correctamente.')
+      router.push('/admin/usuarios')
+    })
+  }
+
+  const handleAnonymize = () => {
+    setIsAnonymizing(true)
+    startTransition(async () => {
+      const result = await anonymizeUserAction(user.id)
+      if (!result.success) {
+        toast.error(result.error ?? 'No se pudo anonimizar el usuario.')
+        setIsAnonymizing(false)
+        return
+      }
+      toast.success('Usuario anonimizado correctamente.')
       router.push('/admin/usuarios')
     })
   }
@@ -214,43 +230,95 @@ export function AdminUserEditForm({ user, currentUserId }: AdminUserEditFormProp
           <CardTitle className="text-rose-700">Zona de peligro</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            La eliminación de un usuario es permanente e incluye todos sus datos: locales, eventos,
-            reseñas, artículos, favoritos, comentarios y toda la información asociada.
-          </p>
+          {isAnonymized ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-800">
+                Este usuario ya ha sido anonimizado. Sus datos personales han sido eliminados
+                y su contenido aparece como &quot;Usuario eliminado&quot;.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Anonimizar:</strong> Elimina los datos personales del usuario (nombre, email, imagen, sesiones)
+                  pero conserva su contenido (locales, eventos, reseñas, artículos) atribuido a &quot;Usuario eliminado&quot;.
+                  Cumple con GDPR.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Eliminar:</strong> Elimina permanentemente el usuario y TODOS sus datos.
+                  Esta acción es destructiva y no se puede deshacer.
+                </p>
+              </div>
 
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                disabled={isSelf || isDeleting}
-                className="bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60"
-              >
-                Eliminar usuario permanentemente
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta acción no se puede deshacer. Se eliminará permanentemente el usuario
-                  <span className="font-semibold"> {user.name ?? user.email}</span> y todos sus datos.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className="bg-rose-600 text-white hover:bg-rose-700"
-                >
-                  Eliminar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              <div className="flex flex-wrap gap-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      disabled={isSelf || isAnonymizing}
+                      className="bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60"
+                    >
+                      Anonimizar usuario (GDPR)
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Anonimizar usuario?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Se eliminarán los datos personales del usuario
+                        <span className="font-semibold"> {user.name ?? user.email}</span>
+                        (nombre, email, imagen, sesiones). Su contenido se conservará pero aparecerá como
+                        &quot;Usuario eliminado&quot;. Esta acción cumple con GDPR y no se puede deshacer.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleAnonymize}
+                        className="bg-amber-600 text-white hover:bg-amber-700"
+                      >
+                        Anonimizar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
 
-          {isSelf && (
-            <p className="text-xs text-muted-foreground">No puedes eliminar tu propia cuenta desde aquí.</p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      disabled={isSelf || isDeleting}
+                      className="bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60"
+                    >
+                      Eliminar permanentemente
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Se eliminará permanentemente el usuario
+                        <span className="font-semibold"> {user.name ?? user.email}</span> y todos sus datos.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-rose-600 text-white hover:bg-rose-700"
+                      >
+                        Eliminar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+
+              {isSelf && (
+                <p className="text-xs text-muted-foreground">No puedes eliminar o anonimizar tu propia cuenta desde aquí.</p>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
