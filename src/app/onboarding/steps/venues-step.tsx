@@ -72,7 +72,6 @@ export function VenuesStep({ venues, followed, onFollow }: VenuesStepProps) {
           <motion.div
             key={venue.id}
             variants={itemVariants}
-            layout
             className="group relative flex items-center gap-3 rounded-2xl border border-border/50 bg-card p-3 transition-shadow hover:shadow-md"
           >
             {/* Image */}

@@ -44,9 +44,8 @@ export function InterestsStep({ categories, selected, onToggle }: InterestsStepP
           <motion.button
             key={cat.id}
             variants={itemVariants}
-            layout
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.93 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.97 }}
             animate={{
               borderColor: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border) / 0.5)',
               backgroundColor: isSelected ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--card))',
@@ -54,7 +53,7 @@ export function InterestsStep({ categories, selected, onToggle }: InterestsStepP
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             onClick={() => onToggle(cat.id)}
             className={cn(
-              'relative flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-shadow',
+              'relative flex min-h-[100px] flex-col items-center justify-center gap-2 rounded-2xl border p-4 text-center transition-shadow',
               isSelected
                 ? 'border-primary shadow-[0_0_20px_hsl(var(--primary)/0.2)]'
                 : 'border-border/50 hover:border-primary/30 hover:shadow-md'
@@ -73,7 +72,7 @@ export function InterestsStep({ categories, selected, onToggle }: InterestsStepP
             )}
             <span className="text-2xl">{cat.icon ?? '📍'}</span>
             <span className={cn(
-              'text-xs font-semibold leading-tight',
+              'line-clamp-2 text-xs font-semibold leading-tight',
               isSelected ? 'text-primary' : 'text-foreground'
             )}>
               {cat.name}

@@ -3,7 +3,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const EMAIL_FROM = "Vive LoJa <notifications@viveloja.com>";
+export const EMAIL_FROM = "Vive Loja <notifications@viveloja.com>";
 
 export async function sendEmail({
   to,

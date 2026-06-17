@@ -40,16 +40,15 @@ export function LifestyleStep({ selected, onToggle }: LifestyleStepProps) {
           <motion.button
             key={opt.id}
             variants={itemVariants}
-            layout
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.94 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.97 }}
             animate={{
               borderColor: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border) / 0.5)',
             }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             onClick={() => onToggle(opt.id)}
             className={cn(
-              'relative flex flex-col items-center gap-2.5 rounded-2xl border p-4 text-center transition-shadow sm:p-5',
+              'relative flex min-h-[120px] flex-col items-center justify-center gap-2.5 rounded-2xl border p-4 text-center transition-shadow sm:p-5',
               isSelected
                 ? 'border-primary bg-primary/5 shadow-[0_0_20px_hsl(var(--primary)/0.15)]'
                 : 'border-border/50 bg-card hover:border-primary/30 hover:shadow-md'
