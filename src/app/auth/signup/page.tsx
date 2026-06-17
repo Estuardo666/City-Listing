@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { OtpInput } from '@/components/auth/otp-input'
+import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 
 const RESEND_COOLDOWN = 60
 
@@ -28,6 +29,7 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [otpError, setOtpError] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   // Resend cooldown
   const [resendCooldown, setResendCooldown] = useState(0)
@@ -51,6 +53,12 @@ export default function SignUpPage() {
     setIsLoading(true)
     setError('')
 
+    if (!turnstileToken) {
+      setError('Completa la verificación de seguridad')
+      setIsLoading(false)
+      return
+    }
+
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden')
       setIsLoading(false)
@@ -67,13 +75,14 @@ export default function SignUpPage() {
       const res = await fetch('/api/auth/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, turnstileToken }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
         setError(data.error ?? 'Error al enviar código')
+        setTurnstileToken(null)
         return
       }
 
@@ -84,7 +93,7 @@ export default function SignUpPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [email, password, confirmPassword])
+  }, [email, password, confirmPassword, turnstileToken])
 
   const handleVerifyCode = useCallback(async (code: string) => {
     setOtpError('')
@@ -131,17 +140,23 @@ export default function SignUpPage() {
     setError('')
     setOtpError('')
 
+    if (!turnstileToken) {
+      setOtpError('Completa la verificación de seguridad')
+      return
+    }
+
     try {
       const res = await fetch('/api/auth/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, turnstileToken }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
         setOtpError(data.error ?? 'Error al reenviar código')
+        setTurnstileToken(null)
         return
       }
 
@@ -149,7 +164,7 @@ export default function SignUpPage() {
     } catch {
       setOtpError('Error al reenviar código')
     }
-  }, [email, password, resendCooldown])
+  }, [email, password, resendCooldown, turnstileToken])
 
   const handleGoogleSignUp = () => {
     signIn('google', { callbackUrl: '/onboarding' })
@@ -230,6 +245,14 @@ export default function SignUpPage() {
                       </div>
                     </div>
 
+                    <div className="flex justify-center">
+                      <TurnstileWidget
+                        onVerify={setTurnstileToken}
+                        onExpire={() => setTurnstileToken(null)}
+                        onError={() => setTurnstileToken(null)}
+                      />
+                    </div>
+
                     <AnimatePresence>
                       {error && (
                         <motion.p
@@ -246,7 +269,7 @@ export default function SignUpPage() {
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={isLoading}
+                      disabled={isLoading || !turnstileToken}
                     >
                       {isLoading ? (
                         <span className="flex items-center gap-2">

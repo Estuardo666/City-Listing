@@ -3,10 +3,12 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import crypto from 'crypto'
 import { sendVerificationCodeEmail } from '@/lib/email/templates/verification-code'
+import { verifyTurnstileToken } from '@/lib/turnstile'
 
 const sendCodeSchema = z.object({
   email: z.string().email('Correo inválido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
+  turnstileToken: z.string().min(1, 'Token de verificación requerido'),
 })
 
 export async function POST(request: NextRequest) {
@@ -21,7 +23,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email, password } = parsed.data
+    const { email, password, turnstileToken } = parsed.data
+
+    // Verify Turnstile token
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined
+    const turnstileResult = await verifyTurnstileToken(turnstileToken, ip)
+
+    if (!turnstileResult.success) {
+      return NextResponse.json(
+        { error: turnstileResult.error ?? 'Verificación de seguridad fallida' },
+        { status: 403 }
+      )
+    }
 
     // Verificar que el email no esté registrado
     const existing = await prisma.user.findUnique({

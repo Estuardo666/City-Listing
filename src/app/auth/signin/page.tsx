@@ -8,19 +8,43 @@ import { Mail, Lock, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
 
+    if (!turnstileToken) {
+      setError('Completa la verificación de seguridad')
+      setIsLoading(false)
+      return
+    }
+
     try {
+      // First verify Turnstile
+      const verifyRes = await fetch('/api/auth/signin-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, turnstileToken }),
+      })
+
+      if (!verifyRes.ok) {
+        const verifyData = await verifyRes.json()
+        setError(verifyData.error ?? 'Verificación de seguridad fallida')
+        setTurnstileToken(null)
+        setIsLoading(false)
+        return
+      }
+
+      // Then proceed with NextAuth signIn
       const result = await signIn('credentials', {
         email,
         password,
@@ -29,6 +53,7 @@ export default function SignInPage() {
 
       if (result?.error) {
         setError('Credenciales inválidas')
+        setTurnstileToken(null)
         setIsLoading(false)
         return
       }
@@ -43,6 +68,7 @@ export default function SignInPage() {
       }
     } catch {
       setError('Error al iniciar sesión')
+      setTurnstileToken(null)
       setIsLoading(false)
     }
   }
@@ -93,6 +119,14 @@ export default function SignInPage() {
                 </div>
               </div>
 
+              <div className="flex justify-center">
+                <TurnstileWidget
+                  onVerify={setTurnstileToken}
+                  onExpire={() => setTurnstileToken(null)}
+                  onError={() => setTurnstileToken(null)}
+                />
+              </div>
+
               <AnimatePresence>
                 {error && (
                   <motion.p
@@ -109,7 +143,7 @@ export default function SignInPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
+                disabled={isLoading || !turnstileToken}
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
