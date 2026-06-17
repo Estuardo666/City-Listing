@@ -40,13 +40,16 @@ export function emailLayout({ title, previewText, content, ctaText, ctaUrl, ctaC
       <td align="center" style="padding:40px 16px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;">
 
-          <!-- Logo placeholder -->
+          <!-- Logo -->
           <tr>
             <td align="center" style="padding-bottom:32px;">
-              <!-- ESPACIO PARA LOGO: Reemplazar por <img> cuando tengas logo -->
-              <div style="font-size:20px;font-weight:700;letter-spacing:-0.5px;color:${COLORS.gray900};">
-                Vive Loja
-              </div>
+              <img
+                src="${BASE_URL}/viveloja.png"
+                alt="Vive Loja"
+                width="160"
+                height="48"
+                style="display:block;border:0;outline:none;max-width:160px;height:auto;"
+              />
             </td>
           </tr>
 

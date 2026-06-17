@@ -1,6 +1,9 @@
 import 'server-only'
 import { sendEmail, EMAIL_FROM } from './resend'
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://viveloja.com'
+const LOGO_HTML = `<img src="${BASE_URL}/viveloja.png" alt="Vive Loja" width="140" height="42" style="display:block;border:0;outline:none;max-width:140px;height:auto;margin-bottom:24px;" />`
+
 export async function sendNewReviewEmail(
   ownerEmail: string,
   ownerName: string,
@@ -12,6 +15,7 @@ export async function sendNewReviewEmail(
   const stars = '⭐'.repeat(rating)
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      ${LOGO_HTML}
       <h2 style="color: #059669;">Nueva reseña en ${venueName}</h2>
       <p>Hola ${ownerName},</p>
       <p><strong>${reviewerName}</strong> dejó una reseña en <strong>${venueName}</strong>:</p>
@@ -35,6 +39,7 @@ export async function sendReservationConfirmationEmail(
 ) {
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      ${LOGO_HTML}
       <h2 style="color: #059669;">Reserva confirmada</h2>
       <p>Hola ${userName},</p>
       <p>Tu reserva en <strong>${venueName}</strong> ha sido recibida:</p>
@@ -58,6 +63,7 @@ export async function sendNewCommentEmail(
 ) {
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+      ${LOGO_HTML}
       <h2 style="color: #059669;">Nuevo comentario en ${entityName}</h2>
       <p>Hola ${ownerName},</p>
       <p><strong>${commenterName}</strong> comentó en <strong>${entityName}</strong>:</p>
