@@ -63,6 +63,7 @@ const MANAGE_NAV: NavItem[] = [
   { href: '/dashboard/blog', label: 'Mis Artículos', icon: FileText },
   { href: '/dashboard/reservas', label: 'Mis Reservas', icon: ClipboardList },
   { href: '/dashboard/favoritos', label: 'Mis Favoritos', icon: Heart },
+  { href: '/dashboard/intereses', label: 'Mis Intereses', icon: Sparkles },
   { href: '/dashboard/colecciones', label: 'Colecciones', icon: Folder },
   { href: '/dashboard/notificaciones', label: 'Notificaciones', icon: Bell },
   { href: '/dashboard/mensajes', label: 'Mensajes', icon: Mail },

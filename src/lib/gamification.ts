@@ -5,6 +5,7 @@ export const POINTS = {
   CHECKIN_PHOTO: 10,
   HELPFUL_VOTE: 2,
   OWNER_REPLY: 5,
+  ONBOARDING_COMPLETED: 50,
 } as const
 
 export const LEVELS = [
@@ -87,6 +88,13 @@ export const BADGES = {
     description: 'Alcanzaste el nivel máximo',
     icon: '💎',
     condition: (stats: UserStats) => stats.reputationScore >= 6000,
+  },
+  ONBOARDING_COMPLETED: {
+    type: 'ONBOARDING_COMPLETED',
+    name: 'Explorador Nivel 1',
+    description: 'Completaste tu perfil de descubrimiento',
+    icon: '🧭',
+    condition: (stats: UserStats) => false, // awarded manually
   },
 } as const
 

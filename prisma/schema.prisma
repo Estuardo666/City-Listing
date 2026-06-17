@@ -79,6 +79,10 @@ model User {
   totalPhotos      Int      @default(0)
   totalHelpfulVotes Int     @default(0)
 
+  // Onboarding
+  onboardingCompletedAt DateTime?
+  onboardingSkippedAt   DateTime?
+
   accounts    Account[]
   sessions    Session[]
   events      Event[]
@@ -99,6 +103,10 @@ model User {
   osmImports  OsmImport[]
   googleImportJobs GoogleImportJob[]
   badges      UserBadge[]
+  interests            UserInterest[]
+  lifestylePreferences UserLifestylePreference[]
+  followingVenues      UserFollowingVenue[]
+  onboardingEvents     OnboardingEvent[]
   
   sentMessages      Message[]    @relation("SentMessages")
   receivedMessages  Message[]    @relation("ReceivedMessages")
@@ -148,6 +156,7 @@ model Category {
   venueCategories    VenueCategory[]
   eventCategories    EventCategory[]
   posts              Post[]
+  userInterests      UserInterest[]
 
   @@unique([name, type])
 }
@@ -341,6 +350,7 @@ model Venue {
   venueCategories    VenueCategory[]
   venueSubcategories VenueSubcategory[]
   watchEventVenues   WatchEventVenue[]
+  followingUsers     UserFollowingVenue[]
   
   parentId      String?
   parent        Venue?    @relation("VenueBranches", fields: [parentId], references: [id], onDelete: SetNull)
@@ -1259,6 +1269,69 @@ model AIConfig {
   maxTokens         Int      @default(4096)
   updatedAt         DateTime @updatedAt
 }
+
+// ──────────────────────────────────────────────
+// Onboarding
+// ──────────────────────────────────────────────
+
+model UserInterest {
+  id         String   @id @default(cuid())
+  userId     String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId])
+  @@index([userId])
+  @@index([categoryId])
+}
+
+model UserLifestylePreference {
+  id         String   @id @default(cuid())
+  userId     String
+  preference String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, preference])
+  @@index([userId])
+}
+
+model UserFollowingVenue {
+  id        String   @id @default(cuid())
+  userId    String
+  venueId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, venueId])
+  @@index([userId])
+  @@index([venueId])
+}
+
+model OnboardingEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  event     String
+  step      Int?
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
+}
+
+// ──────────────────────────────────────────────
+// AI Configuration & Processing
+// ──────────────────────────────────────────────
 
 model AIProcessingLog {
   id              String    @id @default(cuid())

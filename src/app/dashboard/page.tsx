@@ -18,6 +18,11 @@ export default async function DashboardPage() {
 
   if (!session?.user?.id) redirect('/auth/signin')
 
+  // Redirect to onboarding if not completed and not skipped
+  if (!session.user.onboardingCompleted && !session.user.onboardingSkipped) {
+    redirect('/onboarding')
+  }
+
   const userId = session.user.id
 
   const [eventCount, venueCount, postStats, engagement, gamificationUser] = await Promise.all([

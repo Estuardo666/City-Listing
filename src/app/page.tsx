@@ -1,7 +1,10 @@
 import { Suspense } from 'react'
+import { getServerSession } from 'next-auth'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, Compass, Search } from 'lucide-react'
+import { authOptions } from '@/lib/auth'
+import { getPersonalizedHomeData } from '@/lib/queries/onboarding'
 import { Button } from '@/components/ui/button'
 import { MotionDiv, fadeInUp, viewportOnce } from '@/components/ui/motion'
 import { HomeCategoriesGridSection } from '@/components/features/home/home-categories-grid-section'
@@ -20,6 +23,7 @@ import { HomeFeaturedVenuesSkeleton } from '@/components/features/home/home-feat
 import { HomePromoGridSkeleton } from '@/components/features/home/home-promo-grid-skeleton'
 import { HomeRelatedEventsSkeleton } from '@/components/features/home/home-related-events-skeleton'
 import { HomeBlogSkeleton } from '@/components/features/home/home-blog-skeleton'
+import { HomePersonalizedSection } from '@/components/features/home/home-personalized-section'
 
 // Revalidate every 1 hour for ISR (Incremental Static Regeneration)
 export const revalidate = 3600
@@ -51,11 +55,28 @@ export const metadata: Metadata = {
   },
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getServerSession(authOptions)
+  const isPersonalized = !!session?.user?.id && session.user.onboardingCompleted
+
+  let personalizedData = null
+  if (isPersonalized && session?.user?.id) {
+    personalizedData = await getPersonalizedHomeData(session.user.id)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20">
       <main className="space-y-16 sm:space-y-20">
+        {/* Personalized section for onboarding users */}
+        {personalizedData && session?.user && (
+          <div className="pt-8">
+            <HomePersonalizedSection
+              data={personalizedData}
+              userName={session.user.name ?? 'Explorador'}
+            />
+          </div>
+        )}
+
         {/* Hero Map with Suspense - Loads in parallel, shows skeleton while loading */}
         <Suspense fallback={<HomeHeroMapSkeleton />}>
           <HomeHeroMapSection />

@@ -82,12 +82,19 @@ export const authOptions: NextAuthOptions = {
       if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { role: true, image: true },
+          select: {
+            role: true,
+            image: true,
+            onboardingCompletedAt: true,
+            onboardingSkippedAt: true,
+          },
         })
 
         if (dbUser) {
           token.role = dbUser.role
           token.picture = dbUser.image
+          token.onboardingCompleted = !!dbUser.onboardingCompletedAt
+          token.onboardingSkipped = !!dbUser.onboardingSkippedAt
         }
       }
 
@@ -98,6 +105,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub ?? ''
         session.user.role = token.role
         session.user.image = token.picture as string | null
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean
+        session.user.onboardingSkipped = token.onboardingSkipped as boolean
       }
       return session
     },
