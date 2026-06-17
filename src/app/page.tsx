@@ -68,14 +68,14 @@ export default async function HomePage() {
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20">
       <main className="space-y-16 sm:space-y-20">
         {/* Personalized section for onboarding users */}
-        {personalizedData && session?.user && (
+        {/* {personalizedData && session?.user && (
           <div className="pt-8">
             <HomePersonalizedSection
               data={personalizedData}
               userName={session.user.name ?? 'Explorador'}
             />
           </div>
-        )}
+        )} */}
 
         {/* Hero Map with Suspense - Loads in parallel, shows skeleton while loading */}
         <Suspense fallback={<HomeHeroMapSkeleton />}>
