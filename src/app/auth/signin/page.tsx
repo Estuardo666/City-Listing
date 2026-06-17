@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Mail, Lock, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MotionDiv } from '@/components/ui/motion'
-import { fadeInUp } from '@/components/ui/motion'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('')
@@ -29,24 +29,36 @@ export default function SignInPage() {
 
       if (result?.error) {
         setError('Credenciales inválidas')
+        setIsLoading(false)
+        return
+      }
+
+      // Get session to check onboarding status
+      const session = await getSession()
+
+      if (session?.user && !session.user.onboardingCompleted && !session.user.onboardingSkipped) {
+        window.location.href = '/onboarding'
       } else {
-        await getSession()
         window.location.href = '/dashboard'
       }
-    } catch (error) {
+    } catch {
       setError('Error al iniciar sesión')
-    } finally {
       setIsLoading(false)
     }
   }
 
   const handleGoogleSignIn = () => {
-    signIn('google', { callbackUrl: '/dashboard' })
+    signIn('google', { callbackUrl: '/onboarding' })
   }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <MotionDiv {...fadeInUp} className="w-full max-w-md">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-md"
+      >
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
@@ -56,33 +68,57 @@ export default function SignInPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Input
-                  type="email"
-                  placeholder="Correo electrónico"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+              <div className="space-y-3">
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    placeholder="Correo electrónico"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="pl-10"
+                  />
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="password"
+                    placeholder="Contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="pl-10"
+                  />
+                </div>
               </div>
-              <div>
-                <Input
-                  type="password"
-                  placeholder="Contraseña"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              {error && (
-                <p className="text-sm text-destructive text-center">{error}</p>
-              )}
-              <Button 
-                type="submit" 
-                className="w-full" 
+
+              <AnimatePresence>
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: 'auto' }}
+                    exit={{ opacity: 0, y: -4, height: 0 }}
+                    className="text-sm text-destructive text-center"
+                  >
+                    {error}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? 'Iniciando...' : 'Iniciar Sesión'}
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Iniciando...
+                  </span>
+                ) : (
+                  'Iniciar Sesión'
+                )}
               </Button>
             </form>
 
@@ -97,8 +133,8 @@ export default function SignInPage() {
               </div>
             </div>
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full"
               onClick={handleGoogleSignIn}
             >
@@ -113,7 +149,7 @@ export default function SignInPage() {
             </p>
           </CardContent>
         </Card>
-      </MotionDiv>
+      </motion.div>
     </div>
   )
 }
