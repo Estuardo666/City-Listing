@@ -1,4 +1,9 @@
+import type { Metadata } from 'next'
 import { AppSidebar } from '@/components/layout/app-sidebar'
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
 
 export default function DashboardLayout({
   children,

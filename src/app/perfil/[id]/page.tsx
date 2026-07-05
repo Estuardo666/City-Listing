@@ -15,6 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: `${user.name ?? 'Usuario'} — Vive Loja`,
     description: `Perfil de ${user.name ?? 'Usuario'} en Vive Loja. Nivel ${user.reviewerLevel} con ${user.totalReviews} reseñas.`,
+    alternates: { canonical: `https://viveloja.com/perfil/${id}` },
   }
 }
 

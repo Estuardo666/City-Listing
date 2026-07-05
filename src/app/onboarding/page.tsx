@@ -6,6 +6,7 @@ import { OnboardingClient } from './onboarding-client'
 
 export const metadata = {
   title: 'Onboarding — Vive Loja',
+  robots: { index: false, follow: false },
 }
 
 export default async function OnboardingPage() {
