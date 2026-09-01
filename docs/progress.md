@@ -7,7 +7,7 @@
 - Producción: `https://viveloja.com` (la web responde; las rutas nuevas `/api/mobile/v1/*` aún devuelven 404 hasta desplegar este checkpoint).
 - Neon: inspeccionado en solo lectura; la migración aditiva `MobileRefreshSession` está preparada pero aún no aplicada.
 - Cliente iOS: proyecto XcodeGen separado en `Vive Loja Swift`; el build unsigned y XCTest se verifican en su propio repositorio.
-- Auditoría CP9: rama `checkpoint/cp-9-next16-audit` actualiza Next a `16.3.4`, migra `middleware` a `proxy`, usa ESLint 9/flat config con reglas del React Compiler diferidas, fija dependencias transitivas parcheadas y deja el audit completo y de producción en cero; [CI push 33542230161](https://github.com/Estuardo666/City-Listing/actions/runs/33542230161) y [CI PR 33542243234](https://github.com/Estuardo666/City-Listing/actions/runs/33542243234) validan el SHA final. PR #2 queda abierta para revisión.
+- Auditoría CP9: rama `checkpoint/cp-9-next16-audit` actualiza Next a `16.3.4`, migra `middleware` a `proxy`, usa ESLint 9/flat config con reglas del React Compiler diferidas, fija dependencias transitivas parcheadas, sirve AASA de forma fail-closed mediante `APPLE_TEAM_ID` y deja el audit completo y de producción en cero; [CI push 33543411921](https://github.com/Estuardo666/City-Listing/actions/runs/33543411921) y [CI PR 33543415488](https://github.com/Estuardo666/City-Listing/actions/runs/33543415488) validan el SHA actual. PR #2 queda abierta para revisión.
 
 ## Reglas de ejecución
 
