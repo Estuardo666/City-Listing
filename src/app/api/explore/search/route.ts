@@ -142,6 +142,7 @@ export async function GET(request: NextRequest) {
     const cacheKey = getCacheKey(
       'explore', q, type, category, String(featured), String(take),
       String(venueSkip), String(eventSkip),
+      String(latParam ?? ''), String(lngParam ?? ''), String(radiusParam ?? ''),
       String(minRating), String(openNow), String(verified),
       String(hasPromotions), String(hasUpcomingEvents),
       priceRange ?? '', services.join(','), foodTypes.join(','),
