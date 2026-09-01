@@ -49,13 +49,16 @@
 - [x] Sanitizar plan histórico de emails que contenía una credencial; la rotación del valor debe hacerse en Resend/hosting.
 - [x] Añadir borradores de eventos móviles (`GET/POST /me/events`) con estado `PENDING` y slug único.
 - [x] Añadir reseñas y preguntas móviles (`GET/POST /me/reviews`, `GET/POST /me/questions`) con moderación pendiente.
+- [x] Añadir fotos opcionales de reseñas, hasta seis URLs validadas y persistidas en `ReviewPhoto`.
 - [x] Añadir conversación detallada, marcar leído, SSE foreground y cancelación de reservas.
 - [x] Añadir upload multipart autenticado a R2 y portada opcional de eventos.
 - [x] Añadir intereses/preferencias de onboarding (`GET/PUT /me/interests`).
+- [x] Añadir colecciones privadas, ítems idempotentes y check-ins con radio de 1 km.
+- [x] Añadir borradores autenticados para locales, artículos y rutas con estado `PENDING`.
 
 ## Evidencia
 
-- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33503242312
+- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33506434248
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI (último gate verde antes del upload de avatar): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33503894790
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
