@@ -39,7 +39,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -52,6 +52,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/me/reservations/[id]/route'),
     import('../src/app/api/mobile/v1/me/messages/route'),
     import('../src/app/api/mobile/v1/me/messages/[conversationId]/route'),
+    import('../src/app/api/mobile/v1/me/messages/report/route'),
     import('../src/app/api/mobile/v1/me/reviews/route'),
     import('../src/app/api/mobile/v1/me/questions/route'),
     import('../src/app/api/mobile/v1/me/events/route'),
@@ -151,6 +152,12 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(conversationDetail.status, 200)
   const markedRead = await messageDetailRoute.PATCH(new Request(`http://localhost/api/mobile/v1/me/messages/${conversation.id}`, { method: 'PATCH', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ read: true }) }), { params: Promise.resolve({ conversationId: conversation.id }) })
   assert.equal(markedRead.status, 200)
+  const messageBody = (await message.clone().json()) as { data: { id: string } }
+  const reportedMessage = await reportMessageRoute.POST(new Request('http://localhost/api/mobile/v1/me/messages/report', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ messageId: messageBody.data.id, reason: 'SPAM' }),
+  }))
+  assert.equal(reportedMessage.status, 200)
+  assert.equal(((await reportedMessage.json()) as { data: { reported: boolean } }).data.reported, true)
 
   const review = await reviewsRoute.POST(new Request('http://localhost/api/mobile/v1/me/reviews', {
     method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, rating: 5, content: 'Excelente lugar para el contrato CI.', photos: ['https://example.com/review-ci.jpg'] }),

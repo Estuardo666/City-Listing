@@ -413,6 +413,20 @@ paths:
       responses:
         "200": { description: Messages marked read, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /me/messages/report:
+    post:
+      tags: [User]
+      summary: Report a message from the authenticated user's conversation
+      security: [{ bearerAuth: [] }]
+      operationId: reportMobileMessage
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MessageReportRequest" } } }
+      responses:
+        "200": { description: Message reported, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /me/messages/stream:
     get:
       tags: [User]
@@ -744,6 +758,12 @@ components:
         venueId: { type: string }
         receiverId: { type: string }
         content: { type: string, minLength: 1, maxLength: 2000 }
+    MessageReportRequest:
+      type: object
+      required: [messageId, reason]
+      properties:
+        messageId: { type: string, minLength: 1 }
+        reason: { type: string, enum: [SPAM, HARASSMENT, SCAM, OTHER] }
     CreateEventRequest:
       type: object
       required: [title, description, startDate, location]
