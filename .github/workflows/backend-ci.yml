@@ -85,5 +85,8 @@ jobs:
       - name: Dependency audit
         run: npm audit --omit=dev --audit-level=critical
 
+      - name: Validate mobile OpenAPI contract
+        run: npx --yes @redocly/cli lint docs/openapi-mobile-v1.yaml --format=summary
+
       - name: Production build
         run: npm run build:webpack
