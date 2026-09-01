@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-- Checkpoint activo: CP2/CP3 — navegación, design system y contenido público.
+- Checkpoint activo: CP5–CP7 — perfil, reservas y mensajería móvil básica.
 - Fuente de verdad backend: `Estuardo666/City-Listing`.
 - Producción: `https://viveloja.com`.
 - Neon: inspeccionado en solo lectura; el esquema coincide con Prisma.
@@ -43,10 +43,13 @@
 - [x] Crear workflow iOS unsigned para Xcode 26.
 - [x] Compilar el cliente y generar el bundle de tests en macOS 26 (runs `33486192317` y posteriores; los fallos iniciales fueron corregidos en commits siguientes).
 - [x] Añadir tests de integración de auth, refresh single-use, logout, favoritos y contenido.
+- [x] Añadir perfil móvil autenticado (`GET/PATCH /me/profile`) con estadísticas públicas y validación.
+- [x] Añadir reservas móviles (`GET/POST /me/reservations`) con fecha futura, aforo e idempotencia lógica.
+- [x] Añadir inbox y envío de mensajes (`GET/POST /me/messages`) con control de bloqueo.
 
 ## Evidencia
 
-- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33494215251
+- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33496658099
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI: https://github.com/Estuardo666/vive-loja-ios/actions
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
