@@ -122,7 +122,7 @@ paths:
   /home:
     get:
       tags: [Home]
-      summary: Load featured home sections
+      summary: Load featured, latest, related and editorial home sections
       operationId: getMobileHome
       responses:
         "200":
@@ -130,7 +130,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessEnvelope"
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/HomePayload"
   /explore:
     get:
       tags: [Explore]
@@ -715,6 +720,122 @@ components:
       properties:
         data: {}
         meta: { type: object, additionalProperties: true }
+    HomePayload:
+      type: object
+      description: Featured and editorial sections returned by the mobile home endpoint.
+      required: [venues, events, featuredVenues, featuredEvents, latestVenues, relatedEvents, posts, promotions, categories]
+      properties:
+        venues:
+          type: array
+          description: Backwards-compatible alias for featuredVenues.
+          items: { $ref: "#/components/schemas/MobileVenue" }
+        events:
+          type: array
+          description: Backwards-compatible alias for featuredEvents.
+          items: { $ref: "#/components/schemas/MobileEvent" }
+        featuredVenues:
+          type: array
+          items: { $ref: "#/components/schemas/MobileVenue" }
+        featuredEvents:
+          type: array
+          items: { $ref: "#/components/schemas/MobileEvent" }
+        latestVenues:
+          type: array
+          items: { $ref: "#/components/schemas/MobileVenue" }
+        relatedEvents:
+          type: array
+          items: { $ref: "#/components/schemas/MobileEvent" }
+        posts:
+          type: array
+          items: { $ref: "#/components/schemas/MobilePost" }
+        promotions:
+          type: array
+          items: { $ref: "#/components/schemas/MobilePromotion" }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/Category" }
+        pageInfo:
+          type: object
+          additionalProperties: true
+    Category:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        icon: { type: [string, 'null'] }
+        color: { type: [string, 'null'] }
+    MobileVenue:
+      type: object
+      required: [id, name, slug, categories]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        location: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        lat: { type: [number, 'null'] }
+        lng: { type: [number, 'null'] }
+        featured: { type: boolean }
+        phone: { type: [string, 'null'] }
+        website: { type: [string, 'null'], format: uri }
+        priceRange: { type: [string, 'null'] }
+        avgRating: { type: [number, 'null'] }
+        reviewCount: { type: integer }
+        verified: { type: boolean }
+        categories: { type: array, items: { $ref: "#/components/schemas/Category" } }
+    MobileEvent:
+      type: object
+      required: [id, title, slug, startDate, categories]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        startDate: { type: string, format: date-time }
+        endDate: { type: [string, 'null'], format: date-time }
+        location: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        lat: { type: [number, 'null'] }
+        lng: { type: [number, 'null'] }
+        featured: { type: boolean }
+        price: { type: [number, 'null'] }
+        avgRating: { type: [number, 'null'] }
+        reviewCount: { type: integer }
+        categories: { type: array, items: { $ref: "#/components/schemas/Category" } }
+    MobilePost:
+      type: object
+      required: [id, title, slug, status, featured, createdAt, tags]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        excerpt: { type: [string, 'null'] }
+        image: { type: [string, 'null'], format: uri }
+        status: { type: string }
+        featured: { type: boolean }
+        publishedAt: { type: [string, 'null'], format: date-time }
+        createdAt: { type: string, format: date-time }
+        author: { type: [object, 'null'], additionalProperties: true }
+        tags: { type: array, items: { type: object, additionalProperties: true } }
+    MobilePromotion:
+      type: object
+      required: [id, title, description, validFrom, validUntil, featured, venue]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        discount: { type: [string, 'null'] }
+        validFrom: { type: string, format: date-time }
+        validUntil: { type: string, format: date-time }
+        terms: { type: [string, 'null'] }
+        featured: { type: boolean }
+        venue: { type: object, additionalProperties: true }
     RegisterRequest:
       type: object
       required: [name, email, password]

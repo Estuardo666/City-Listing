@@ -68,13 +68,14 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, homeRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
     import('../src/app/api/mobile/v1/auth/logout/route'),
     import('../src/app/api/mobile/v1/me/favorites/route'),
     import('../src/app/api/mobile/v1/content/route'),
+    import('../src/app/api/mobile/v1/home/route'),
     import('../src/app/api/mobile/v1/me/profile/route'),
     import('../src/app/api/mobile/v1/me/interests/route'),
     import('../src/app/api/mobile/v1/me/reservations/route'),
@@ -120,6 +121,29 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.ok(Array.isArray(contentBody.data.promotions))
   assert.ok(Array.isArray(contentBody.data.routes))
   assert.ok(Array.isArray(contentBody.data.collections))
+
+  const home = await homeRoute.GET()
+  assert.equal(home.status, 200)
+  const homeBody = await home.json() as {
+    data: {
+      venues: unknown[]
+      events: unknown[]
+      featuredVenues: unknown[]
+      featuredEvents: unknown[]
+      latestVenues: unknown[]
+      relatedEvents: unknown[]
+      posts: unknown[]
+      promotions: unknown[]
+    }
+  }
+  assert.ok(Array.isArray(homeBody.data.venues))
+  assert.ok(Array.isArray(homeBody.data.events))
+  assert.ok(Array.isArray(homeBody.data.featuredVenues))
+  assert.ok(Array.isArray(homeBody.data.featuredEvents))
+  assert.ok(Array.isArray(homeBody.data.latestVenues))
+  assert.ok(Array.isArray(homeBody.data.relatedEvents))
+  assert.ok(Array.isArray(homeBody.data.posts))
+  assert.ok(Array.isArray(homeBody.data.promotions))
 
   const pagedContent = await contentRoute.GET(new Request('http://localhost/api/mobile/v1/content?limit=1&postSkip=0'))
   assert.equal(pagedContent.status, 200)
