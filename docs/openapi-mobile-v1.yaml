@@ -10,6 +10,7 @@ tags:
   - name: Auth
   - name: Home
   - name: Explore
+  - name: Content
 paths:
   /health:
     get:
@@ -122,6 +123,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessEnvelope"
+  /venues/{slug}:
+    get:
+      tags: [Content]
+      operationId: getMobileVenue
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Venue detail
+          content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /events/{slug}:
+    get:
+      tags: [Content]
+      operationId: getMobileEvent
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Event detail
+          content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
 components:
   securitySchemes:
     bearerAuth:
@@ -185,4 +214,7 @@ components:
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Conflict:
       description: Resource conflict
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    NotFound:
+      description: Resource not found
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
