@@ -39,7 +39,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -53,6 +53,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/me/messages/route'),
     import('../src/app/api/mobile/v1/me/messages/[conversationId]/route'),
     import('../src/app/api/mobile/v1/me/messages/report/route'),
+    import('../src/app/api/mobile/v1/me/messages/block/route'),
     import('../src/app/api/mobile/v1/me/reviews/route'),
     import('../src/app/api/mobile/v1/me/questions/route'),
     import('../src/app/api/mobile/v1/me/events/route'),
@@ -158,6 +159,19 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   }))
   assert.equal(reportedMessage.status, 200)
   assert.equal(((await reportedMessage.json()) as { data: { reported: boolean } }).data.reported, true)
+  const messageId = messageBody.data.id
+  const blockedMessage = await blockMessageRoute.POST(new Request('http://localhost/api/mobile/v1/me/messages/block', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, userId: venueOwner!.userId, reason: 'CI test' }),
+  }))
+  assert.equal(blockedMessage.status, 200)
+  const rejectedMessage = await messagesRoute.POST(new Request('http://localhost/api/mobile/v1/me/messages', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, receiverId: venueOwner!.userId, content: `Mensaje bloqueado ${messageId}` }),
+  }))
+  assert.equal(rejectedMessage.status, 403)
+  const unblockedMessage = await blockMessageRoute.DELETE(new Request('http://localhost/api/mobile/v1/me/messages/block', {
+    method: 'DELETE', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, userId: venueOwner!.userId }),
+  }))
+  assert.equal(unblockedMessage.status, 200)
 
   const review = await reviewsRoute.POST(new Request('http://localhost/api/mobile/v1/me/reviews', {
     method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, rating: 5, content: 'Excelente lugar para el contrato CI.', photos: ['https://example.com/review-ci.jpg'] }),
