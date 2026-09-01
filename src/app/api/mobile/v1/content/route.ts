@@ -6,13 +6,18 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')?.trim() || undefined
   const category = searchParams.get('category')?.trim() || undefined
+  const rawLimit = Number(searchParams.get('limit') ?? '12')
+  const limit = Number.isFinite(rawLimit) ? Math.min(24, Math.max(1, Math.floor(rawLimit))) : 12
+  const rawPostSkip = Number(searchParams.get('postSkip') ?? '0')
+  const postSkip = Number.isFinite(rawPostSkip) ? Math.max(0, Math.floor(rawPostSkip)) : 0
   const now = new Date()
   const [posts, categories] = await Promise.all([
-    getPosts({ status: 'APPROVED', q: query, category }),
+    getPosts({ status: 'APPROVED', q: query, category }, { skip: postSkip, take: limit + 1 }),
     getPostCategories(),
   ])
 
-  const mobilePosts = posts.map(({ user, tags, ...post }) => ({
+  const hasMorePosts = posts.length > limit
+  const mobilePosts = posts.slice(0, limit).map(({ user, tags, ...post }) => ({
     ...post,
     author: user ? { id: user.id, name: user.name } : null,
     tags: tags.map(({ tag }) => tag),
@@ -82,5 +87,5 @@ export async function GET(request: Request) {
     promotions,
     routes,
     collections: collections.map(({ _count, ...collection }) => ({ ...collection, itemCount: _count.items })),
-  })
+  }, { posts: { hasMore: hasMorePosts, nextSkip: postSkip + mobilePosts.length } })
 }

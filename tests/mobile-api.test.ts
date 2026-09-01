@@ -74,6 +74,13 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.ok(Array.isArray(contentBody.data.routes))
   assert.ok(Array.isArray(contentBody.data.collections))
 
+  const pagedContent = await contentRoute.GET(new Request('http://localhost/api/mobile/v1/content?limit=1&postSkip=0'))
+  assert.equal(pagedContent.status, 200)
+  const pagedBody = await pagedContent.json() as { data: { posts: unknown[] }; meta?: { posts?: { hasMore: boolean; nextSkip: number } } }
+  assert.ok((pagedBody.data.posts ?? []).length <= 1)
+  assert.equal(typeof pagedBody.meta?.posts?.hasMore, 'boolean')
+  assert.equal(typeof pagedBody.meta?.posts?.nextSkip, 'number')
+
   const venue = await prisma.venue.findFirst({ where: { status: 'APPROVED', isActive: true }, select: { id: true } })
   assert.ok(venue, 'CI seed must provide an approved venue for the favorites contract')
   const authHeaders = { authorization: `Bearer ${rotated.data.accessToken}` }

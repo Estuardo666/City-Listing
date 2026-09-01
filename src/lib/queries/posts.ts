@@ -127,7 +127,8 @@ export async function getPostCategories(): Promise<PostCategory[]> {
 }
 
 export async function getPosts(
-  rawFilters: Partial<PostListFiltersInput> = {}
+  rawFilters: Partial<PostListFiltersInput> = {},
+  pagination: { skip?: number; take?: number } = {}
 ): Promise<PostListItem[]> {
   const filters = postListFiltersSchema.parse(rawFilters)
 
@@ -158,6 +159,8 @@ export async function getPosts(
   return prisma.post.findMany({
     where,
     orderBy: [{ featured: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
+    ...(pagination.skip !== undefined ? { skip: Math.max(0, Math.floor(pagination.skip)) } : {}),
+    ...(pagination.take !== undefined ? { take: Math.max(1, Math.floor(pagination.take)) } : {}),
     select: postListSelect,
   })
 }
