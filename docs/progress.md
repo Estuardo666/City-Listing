@@ -26,7 +26,7 @@
 - [x] Resolver el bloqueo de build por inicialización eager de Upstash Search (cliente lazy).
 - [x] Documentar la excepción de las vulnerabilidades no críticas restantes de Next 15 (la actualización mayor queda para CP9).
 - [x] Ejecutar audit/typecheck local con variables dummy; build local requiere PostgreSQL efímero.
-- [x] Ejecutar audit, typecheck y build en GitHub Actions (último run `33491264262`).
+- [x] Ejecutar audit, typecheck, OpenAPI y build en GitHub Actions (último run `33498524495`).
 
 ## CP1 (inicio)
 
@@ -47,10 +47,11 @@
 - [x] Añadir reservas móviles (`GET/POST /me/reservations`) con fecha futura, aforo e idempotencia lógica.
 - [x] Añadir inbox y envío de mensajes (`GET/POST /me/messages`) con control de bloqueo.
 - [x] Sanitizar plan histórico de emails que contenía una credencial; la rotación del valor debe hacerse en Resend/hosting.
+- [x] Añadir borradores de eventos móviles (`GET/POST /me/events`) con estado `PENDING` y slug único.
 
 ## Evidencia
 
-- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33496658099
+- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33498524495
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI: https://github.com/Estuardo666/vive-loja-ios/actions
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
