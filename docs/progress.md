@@ -65,7 +65,7 @@
 ## Evidencia
 
 - Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33551163790 y PR https://github.com/Estuardo666/City-Listing/actions/runs/33551167519 (Prisma, seed efímero, integración móvil, pruebas de configuración Resend y contrato de entorno, lint, typecheck, audit, OpenAPI y build webpack sobre `900a134`).
-- Backend CI verde sobre los cambios de paridad: [run 33567032697](https://github.com/Estuardo666/City-Listing/actions/runs/33567032697) en `874ef42` ejecuta Prisma/seed efímero, integración móvil, contrato OpenAPI, lint, typecheck, audit y build webpack; Home y detalle quedan cubiertos por aserciones de contrato.
+- Backend CI verde sobre los cambios de paridad: [run 33569587155](https://github.com/Estuardo666/City-Listing/actions/runs/33569587155) en `2e30ee1` (código funcional `8fd32ac`/`874ef42`) ejecuta Prisma/seed efímero, integración móvil, contrato OpenAPI, lint, typecheck, audit y build webpack; Home y detalle quedan cubiertos por aserciones de contrato.
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI (último gate verde previo a la reconexión SSE): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33513652243
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
