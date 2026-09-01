@@ -39,7 +39,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reviewsRoute, questionsRoute, eventsRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reviewsRoute, questionsRoute, eventsRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -47,6 +47,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/me/favorites/route'),
     import('../src/app/api/mobile/v1/content/route'),
     import('../src/app/api/mobile/v1/me/profile/route'),
+    import('../src/app/api/mobile/v1/me/interests/route'),
     import('../src/app/api/mobile/v1/me/reservations/route'),
     import('../src/app/api/mobile/v1/me/reservations/[id]/route'),
     import('../src/app/api/mobile/v1/me/messages/route'),
@@ -100,6 +101,15 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   }))
   assert.equal(updatedProfile.status, 200)
   assert.equal(((await updatedProfile.json()) as { data: { name: string } }).data.name, 'Mobile CI Updated')
+  const category = await prisma.category.findFirst({ select: { id: true } })
+  assert.ok(category, 'CI seed must provide a category for onboarding contract')
+  const updatedInterests = await interestsRoute.PUT(new Request('http://localhost/api/mobile/v1/me/interests', {
+    method: 'PUT', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ categoryIds: [category!.id], preferences: ['Cultura'] }),
+  }))
+  assert.equal(updatedInterests.status, 200)
+  const listedInterests = await interestsRoute.GET(new Request('http://localhost/api/mobile/v1/me/interests', { headers: authHeaders }))
+  assert.equal(listedInterests.status, 200)
+  assert.equal(((await listedInterests.json()) as { data: { categories: Array<{ id: string }> } }).data.categories[0].id, category!.id)
 
   const reservationDate = new Date(Date.now() + 86_400_000).toISOString()
   const reservationInput = { venueId: venue.id, date: reservationDate, time: '19:00', partySize: 2, notes: 'CI contract' }
