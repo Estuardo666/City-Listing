@@ -9,6 +9,7 @@ const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   title: z.string().trim().max(120).optional(),
   content: z.string().trim().max(2_000).optional(),
+  photos: z.array(z.string().url().max(2_000)).max(6).optional(),
 }).superRefine((value, context) => {
   if ((value.venueId ? 1 : 0) + (value.eventId ? 1 : 0) !== 1) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['venueId'], message: 'Selecciona un local o evento.' })
@@ -18,6 +19,7 @@ const reviewSchema = z.object({
 const reviewSelect = {
   id: true, rating: true, title: true, content: true, status: true, createdAt: true, updatedAt: true,
   user: { select: { id: true, name: true, image: true } },
+  photos: { select: { id: true, url: true, order: true } },
 } as const
 
 export async function GET(request: Request) {
@@ -46,8 +48,13 @@ export async function POST(request: Request) {
   if (!target) return mobileError('NOT_FOUND', 'El contenido no está disponible.', 404)
 
   const existing = await prisma.review.findFirst({ where: { userId: principal.userId, ...(venueId ? { venueId } : { eventId }) } })
-  const review = existing
-    ? await prisma.review.update({ where: { id: existing.id }, data: { rating: parsed.data.rating, title: parsed.data.title, content: parsed.data.content, status: 'PENDING' }, select: reviewSelect })
-    : await prisma.review.create({ data: { userId: principal.userId, venueId, eventId, rating: parsed.data.rating, title: parsed.data.title, content: parsed.data.content, status: 'PENDING' }, select: reviewSelect })
+  const review = await prisma.$transaction(async (tx) => {
+    const saved = existing
+      ? await tx.review.update({ where: { id: existing.id }, data: { rating: parsed.data.rating, title: parsed.data.title, content: parsed.data.content, status: 'PENDING' }, select: { id: true } })
+      : await tx.review.create({ data: { userId: principal.userId, venueId, eventId, rating: parsed.data.rating, title: parsed.data.title, content: parsed.data.content, status: 'PENDING' }, select: { id: true } })
+    await tx.reviewPhoto.deleteMany({ where: { reviewId: saved.id } })
+    if (parsed.data.photos?.length) await tx.reviewPhoto.createMany({ data: parsed.data.photos.map((url, order) => ({ reviewId: saved.id, url, order })) })
+    return tx.review.findUniqueOrThrow({ where: { id: saved.id }, select: reviewSelect })
+  })
   return mobileSuccess(review, { moderation: 'PENDING', updated: Boolean(existing) })
 }

@@ -153,9 +153,10 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(markedRead.status, 200)
 
   const review = await reviewsRoute.POST(new Request('http://localhost/api/mobile/v1/me/reviews', {
-    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, rating: 5, content: 'Excelente lugar para el contrato CI.' }),
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, rating: 5, content: 'Excelente lugar para el contrato CI.', photos: ['https://example.com/review-ci.jpg'] }),
   }))
   assert.equal(review.status, 200)
+  assert.equal(((await review.clone().json()) as { data: { photos: Array<{ url: string }> } }).data.photos[0].url, 'https://example.com/review-ci.jpg')
   const listedReviews = await reviewsRoute.GET(new Request(`http://localhost/api/mobile/v1/me/reviews?venueId=${venue.id}`, { headers: authHeaders }))
   assert.equal(listedReviews.status, 200)
   assert.ok(((await listedReviews.json()) as { data: unknown[] }).data.length >= 1)
