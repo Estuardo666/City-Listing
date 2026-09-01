@@ -39,12 +39,13 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
     import('../src/app/api/mobile/v1/auth/logout/route'),
     import('../src/app/api/mobile/v1/me/favorites/route'),
+    import('../src/app/api/mobile/v1/content/route'),
     import('../src/lib/prisma'),
   ])
   t.after(async () => prisma.$disconnect())
@@ -64,6 +65,14 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   const rotatedResponses = await Promise.all([refresh(refreshRequest()), refresh(refreshRequest())])
   assert.deepEqual(rotatedResponses.map((response) => response.status).sort(), [200, 401])
   const rotated = (await rotatedResponses.find((response) => response.status === 200)!.json()) as TokenResponse
+
+  const content = await contentRoute.GET(new Request('http://localhost/api/mobile/v1/content'))
+  assert.equal(content.status, 200)
+  const contentBody = await content.json() as { data: { posts: unknown[]; promotions: unknown[]; routes: unknown[]; collections: unknown[] } }
+  assert.ok(Array.isArray(contentBody.data.posts))
+  assert.ok(Array.isArray(contentBody.data.promotions))
+  assert.ok(Array.isArray(contentBody.data.routes))
+  assert.ok(Array.isArray(contentBody.data.collections))
 
   const venue = await prisma.venue.findFirst({ where: { status: 'APPROVED', isActive: true }, select: { id: true } })
   assert.ok(venue, 'CI seed must provide an approved venue for the favorites contract')
