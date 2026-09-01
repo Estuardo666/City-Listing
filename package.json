@@ -10,7 +10,7 @@
     "build:webpack": "prisma generate && next build --webpack",
     "start": "next start",
     "test:mobile": "node --require ./tests/register-server-only.cjs --import tsx --test tests/mobile-api.test.ts",
-    "test:config": "node --require ./tests/register-server-only.cjs --import tsx --test tests/resend-config.test.ts",
+    "test:config": "node --require ./tests/register-server-only.cjs --import tsx --test tests/resend-config.test.ts tests/env-contract.test.ts",
     "lint": "eslint .",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
