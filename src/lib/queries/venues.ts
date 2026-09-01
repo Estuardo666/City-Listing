@@ -424,6 +424,13 @@ export const getVenueBySlug = serverCache(async (slug: string): Promise<VenueWit
         },
         orderBy: { createdAt: 'desc' },
       },
+      questions: {
+        where: { status: { in: ['APPROVED', 'PENDING'] } },
+        include: {
+          user: { select: { id: true, name: true, image: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
       promotions: {
         where: { status: 'ACTIVE' },
         orderBy: { createdAt: 'desc' },

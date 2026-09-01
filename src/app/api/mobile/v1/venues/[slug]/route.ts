@@ -35,6 +35,16 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       createdAt: review.createdAt,
       user: { id: review.user.id, name: review.user.name, image: review.user.image },
     })),
+    questions: ((venue as any).questions ?? []).map((question: any) => ({
+      id: question.id,
+      content: question.content,
+      answer: question.answer,
+      answerBy: question.answerBy,
+      answeredAt: question.answeredAt,
+      status: question.status,
+      createdAt: question.createdAt,
+      user: { id: question.user.id, name: question.user.name, image: question.user.image },
+    })),
   }
   return mobileSuccess(data)
 }

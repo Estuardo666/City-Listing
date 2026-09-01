@@ -39,7 +39,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, reservationsRoute, messagesRoute, eventsRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reviewsRoute, questionsRoute, eventsRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -48,7 +48,11 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/content/route'),
     import('../src/app/api/mobile/v1/me/profile/route'),
     import('../src/app/api/mobile/v1/me/reservations/route'),
+    import('../src/app/api/mobile/v1/me/reservations/[id]/route'),
     import('../src/app/api/mobile/v1/me/messages/route'),
+    import('../src/app/api/mobile/v1/me/messages/[conversationId]/route'),
+    import('../src/app/api/mobile/v1/me/reviews/route'),
+    import('../src/app/api/mobile/v1/me/questions/route'),
     import('../src/app/api/mobile/v1/me/events/route'),
     import('../src/lib/prisma'),
   ])
@@ -110,7 +114,10 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(((await repeatedReservation.json()) as { meta?: { idempotent?: boolean } }).meta?.idempotent, true)
   const reservations = await reservationsRoute.GET(new Request('http://localhost/api/mobile/v1/me/reservations', { headers: authHeaders }))
   assert.equal(reservations.status, 200)
-  assert.ok(((await reservations.json()) as { data: unknown[] }).data.length >= 1)
+  const reservationBody = (await reservations.json()) as { data: Array<{ id: string }> }
+  assert.ok(reservationBody.data.length >= 1)
+  const reservationDetail = await reservationDetailRoute.GET(new Request(`http://localhost/api/mobile/v1/me/reservations/${reservationBody.data[0].id}`, { headers: authHeaders }), { params: Promise.resolve({ id: reservationBody.data[0].id }) })
+  assert.equal(reservationDetail.status, 200)
 
   const venueOwner = await prisma.venue.findUnique({ where: { id: venue.id }, select: { userId: true } })
   assert.ok(venueOwner?.userId, 'CI seed venue must have an owner for messaging contract')
@@ -120,7 +127,29 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(message.status, 200)
   const conversations = await messagesRoute.GET(new Request('http://localhost/api/mobile/v1/me/messages', { headers: authHeaders }))
   assert.equal(conversations.status, 200)
-  assert.ok(((await conversations.json()) as { data: Array<{ venueId?: string }> }).data.length >= 1)
+  const conversationBody = (await conversations.json()) as { data: Array<{ id: string }> }
+  assert.ok(conversationBody.data.length >= 1)
+  const conversation = conversationBody.data[0]
+  const conversationDetail = await messageDetailRoute.GET(new Request(`http://localhost/api/mobile/v1/me/messages/${conversation.id}`, { headers: authHeaders }), { params: Promise.resolve({ conversationId: conversation.id }) })
+  assert.equal(conversationDetail.status, 200)
+  const markedRead = await messageDetailRoute.PATCH(new Request(`http://localhost/api/mobile/v1/me/messages/${conversation.id}`, { method: 'PATCH', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ read: true }) }), { params: Promise.resolve({ conversationId: conversation.id }) })
+  assert.equal(markedRead.status, 200)
+
+  const review = await reviewsRoute.POST(new Request('http://localhost/api/mobile/v1/me/reviews', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, rating: 5, content: 'Excelente lugar para el contrato CI.' }),
+  }))
+  assert.equal(review.status, 200)
+  const listedReviews = await reviewsRoute.GET(new Request(`http://localhost/api/mobile/v1/me/reviews?venueId=${venue.id}`, { headers: authHeaders }))
+  assert.equal(listedReviews.status, 200)
+  assert.ok(((await listedReviews.json()) as { data: unknown[] }).data.length >= 1)
+  const question = await questionsRoute.POST(new Request('http://localhost/api/mobile/v1/me/questions', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, content: '¿Cuál es el horario para este contrato?' }),
+  }))
+  assert.equal(question.status, 200)
+
+  const cancelled = await reservationDetailRoute.PATCH(new Request(`http://localhost/api/mobile/v1/me/reservations/${reservationBody.data[0].id}`, { method: 'PATCH', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ cancelReason: 'Cambio de planes CI' }) }), { params: Promise.resolve({ id: reservationBody.data[0].id }) })
+  assert.equal(cancelled.status, 200)
+  assert.equal(((await cancelled.json()) as { data: { status: string } }).data.status, 'CANCELLED')
 
   const createdEvent = await eventsRoute.POST(new Request('http://localhost/api/mobile/v1/me/events', {
     method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({

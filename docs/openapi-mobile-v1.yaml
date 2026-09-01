@@ -243,6 +243,87 @@ paths:
         "200": { description: Reservation created or replayed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "422": { $ref: "#/components/responses/BadRequest" }
+  /me/reservations/{id}:
+    get:
+      tags: [User]
+      summary: Read one reservation
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileReservation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Reservation, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [User]
+      summary: Cancel one reservation
+      security: [{ bearerAuth: [] }]
+      operationId: cancelMobileReservation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content: { application/json: { schema: { $ref: "#/components/schemas/CancelReservationRequest" } } }
+      responses:
+        "200": { description: Reservation cancelled, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /me/reviews:
+    get:
+      tags: [User]
+      summary: List reviews for a venue or event
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileReviews
+      parameters:
+        - { name: venueId, in: query, schema: { type: string } }
+        - { name: eventId, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Reviews, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+    post:
+      tags: [User]
+      summary: Create or update a review
+      security: [{ bearerAuth: [] }]
+      operationId: upsertMobileReview
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ReviewRequest" } } }
+      responses:
+        "200": { description: Review submitted for moderation, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+  /me/questions:
+    get:
+      tags: [User]
+      summary: List questions for a venue or event
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileQuestions
+      parameters:
+        - { name: venueId, in: query, schema: { type: string } }
+        - { name: eventId, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Questions, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+    post:
+      tags: [User]
+      summary: Ask a question about a venue or event
+      security: [{ bearerAuth: [] }]
+      operationId: createMobileQuestion
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/QuestionRequest" } } }
+      responses:
+        "200": { description: Question submitted for moderation, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /me/messages:
     get:
       tags: [User]
@@ -264,6 +345,49 @@ paths:
         "200": { description: Message sent, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /me/messages/{conversationId}:
+    get:
+      tags: [User]
+      summary: Load messages in one conversation
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileConversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Conversation messages, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [User]
+      summary: Mark conversation messages as read
+      security: [{ bearerAuth: [] }]
+      operationId: markMobileConversationRead
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Messages marked read, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /me/messages/stream:
+    get:
+      tags: [User]
+      summary: Subscribe to foreground message events
+      security: [{ bearerAuth: [] }]
+      operationId: streamMobileMessages
+      parameters:
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Server-sent message events
+          content: { text/event-stream: { schema: { type: string } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
   /me/events:
     get:
       tags: [User]
@@ -373,6 +497,27 @@ components:
         time: { type: string, pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' }
         partySize: { type: integer, minimum: 1, maximum: 50 }
         notes: { type: string, maxLength: 500 }
+    CancelReservationRequest:
+      type: object
+      properties:
+        status: { type: string, enum: [CANCELLED], default: CANCELLED }
+        cancelReason: { type: string, maxLength: 500 }
+    ReviewRequest:
+      type: object
+      required: [rating]
+      properties:
+        venueId: { type: string }
+        eventId: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        title: { type: string, maxLength: 120 }
+        content: { type: string, maxLength: 2000 }
+    QuestionRequest:
+      type: object
+      required: [content]
+      properties:
+        venueId: { type: string }
+        eventId: { type: string }
+        content: { type: string, minLength: 5, maxLength: 1000 }
     MessageRequest:
       type: object
       required: [venueId, receiverId, content]

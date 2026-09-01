@@ -432,6 +432,13 @@ export const getEventBySlug = serverCache(async (slug: string): Promise<EventWit
         },
         orderBy: { createdAt: 'desc' },
       },
+      questions: {
+        where: { status: { in: ['APPROVED', 'PENDING'] } },
+        include: {
+          user: { select: { id: true, name: true, image: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
       recurrenceRule: true,
     },
   })
