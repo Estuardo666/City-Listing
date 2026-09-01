@@ -11,6 +11,7 @@ tags:
   - name: Home
   - name: Explore
   - name: Content
+  - name: User
 paths:
   /health:
     get:
@@ -164,6 +165,34 @@ paths:
         "200":
           description: Public blog content
           content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
+  /me/favorites:
+    get:
+      tags: [User]
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileFavorites
+      responses:
+        "200": { description: Saved content, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      security: [{ bearerAuth: [] }]
+      operationId: addMobileFavorite
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/FavoriteRequest" } } }
+      responses:
+        "200": { description: Favorite added, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      tags: [User]
+      security: [{ bearerAuth: [] }]
+      operationId: removeMobileFavorite
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/FavoriteRequest" } } }
+      responses:
+        "200": { description: Favorite removed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
 components:
   securitySchemes:
     bearerAuth:
@@ -204,6 +233,12 @@ components:
       required: [refreshToken]
       properties:
         refreshToken: { type: string, minLength: 1 }
+    FavoriteRequest:
+      type: object
+      required: [kind, itemId]
+      properties:
+        kind: { type: string, enum: [venue, event, post, route] }
+        itemId: { type: string, minLength: 1 }
     TokenEnvelope:
       allOf:
         - $ref: "#/components/schemas/SuccessEnvelope"
