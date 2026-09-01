@@ -52,6 +52,7 @@
 - [x] Añadir fotos opcionales de reseñas, hasta seis URLs validadas y persistidas en `ReviewPhoto`.
 - [x] Añadir conversación detallada, marcar leído, SSE foreground y cancelación de reservas.
 - [x] Añadir reporte autenticado e idempotente de mensajes (`POST /me/messages/report`) con razones normalizadas.
+- [x] Añadir bloqueo/desbloqueo autenticado de participantes (`POST/DELETE /me/messages/block`) y rechazo de mensajes mientras exista el bloqueo.
 - [x] Añadir upload multipart autenticado a R2 y portada opcional de eventos.
 - [x] Añadir intereses/preferencias de onboarding (`GET/PUT /me/interests`).
 - [x] Añadir colecciones privadas, ítems idempotentes y check-ins con radio de 1 km.
@@ -59,7 +60,7 @@
 
 ## Evidencia
 
-- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33508187934 (typecheck, lint, integración móvil, OpenAPI y build tras estabilizar la relación opcional de fotos).
+- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33512178880 (typecheck, lint, integración móvil, OpenAPI y build tras añadir reporte y bloqueo idempotente de conversaciones).
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI (último gate verde): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33507432287
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
