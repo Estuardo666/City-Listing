@@ -1,5 +1,5 @@
 import 'server-only'
-import { cache } from 'react'
+import { serverCache } from '@/lib/server-cache'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
@@ -82,7 +82,7 @@ export async function getPublicCollections(limit = 20) {
   })
 }
 
-export const getCollectionBySlug = cache(async (slug: string) => {
+export const getCollectionBySlug = serverCache(async (slug: string) => {
   return prisma.collection.findFirst({
     where: { slug, isPublic: true },
     include: {

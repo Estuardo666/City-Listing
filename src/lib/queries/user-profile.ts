@@ -1,8 +1,8 @@
 import 'server-only'
-import { cache } from 'react'
+import { serverCache } from '@/lib/server-cache'
 import { prisma } from '@/lib/prisma'
 
-export const getUserProfileById = cache(async (userId: string) => {
+export const getUserProfileById = serverCache(async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
