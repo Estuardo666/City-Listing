@@ -12,10 +12,12 @@ tags:
   - name: Explore
   - name: Content
   - name: User
+security: []
 paths:
   /health:
     get:
       tags: [Health]
+      summary: Check mobile API availability
       operationId: getMobileHealth
       responses:
         "200":
@@ -27,6 +29,7 @@ paths:
   /auth/register:
     post:
       tags: [Auth]
+      summary: Register a mobile user
       operationId: registerMobileUser
       requestBody:
         required: true
@@ -42,6 +45,7 @@ paths:
   /auth/login:
     post:
       tags: [Auth]
+      summary: Sign in with email and password
       operationId: loginMobileUser
       requestBody:
         required: true
@@ -60,6 +64,7 @@ paths:
   /auth/apple:
     post:
       tags: [Auth]
+      summary: Sign in with Apple identity token
       operationId: loginMobileUserWithApple
       requestBody:
         required: true
@@ -79,6 +84,7 @@ paths:
   /auth/refresh:
     post:
       tags: [Auth]
+      summary: Rotate a mobile refresh session
       operationId: refreshMobileSession
       requestBody:
         required: true
@@ -97,6 +103,7 @@ paths:
   /auth/logout:
     post:
       tags: [Auth]
+      summary: Revoke a mobile refresh session
       operationId: logoutMobileSession
       requestBody:
         required: true
@@ -115,6 +122,7 @@ paths:
   /home:
     get:
       tags: [Home]
+      summary: Load featured home sections
       operationId: getMobileHome
       responses:
         "200":
@@ -126,6 +134,7 @@ paths:
   /explore:
     get:
       tags: [Explore]
+      summary: Search venues and events with filters
       operationId: exploreMobileContent
       parameters:
         - { $ref: "#/components/parameters/Query" }
@@ -146,6 +155,7 @@ paths:
   /venues/{slug}:
     get:
       tags: [Content]
+      summary: Load a venue detail
       operationId: getMobileVenue
       parameters:
         - name: slug
@@ -160,6 +170,7 @@ paths:
   /events/{slug}:
     get:
       tags: [Content]
+      summary: Load an event detail
       operationId: getMobileEvent
       parameters:
         - name: slug
@@ -174,6 +185,7 @@ paths:
   /content:
     get:
       tags: [Content]
+      summary: Load public content sections
       operationId: getMobileContent
       parameters:
         - { $ref: "#/components/parameters/Query" }
@@ -276,6 +288,7 @@ paths:
   /me/favorites:
     get:
       tags: [User]
+      summary: List saved content
       security: [{ bearerAuth: [] }]
       operationId: getMobileFavorites
       responses:
@@ -283,6 +296,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
     post:
       tags: [User]
+      summary: Save content for the current user
       security: [{ bearerAuth: [] }]
       operationId: addMobileFavorite
       requestBody:
@@ -293,6 +307,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
     delete:
       tags: [User]
+      summary: Remove saved content for the current user
       security: [{ bearerAuth: [] }]
       operationId: removeMobileFavorite
       requestBody:
