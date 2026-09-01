@@ -4,8 +4,8 @@
 
 - Checkpoint activo: CP5–CP8 — contratos móviles de interacción, cuenta, mensajería y creación.
 - Fuente de verdad backend: `Estuardo666/City-Listing`.
-- Producción: `https://viveloja.com`.
-- Neon: inspeccionado en solo lectura; el esquema coincide con Prisma.
+- Producción: `https://viveloja.com` (la web responde; las rutas nuevas `/api/mobile/v1/*` aún devuelven 404 hasta desplegar este checkpoint).
+- Neon: inspeccionado en solo lectura; la migración aditiva `MobileRefreshSession` está preparada pero aún no aplicada.
 - Cliente iOS: proyecto XcodeGen separado en `Vive Loja Swift`; el build unsigned y XCTest se verifican en su propio repositorio.
 
 ## Reglas de ejecución
@@ -62,5 +62,5 @@
 
 - Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33512178880 (typecheck, lint, integración móvil, OpenAPI y build tras añadir reporte y bloqueo idempotente de conversaciones).
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
-- iOS CI (último gate verde): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33507432287
+- iOS CI (último gate verde previo a la reconexión SSE): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33513652243
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
