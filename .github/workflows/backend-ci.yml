@@ -76,6 +76,9 @@ jobs:
       - name: Mobile API integration tests
         run: npm run test:mobile
 
+      - name: Optional integration configuration tests
+        run: npm run test:config
+
       - name: Lint
         run: npm run lint
 
