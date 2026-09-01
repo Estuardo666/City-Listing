@@ -2,11 +2,11 @@
 
 ## Estado actual
 
-- Checkpoint activo: CP1 — base iOS y autenticación.
+- Checkpoint activo: CP2/CP3 — navegación, design system y contenido público.
 - Fuente de verdad backend: `Estuardo666/City-Listing`.
 - Producción: `https://viveloja.com`.
 - Neon: inspeccionado en solo lectura; el esquema coincide con Prisma.
-- iOS: proyecto XcodeGen creado en `Vive Loja Swift`; el build unsigned ya compila en macOS 26/Xcode 26.2 y la suite XCTest sigue ejecutándose por cola de GitHub Actions.
+- iOS: proyecto XcodeGen creado en `Vive Loja Swift`; el build unsigned y la suite XCTest se ejecutan en macOS 26/Xcode 26.2 por GitHub Actions.
 
 ## Reglas de ejecución
 
@@ -37,14 +37,16 @@
 - [x] Añadir rate limit distribuido para login/registro y manejo de carreras por email único.
 - [x] Añadir API autenticada de guardados (`GET/POST/DELETE /api/mobile/v1/me/favorites`) lista para sincronización del cliente.
 - [x] Añadir Sign in with Apple: nonce con hash en iOS y verificación JWKS/issuer/audience en backend; se habilita al configurar `APPLE_CLIENT_ID`.
+- [x] Añadir contenido móvil: posts/categorías, promociones activas, rutas aprobadas y colecciones públicas.
+- [x] Corregir memoización server-side para React 18 con fallback cuando `react.cache` no existe.
 - [x] Crear cliente SwiftUI con URLSession, Observation, Keychain y fixtures.
 - [x] Crear workflow iOS unsigned para Xcode 26.
 - [x] Compilar el cliente y generar el bundle de tests en macOS 26 (runs `33486192317` y posteriores; los fallos iniciales fueron corregidos en commits siguientes).
-- [ ] Añadir tests de integración de auth y rate limiting.
+- [x] Añadir tests de integración de auth, refresh single-use, logout, favoritos y contenido.
 
 ## Evidencia
 
-- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33491264262
+- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33494215251
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI: https://github.com/Estuardo666/vive-loja-ios/actions
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
