@@ -39,7 +39,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, reservationsRoute, messagesRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, reservationsRoute, messagesRoute, eventsRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -49,6 +49,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/me/profile/route'),
     import('../src/app/api/mobile/v1/me/reservations/route'),
     import('../src/app/api/mobile/v1/me/messages/route'),
+    import('../src/app/api/mobile/v1/me/events/route'),
     import('../src/lib/prisma'),
   ])
   t.after(async () => prisma.$disconnect())
@@ -120,6 +121,14 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   const conversations = await messagesRoute.GET(new Request('http://localhost/api/mobile/v1/me/messages', { headers: authHeaders }))
   assert.equal(conversations.status, 200)
   assert.ok(((await conversations.json()) as { data: Array<{ venueId?: string }> }).data.length >= 1)
+
+  const createdEvent = await eventsRoute.POST(new Request('http://localhost/api/mobile/v1/me/events', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({
+      title: 'Evento móvil CI', description: 'Evento de prueba para el contrato móvil.', startDate: new Date(Date.now() + 172_800_000).toISOString(), location: 'Centro de Loja', price: 0,
+    }),
+  }))
+  assert.equal(createdEvent.status, 200)
+  assert.equal(((await createdEvent.json()) as { data: { status: string }; meta?: { moderation: string } }).data.status, 'PENDING')
   const favorite = await favoritesRoute.POST(jsonRequest('/me/favorites', { kind: 'venue', itemId: venue.id }, authHeaders))
   assert.equal(favorite.status, 200)
   const listed = await favoritesRoute.GET(new Request('http://localhost/api/mobile/v1/me/favorites', { headers: authHeaders }))
