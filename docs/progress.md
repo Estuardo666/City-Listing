@@ -46,6 +46,7 @@
 - [x] Añadir perfil móvil autenticado (`GET/PATCH /me/profile`) con estadísticas públicas y validación.
 - [x] Añadir reservas móviles (`GET/POST /me/reservations`) con fecha futura, aforo e idempotencia lógica.
 - [x] Añadir inbox y envío de mensajes (`GET/POST /me/messages`) con control de bloqueo.
+- [x] Sanitizar plan histórico de emails que contenía una credencial; la rotación del valor debe hacerse en Resend/hosting.
 
 ## Evidencia
 
