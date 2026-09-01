@@ -510,7 +510,18 @@ paths:
       security: [{ bearerAuth: [] }]
       operationId: getMobileFavorites
       responses:
-        "200": { description: Saved content, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "200":
+          description: Saved content
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/FavoriteRecord" }
         "401": { $ref: "#/components/responses/Unauthorized" }
     post:
       tags: [User]
@@ -969,6 +980,33 @@ components:
       properties:
         kind: { type: string, enum: [venue, event, post, route] }
         itemId: { type: string, minLength: 1 }
+    FavoriteSummary:
+      type: object
+      required: [kind, id, title, slug]
+      properties:
+        kind: { type: string, enum: [venue, event, post, route] }
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        description: { type: [string, 'null'] }
+        image: { type: [string, 'null'], format: uri }
+        subtitle: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        lat: { type: [number, 'null'], minimum: -90, maximum: 90 }
+        lng: { type: [number, 'null'], minimum: -180, maximum: 180 }
+        startDate: { type: [string, 'null'], format: date-time }
+    FavoriteRecord:
+      type: object
+      required: [id, kind, itemId, createdAt]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [venue, event, post, route] }
+        itemId: { type: string }
+        createdAt: { type: string, format: date-time }
+        item:
+          anyOf:
+            - $ref: "#/components/schemas/FavoriteSummary"
+            - type: 'null'
     CollectionRequest:
       type: object
       required: [name]

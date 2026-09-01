@@ -153,7 +153,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(typeof pagedBody.meta?.posts?.hasMore, 'boolean')
   assert.equal(typeof pagedBody.meta?.posts?.nextSkip, 'number')
 
-  const venue = await prisma.venue.findFirst({ where: { status: 'APPROVED', isActive: true }, select: { id: true, slug: true, lat: true, lng: true } })
+  const venue = await prisma.venue.findFirst({ where: { status: 'APPROVED', isActive: true }, select: { id: true, name: true, slug: true, description: true, image: true, location: true, address: true, lat: true, lng: true } })
   assert.ok(venue, 'CI seed must provide an approved venue for the favorites contract')
   const authHeaders = { authorization: `Bearer ${rotated.data.accessToken}` }
   const venueDetail = await venueDetailRoute.GET(new Request(`http://localhost/api/mobile/v1/venues/${venue.slug}`), { params: Promise.resolve({ slug: venue.slug }) })
@@ -315,7 +315,10 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(favorite.status, 200)
   const listed = await favoritesRoute.GET(new Request('http://localhost/api/mobile/v1/me/favorites', { headers: authHeaders }))
   assert.equal(listed.status, 200)
-  assert.equal(((await listed.json()) as { data: Array<{ itemId: string }> }).data.some((item) => item.itemId === venue.id), true)
+  const listedData = (await listed.json()) as { data: Array<{ itemId: string; item?: { kind: string; id: string; title: string; slug: string } | null }> }
+  const listedFavorite = listedData.data.find((item) => item.itemId === venue.id)
+  assert.ok(listedFavorite)
+  assert.deepEqual(listedFavorite?.item, { kind: 'venue', id: venue.id, title: venue.name, slug: venue.slug, description: venue.description, image: venue.image, subtitle: venue.location, address: venue.address, lat: venue.lat, lng: venue.lng })
   const removed = await favoritesRoute.DELETE(jsonRequest('/me/favorites', { kind: 'venue', itemId: venue.id }, authHeaders))
   assert.equal(removed.status, 200)
 

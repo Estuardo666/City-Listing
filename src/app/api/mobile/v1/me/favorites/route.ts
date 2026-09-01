@@ -16,12 +16,30 @@ function fieldFor(kind: z.infer<typeof favoriteSchema>['kind']) {
 export async function GET(request: Request) {
   const principal = await getMobilePrincipal(request)
   if (!principal) return mobileError('UNAUTHORIZED', 'Inicia sesión para ver tus guardados.', 401)
-  const favorites = await prisma.favorite.findMany({ where: { userId: principal.userId }, orderBy: { createdAt: 'desc' } })
+  const favorites = await prisma.favorite.findMany({
+    where: { userId: principal.userId },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      venue: { select: { id: true, name: true, slug: true, description: true, image: true, location: true, address: true, lat: true, lng: true } },
+      event: { select: { id: true, title: true, slug: true, description: true, image: true, location: true, address: true, lat: true, lng: true, startDate: true } },
+      post: { select: { id: true, title: true, slug: true, excerpt: true, image: true } },
+      route: { select: { id: true, title: true, slug: true, description: true, image: true, duration: true, difficulty: true } },
+    },
+  })
   return mobileSuccess(favorites.map((favorite) => ({
     id: favorite.id,
     kind: favorite.venueId ? 'venue' : favorite.eventId ? 'event' : favorite.postId ? 'post' : 'route',
     itemId: favorite.venueId ?? favorite.eventId ?? favorite.postId ?? favorite.routeId,
     createdAt: favorite.createdAt,
+    item: favorite.venue
+      ? { kind: 'venue', id: favorite.venue.id, title: favorite.venue.name, slug: favorite.venue.slug, description: favorite.venue.description, image: favorite.venue.image, subtitle: favorite.venue.location, address: favorite.venue.address, lat: favorite.venue.lat, lng: favorite.venue.lng }
+      : favorite.event
+        ? { kind: 'event', id: favorite.event.id, title: favorite.event.title, slug: favorite.event.slug, description: favorite.event.description, image: favorite.event.image, subtitle: favorite.event.location, address: favorite.event.address, lat: favorite.event.lat, lng: favorite.event.lng, startDate: favorite.event.startDate }
+        : favorite.post
+          ? { kind: 'post', id: favorite.post.id, title: favorite.post.title, slug: favorite.post.slug, description: favorite.post.excerpt, image: favorite.post.image, subtitle: favorite.post.excerpt }
+          : favorite.route
+            ? { kind: 'route', id: favorite.route.id, title: favorite.route.title, slug: favorite.route.slug, description: favorite.route.description, image: favorite.route.image, subtitle: [favorite.route.duration, favorite.route.difficulty].filter(Boolean).join(' · ') || null }
+            : null,
   })))
 }
 
