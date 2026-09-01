@@ -480,6 +480,115 @@ paths:
       responses:
         "200": { description: Favorite removed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /me/collections:
+    get:
+      tags: [User]
+      summary: List the authenticated user's collections
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileCollections
+      responses:
+        "200": { description: Collections, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Create a collection
+      security: [{ bearerAuth: [] }]
+      operationId: createMobileCollection
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CollectionRequest" } } }
+      responses:
+        "200": { description: Collection created, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+  /me/collections/{id}:
+    get:
+      tags: [User]
+      summary: Read one owned collection
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileCollection
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Collection, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [User]
+      summary: Update one owned collection
+      security: [{ bearerAuth: [] }]
+      operationId: updateMobileCollection
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CollectionUpdateRequest" } } }
+      responses:
+        "200": { description: Collection updated, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [User]
+      summary: Add content to an owned collection
+      security: [{ bearerAuth: [] }]
+      operationId: addMobileCollectionItem
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CollectionItemRequest" } } }
+      responses:
+        "200": { description: Collection item added, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [User]
+      summary: Delete an owned collection
+      security: [{ bearerAuth: [] }]
+      operationId: deleteMobileCollection
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Collection deleted, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /me/collections/{id}/items:
+    delete:
+      tags: [User]
+      summary: Remove content from an owned collection
+      security: [{ bearerAuth: [] }]
+      operationId: removeMobileCollectionItem
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CollectionItemKey" } } }
+      responses:
+        "200": { description: Collection item removed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /me/check-ins:
+    get:
+      tags: [User]
+      summary: List authenticated user's check-ins
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileCheckIns
+      responses:
+        "200": { description: Check-ins, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Register a nearby venue check-in
+      security: [{ bearerAuth: [] }]
+      operationId: createMobileCheckIn
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CheckInRequest" } } }
+      responses:
+        "200": { description: Check-in registered, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/BadRequest" }
 components:
   securitySchemes:
     bearerAuth:
@@ -597,6 +706,42 @@ components:
       properties:
         kind: { type: string, enum: [venue, event, post, route] }
         itemId: { type: string, minLength: 1 }
+    CollectionRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        description: { type: string, maxLength: 500 }
+        icon: { type: string, maxLength: 40 }
+        isPublic: { type: boolean, default: true }
+    CollectionUpdateRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        description: { type: [string, 'null'], maxLength: 500 }
+        icon: { type: [string, 'null'], maxLength: 40 }
+        isPublic: { type: boolean }
+    CollectionItemKey:
+      type: object
+      required: [kind, itemId]
+      properties:
+        kind: { type: string, enum: [venue, event, post, route] }
+        itemId: { type: string, minLength: 1 }
+    CollectionItemRequest:
+      allOf:
+        - $ref: "#/components/schemas/CollectionItemKey"
+      properties:
+        note: { type: string, maxLength: 300 }
+        order: { type: integer, minimum: 0 }
+    CheckInRequest:
+      type: object
+      required: [venueId, lat, lng]
+      properties:
+        venueId: { type: string }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+        note: { type: string, maxLength: 500 }
+        photoUrl: { type: string, format: uri, maxLength: 2000 }
     TokenEnvelope:
       allOf:
         - $ref: "#/components/schemas/SuccessEnvelope"
