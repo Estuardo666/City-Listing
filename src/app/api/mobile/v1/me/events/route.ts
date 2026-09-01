@@ -15,6 +15,7 @@ const eventSchema = z.object({
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
   price: z.number().min(0).max(10_000).optional(),
+  image: z.string().url().max(2_000).optional(),
   venueId: z.string().trim().min(1).optional(),
 }).superRefine((value, context) => {
   if (value.endDate && new Date(value.endDate) <= new Date(value.startDate)) {
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
       userId: principal.userId, title: parsed.data.title, slug, description: parsed.data.description,
       startDate, endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : undefined,
       location: parsed.data.location, address: parsed.data.address, lat: parsed.data.lat, lng: parsed.data.lng,
-      price: parsed.data.price, venueId: parsed.data.venueId, status: 'PENDING',
+      price: parsed.data.price, image: parsed.data.image, venueId: parsed.data.venueId, status: 'PENDING',
     },
     select: eventSelect,
   })

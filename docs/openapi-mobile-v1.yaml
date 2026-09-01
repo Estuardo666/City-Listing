@@ -345,6 +345,25 @@ paths:
         "200": { description: Message sent, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /me/uploads:
+    post:
+      tags: [User]
+      summary: Upload an image or video for a mobile draft
+      security: [{ bearerAuth: [] }]
+      operationId: uploadMobileMedia
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "200": { description: Uploaded media URL, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /me/messages/{conversationId}:
     get:
       tags: [User]
@@ -538,6 +557,7 @@ components:
         lat: { type: number, minimum: -90, maximum: 90 }
         lng: { type: number, minimum: -180, maximum: 180 }
         price: { type: number, minimum: 0 }
+        image: { type: string, format: uri, maxLength: 2000 }
         venueId: { type: string }
     RefreshRequest:
       type: object
