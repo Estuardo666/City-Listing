@@ -22,4 +22,4 @@ Liquid Glass se reserva para navegación, toolbars, buscadores, filtros, sheets 
 
 ## ADR-006 — Auditoría de dependencias
 
-`npm audit --omit=dev` mantiene un aviso moderado asociado a Next 15.5.25 y uno alto en el PostCSS fijado internamente por esa versión de Next. No se ejecuta `npm audit fix --force` porque saltaría a Next 16/React 19 y cambiaría el contrato de la aplicación existente. El gate CI bloquea vulnerabilidades críticas; el upgrade mayor queda planificado para CP9.
+El baseline de CP0 mantenía avisos de Next 15.5.25/PostCSS y evitaba `npm audit fix --force` porque podía cambiar el contrato de la aplicación. En CP9 se ejecutó una actualización explícita y revisada a Next `16.3.4`, con la migración requerida de `middleware` a `proxy` y el script Webpack fijado para conservar el pipeline existente. El gate de GitHub Actions confirma `npm audit --omit=dev` sin vulnerabilidades de producción, además de typecheck, integración móvil, OpenAPI y build verdes (runs `33538203613` y `33538569725`). La rama candidata permanece en PR hasta revisión y validación del despliegue Vercel.
