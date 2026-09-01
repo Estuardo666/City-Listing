@@ -73,6 +73,9 @@ jobs:
       - name: Seed CI data
         run: npm run db:seed
 
+      - name: Mobile API integration tests
+        run: npm run test:mobile
+
       - name: Lint
         run: npm run lint
 

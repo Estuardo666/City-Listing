@@ -8,6 +8,7 @@
     "build": "prisma generate && next build --turbopack",
     "build:webpack": "prisma generate && next build",
     "start": "next start",
+    "test:mobile": "node --require ./tests/register-server-only.cjs --import tsx --test tests/mobile-api.test.ts",
     "lint": "eslint . --ext .ts,.tsx",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
@@ -58,6 +59,7 @@
     "react-map-gl": "^7.1.7",
     "recharts": "^2.13.0",
     "resend": "^6.12.4",
+    "server-only": "^0.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^2.5.4",
     "zod": "^3.25.76"
