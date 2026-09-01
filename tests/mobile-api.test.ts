@@ -33,6 +33,35 @@ test('Apple login fails closed when the provider is not configured', async () =>
   })
 })
 
+test('AASA fails closed without a Team ID and emits configured app links', async () => {
+  const previousTeamID = process.env.APPLE_TEAM_ID
+  const previousBundleID = process.env.APPLE_BUNDLE_ID
+  const { GET } = await import('../src/app/.well-known/apple-app-site-association/route')
+
+  try {
+    delete process.env.APPLE_TEAM_ID
+    process.env.APPLE_BUNDLE_ID = 'com.viveloja.app'
+    assert.equal((await GET()).status, 404)
+
+    process.env.APPLE_TEAM_ID = 'TEAMID123'
+    const response = await GET()
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), {
+      applinks: {
+        details: [{
+          appIDs: ['TEAMID123.com.viveloja.app'],
+          components: [{ '/': '/locales/*' }, { '/': '/eventos/*' }, { '/': '/blog/*' }],
+        }],
+      },
+    })
+  } finally {
+    if (previousTeamID === undefined) delete process.env.APPLE_TEAM_ID
+    else process.env.APPLE_TEAM_ID = previousTeamID
+    if (previousBundleID === undefined) delete process.env.APPLE_BUNDLE_ID
+    else process.env.APPLE_BUNDLE_ID = previousBundleID
+  }
+})
+
 test('mobile auth and favorites lifecycle is single-use and idempotent', async (t) => {
   if (!process.env.DATABASE_URL) {
     t.skip('requires DATABASE_URL from the ephemeral CI service')
