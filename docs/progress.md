@@ -26,13 +26,15 @@
 - [x] Resolver el bloqueo de build por inicialización eager de Upstash Search (cliente lazy).
 - [x] Documentar la excepción de las vulnerabilidades no críticas restantes de Next 15 (la actualización mayor queda para CP9).
 - [x] Ejecutar audit/typecheck local con variables dummy; build local requiere PostgreSQL efímero.
-- [x] Ejecutar audit, typecheck y build en GitHub Actions (run `33486590765`).
+- [x] Ejecutar audit, typecheck y build en GitHub Actions (runs `33486590765`, `33487559859`).
 
 ## CP1 (inicio)
 
 - [x] Añadir modelo separado `MobileRefreshSession`.
 - [x] Añadir emisión, rotación y revocación de tokens móviles.
 - [x] Añadir endpoints health/register/login/refresh/logout.
+- [x] Añadir endpoints públicos de Home, Explore y detalle de locales/eventos con DTO móvil sanitizado.
+- [x] Añadir rate limit distribuido para login/registro y manejo de carreras por email único.
 - [x] Crear cliente SwiftUI con URLSession, Observation, Keychain y fixtures.
 - [x] Crear workflow iOS unsigned para Xcode 26.
 - [x] Compilar el cliente y generar el bundle de tests en macOS 26 (runs `33486192317` y posteriores; los fallos iniciales fueron corregidos en commits siguientes).
@@ -41,7 +43,7 @@
 
 ## Evidencia
 
-- Backend CI verde: https://github.com/Estuardo666/City-Listing/actions/runs/33486590765
+- Backend CI verde: https://github.com/Estuardo666/City-Listing/actions/runs/33487559859
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI: https://github.com/Estuardo666/vive-loja-ios/actions
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
