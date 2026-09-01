@@ -51,6 +51,7 @@
 - [x] Añadir reseñas y preguntas móviles (`GET/POST /me/reviews`, `GET/POST /me/questions`) con moderación pendiente.
 - [x] Añadir fotos opcionales de reseñas, hasta seis URLs validadas y persistidas en `ReviewPhoto`.
 - [x] Añadir conversación detallada, marcar leído, SSE foreground y cancelación de reservas.
+- [x] Añadir reporte autenticado e idempotente de mensajes (`POST /me/messages/report`) con razones normalizadas.
 - [x] Añadir upload multipart autenticado a R2 y portada opcional de eventos.
 - [x] Añadir intereses/preferencias de onboarding (`GET/PUT /me/interests`).
 - [x] Añadir colecciones privadas, ítems idempotentes y check-ins con radio de 1 km.
