@@ -40,9 +40,6 @@ export type EventWithRelations = Prisma.EventGetPayload<{
             image: true
           }
         }
-        photos: {
-          orderBy: { order: 'asc' }
-        }
       }
       orderBy: { createdAt: 'desc' }
     }
