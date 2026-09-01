@@ -2,12 +2,12 @@
 
 ## Estado actual
 
-- Checkpoint activo: CP5–CP8 — contratos móviles de interacción, cuenta, mensajería y creación.
+- Checkpoint activo: CP9 — auditoría de seguridad y compatibilidad Next.js 16.
 - Fuente de verdad backend: `Estuardo666/City-Listing`.
 - Producción: `https://viveloja.com` (la web responde; las rutas nuevas `/api/mobile/v1/*` aún devuelven 404 hasta desplegar este checkpoint).
 - Neon: inspeccionado en solo lectura; la migración aditiva `MobileRefreshSession` está preparada pero aún no aplicada.
 - Cliente iOS: proyecto XcodeGen separado en `Vive Loja Swift`; el build unsigned y XCTest se verifican en su propio repositorio.
-- Auditoría CP9: rama `checkpoint/cp-9-next16-audit` actualiza Next a `16.3.4`, migra `middleware` a `proxy`, usa ESLint 9/flat config con reglas del React Compiler diferidas, fija dependencias transitivas parcheadas, sirve AASA de forma fail-closed mediante `APPLE_TEAM_ID` y deja el audit completo y de producción en cero; [CI push 33543411921](https://github.com/Estuardo666/City-Listing/actions/runs/33543411921) y [CI PR 33543415488](https://github.com/Estuardo666/City-Listing/actions/runs/33543415488) validan el SHA actual. PR #2 queda abierta para revisión.
+- Auditoría CP9: rama `checkpoint/cp-9-next16-audit` actualiza Next a `16.3.4`, migra `middleware` a `proxy`, usa ESLint 9/flat config con reglas del React Compiler diferidas, fija dependencias transitivas parcheadas, sirve AASA de forma fail-closed mediante `APPLE_TEAM_ID`, difiere la inicialización de Resend hasta el envío y deja el audit completo y de producción en cero; [CI push 33544993866](https://github.com/Estuardo666/City-Listing/actions/runs/33544993866) y [CI PR 33544998871](https://github.com/Estuardo666/City-Listing/actions/runs/33544998871) validan el commit `b1d305e`. PR #2 queda abierta para revisión; Vercel Preview sigue rojo y requiere logs/configuración del proveedor.
 
 ## Reglas de ejecución
 
@@ -58,10 +58,11 @@
 - [x] Añadir intereses/preferencias de onboarding (`GET/PUT /me/interests`).
 - [x] Añadir colecciones privadas, ítems idempotentes y check-ins con radio de 1 km.
 - [x] Añadir borradores autenticados para locales, artículos y rutas con estado `PENDING`.
+- [x] Hacer tolerante el build a `RESEND_API_KEY` ausente: la integración falla sólo al enviar y tiene prueba de configuración (`tests/resend-config.test.ts`).
 
 ## Evidencia
 
-- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33512178880 (typecheck, lint, integración móvil, OpenAPI y build tras añadir reporte y bloqueo idempotente de conversaciones).
+- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33544993866 (Prisma, seed efímero, integración móvil, prueba de configuración Resend, lint, typecheck, audit, OpenAPI y build webpack).
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI (último gate verde previo a la reconexión SSE): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33513652243
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
