@@ -28,7 +28,7 @@ const CONNECT_SRC_DOMAINS = [
   'https://va.vercel-scripts.com',
 ].join(' ')
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (pathname.startsWith('/api/admin/imports/google/slow')) {
