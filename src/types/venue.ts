@@ -52,6 +52,9 @@ export type VenueWithRelations = Prisma.VenueGetPayload<{
             image: true
           }
         }
+        photos: {
+          orderBy: { order: 'asc' }
+        }
       }
       orderBy: { createdAt: 'desc' }
     }
