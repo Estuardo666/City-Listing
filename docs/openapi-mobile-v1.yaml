@@ -151,6 +151,19 @@ paths:
           description: Event detail
           content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
         "404": { $ref: "#/components/responses/NotFound" }
+  /content:
+    get:
+      tags: [Content]
+      operationId: getMobileContent
+      parameters:
+        - { $ref: "#/components/parameters/Query" }
+        - name: category
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Public blog content
+          content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
 components:
   securitySchemes:
     bearerAuth:
