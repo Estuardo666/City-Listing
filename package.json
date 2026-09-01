@@ -9,7 +9,7 @@
     "build:webpack": "prisma generate && next build --webpack",
     "start": "next start",
     "test:mobile": "node --require ./tests/register-server-only.cjs --import tsx --test tests/mobile-api.test.ts",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint .",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
@@ -74,8 +74,8 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.20",
-    "eslint": "^8",
-    "eslint-config-next": "^15.5.25",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.4",
     "postcss": "^8",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.1",
@@ -83,6 +83,8 @@
     "typescript": "^5"
   },
   "overrides": {
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "browserslist": "4.28.8",
+    "postcss-selector-parser": "6.1.3"
   }
 }
