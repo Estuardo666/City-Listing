@@ -35,6 +35,7 @@
 - [x] Añadir endpoints health/register/login/refresh/logout.
 - [x] Añadir endpoints públicos de Home, Explore y detalle de locales/eventos con DTO móvil sanitizado.
 - [x] Añadir rate limit distribuido para login/registro y manejo de carreras por email único.
+- [x] Añadir API autenticada de guardados (`GET/POST/DELETE /api/mobile/v1/me/favorites`) lista para sincronización del cliente.
 - [x] Crear cliente SwiftUI con URLSession, Observation, Keychain y fixtures.
 - [x] Crear workflow iOS unsigned para Xcode 26.
 - [x] Compilar el cliente y generar el bundle de tests en macOS 26 (runs `33486192317` y posteriores; los fallos iniciales fueron corregidos en commits siguientes).
