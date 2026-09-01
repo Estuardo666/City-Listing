@@ -31,9 +31,11 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     reviews: venue.reviews.map((review) => ({
       id: review.id,
       rating: review.rating,
-      comment: review.content,
+      title: review.title,
+      content: review.content,
       createdAt: review.createdAt,
       user: { id: review.user.id, name: review.user.name, image: review.user.image },
+      photos: review.photos.map(({ id, url, order }) => ({ id, url, order })),
     })),
     questions: ((venue as any).questions ?? []).map((question: any) => ({
       id: question.id,
