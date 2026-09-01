@@ -170,7 +170,15 @@ paths:
       responses:
         "200":
           description: Venue detail
-          content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/VenueDetail"
         "404": { $ref: "#/components/responses/NotFound" }
   /events/{slug}:
     get:
@@ -836,6 +844,22 @@ components:
         terms: { type: [string, 'null'] }
         featured: { type: boolean }
         venue: { type: object, additionalProperties: true }
+    VenueDetail:
+      allOf:
+        - $ref: "#/components/schemas/MobileVenue"
+        - type: object
+          required: [media, services, businessHours, menu, products, events, promotions, reviews, questions]
+          properties:
+            operatingHours: { type: [object, 'null'], additionalProperties: true }
+            businessHours: { type: array, items: { type: object, additionalProperties: true } }
+            menu: { type: array, items: { type: object, additionalProperties: true } }
+            products: { type: array, items: { type: object, additionalProperties: true } }
+            events: { type: array, items: { type: object, additionalProperties: true } }
+            promotions: { type: array, items: { type: object, additionalProperties: true } }
+            media: { type: array, items: { type: object, additionalProperties: true } }
+            services: { type: array, items: { type: object, additionalProperties: true } }
+            reviews: { type: array, items: { type: object, additionalProperties: true } }
+            questions: { type: array, items: { type: object, additionalProperties: true } }
     RegisterRequest:
       type: object
       required: [name, email, password]

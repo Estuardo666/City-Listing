@@ -68,7 +68,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, homeRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, homeRoute, venueDetailRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -76,6 +76,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/me/favorites/route'),
     import('../src/app/api/mobile/v1/content/route'),
     import('../src/app/api/mobile/v1/home/route'),
+    import('../src/app/api/mobile/v1/venues/[slug]/route'),
     import('../src/app/api/mobile/v1/me/profile/route'),
     import('../src/app/api/mobile/v1/me/interests/route'),
     import('../src/app/api/mobile/v1/me/reservations/route'),
@@ -152,9 +153,17 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(typeof pagedBody.meta?.posts?.hasMore, 'boolean')
   assert.equal(typeof pagedBody.meta?.posts?.nextSkip, 'number')
 
-  const venue = await prisma.venue.findFirst({ where: { status: 'APPROVED', isActive: true }, select: { id: true, lat: true, lng: true } })
+  const venue = await prisma.venue.findFirst({ where: { status: 'APPROVED', isActive: true }, select: { id: true, slug: true, lat: true, lng: true } })
   assert.ok(venue, 'CI seed must provide an approved venue for the favorites contract')
   const authHeaders = { authorization: `Bearer ${rotated.data.accessToken}` }
+  const venueDetail = await venueDetailRoute.GET(new Request(`http://localhost/api/mobile/v1/venues/${venue.slug}`), { params: Promise.resolve({ slug: venue.slug }) })
+  assert.equal(venueDetail.status, 200)
+  const venueDetailBody = await venueDetail.json() as { data: { businessHours: unknown[]; menu: unknown[]; products: unknown[]; events: unknown[]; promotions: unknown[] } }
+  assert.ok(Array.isArray(venueDetailBody.data.businessHours))
+  assert.ok(Array.isArray(venueDetailBody.data.menu))
+  assert.ok(Array.isArray(venueDetailBody.data.products))
+  assert.ok(Array.isArray(venueDetailBody.data.events))
+  assert.ok(Array.isArray(venueDetailBody.data.promotions))
   const profile = await profileRoute.GET(new Request('http://localhost/api/mobile/v1/me/profile', { headers: authHeaders }))
   assert.equal(profile.status, 200)
   assert.equal(((await profile.json()) as { data: { email: string } }).data.email, email)
