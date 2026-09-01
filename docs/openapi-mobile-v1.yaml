@@ -1,0 +1,178 @@
+openapi: 3.1.0
+info:
+  title: Vive Loja Mobile API
+  version: 1.0.0
+  description: Versioned contract consumed by the Vive Loja iOS client.
+servers:
+  - url: https://viveloja.com/api/mobile/v1
+tags:
+  - name: Health
+  - name: Auth
+  - name: Home
+  - name: Explore
+paths:
+  /health:
+    get:
+      tags: [Health]
+      operationId: getMobileHealth
+      responses:
+        "200":
+          description: API is available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+  /auth/register:
+    post:
+      tags: [Auth]
+      operationId: registerMobileUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: loginMobileUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Session tokens
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenEnvelope"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshMobileSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Rotated session tokens
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenEnvelope"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      operationId: logoutMobileSession
+      responses:
+        "204": { description: Session revoked }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /home:
+    get:
+      tags: [Home]
+      operationId: getMobileHome
+      responses:
+        "200":
+          description: Home sections
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+  /explore:
+    get:
+      tags: [Explore]
+      operationId: exploreMobileContent
+      parameters:
+        - { $ref: "#/components/parameters/Query" }
+        - { $ref: "#/components/parameters/Type" }
+        - { $ref: "#/components/parameters/Take" }
+        - { $ref: "#/components/parameters/VenueSkip" }
+        - { $ref: "#/components/parameters/EventSkip" }
+        - { $ref: "#/components/parameters/Latitude" }
+        - { $ref: "#/components/parameters/Longitude" }
+        - { $ref: "#/components/parameters/Radius" }
+      responses:
+        "200":
+          description: Explore results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Query: { name: q, in: query, schema: { type: string } }
+    Type: { name: type, in: query, schema: { type: string, enum: [all, venues, events] } }
+    Take: { name: take, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 60 } }
+    VenueSkip: { name: venueSkip, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+    EventSkip: { name: eventSkip, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+    Latitude: { name: lat, in: query, schema: { type: number, format: double } }
+    Longitude: { name: lng, in: query, schema: { type: number, format: double } }
+    Radius: { name: radius, in: query, schema: { type: number, minimum: 1 } }
+  schemas:
+    SuccessEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data: {}
+        meta: { type: object, additionalProperties: true }
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 1 }
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string, minLength: 1 }
+    TokenEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            fields: { type: object, additionalProperties: { type: string } }
+  responses:
+    BadRequest:
+      description: Invalid input
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    Unauthorized:
+      description: Authentication required or invalid
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    Conflict:
+      description: Resource conflict
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }

@@ -239,7 +239,7 @@ export function CommandPalette() {
               {/* Empty */}
               {showEmpty && (
                 <motion.p layout="position" className="px-4 py-6 text-center text-sm text-muted-foreground">
-                  Sin resultados para <span className="font-medium text-foreground">"{query}"</span>
+                  Sin resultados para <span className="font-medium text-foreground">&quot;{query}&quot;</span>
                 </motion.p>
               )}
 

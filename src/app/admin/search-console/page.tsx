@@ -78,6 +78,8 @@ export default async function SearchConsolePage({ searchParams }: SearchConsoleP
               Autoriza el acceso a tu cuenta de Google Search Console para ver las metricas de rendimiento de busqueda.
             </p>
 
+            {/* This is an OAuth endpoint, not an internal page navigation. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/api/admin/search-console/setup"
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -121,6 +123,8 @@ export default async function SearchConsolePage({ searchParams }: SearchConsoleP
             </div>
             <h2 className="text-lg font-semibold text-foreground mb-2">Error al cargar datos</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">{message}</p>
+            {/* This is an OAuth endpoint, not an internal page navigation. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/api/admin/search-console/setup"
               className="inline-flex items-center gap-2 rounded-lg bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80 transition-colors"

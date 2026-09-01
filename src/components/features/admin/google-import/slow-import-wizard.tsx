@@ -377,7 +377,7 @@ export function SlowImportWizard() {
             <div className="p-4 bg-muted/50 rounded-lg space-y-2">
               <p className="text-sm"><strong>Locales seleccionados:</strong> {selectedIds.size}</p>
               <p className="text-sm">Los negocios se crearán como <Badge variant="secondary">BORRADOR</Badge></p>
-              <p className="text-sm text-muted-foreground">Podrás publicarlos en lote desde la pestaña "Borradores"</p>
+              <p className="text-sm text-muted-foreground">Podrás publicarlos en lote desde la pestaña &quot;Borradores&quot;</p>
             </div>
 
             <div className="space-y-3">

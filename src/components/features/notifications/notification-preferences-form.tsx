@@ -110,7 +110,7 @@ export function NotificationPreferencesForm() {
                 />
               </FormControl>
               <FormDescription>
-                Cuántas horas hacia el futuro se consideran "próximos eventos".
+                Cuántas horas hacia el futuro se consideran &quot;próximos eventos&quot;.
               </FormDescription>
               <FormMessage />
             </FormItem>

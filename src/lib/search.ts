@@ -1,9 +1,12 @@
 import 'server-only'
 import { Search } from '@upstash/search'
 
-// Configuración de Upstash Search - usar fromEnv() para leer variables automáticamente
-const searchClient = Search.fromEnv()
-const searchIndex = searchClient.index("city-listing")
+// El cliente se inicializa bajo demanda: el build, CI y las rutas que no usan
+// búsqueda no deben exigir credenciales de Upstash Search.
+function getSearchIndex() {
+  if (!process.env.UPSTASH_SEARCH_REST_URL || !process.env.UPSTASH_SEARCH_REST_TOKEN) return null
+  return Search.fromEnv().index('city-listing')
+}
 
 // Tipos para los documentos de búsqueda
 export interface SearchDocument {
@@ -18,6 +21,8 @@ export interface SearchDocument {
 
 // Función para indexar un documento
 export async function indexDocument(doc: SearchDocument) {
+  const searchIndex = getSearchIndex()
+  if (!searchIndex) return
   try {
     // Crear el documento con el formato correcto
     const documentId = `${doc.type}:${doc.id}`
@@ -44,6 +49,8 @@ export async function indexDocument(doc: SearchDocument) {
 
 // Función para buscar documentos
 export async function searchDocuments(query: string, limit: number = 10) {
+  const searchIndex = getSearchIndex()
+  if (!searchIndex) return []
   try {
     // Usar el método correcto: search con 'limit' en lugar de 'topK'
     const results = await searchIndex.search({
@@ -67,6 +74,8 @@ export async function searchDocuments(query: string, limit: number = 10) {
 
 // Función para eliminar un documento
 export async function deleteDocument(type: string, id: string) {
+  const searchIndex = getSearchIndex()
+  if (!searchIndex) return
   try {
     const documentId = `${type}:${id}`
     
@@ -81,6 +90,8 @@ export async function deleteDocument(type: string, id: string) {
 
 // Función para indexar múltiples documentos (bulk)
 export async function indexDocuments(docs: SearchDocument[]) {
+  const searchIndex = getSearchIndex()
+  if (!searchIndex) return
   try {
     // Preparar documentos para bulk upsert con el formato correcto
     const documents = docs.map(doc => ({

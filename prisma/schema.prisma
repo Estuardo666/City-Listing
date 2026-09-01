@@ -9,12 +9,12 @@ datasource db {
 }
 
 model NotificationPreference {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  enabled   Boolean  @default(true)
-  hoursAhead Int     @default(48)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  enabled    Boolean  @default(true)
+  hoursAhead Int      @default(48)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -60,6 +60,22 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Mobile API sessions are intentionally separate from NextAuth web sessions.
+// Only a SHA-256 hash of the opaque refresh token is stored.
+model MobileRefreshSession {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -72,47 +88,48 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Gamificación
-  reputationScore  Int      @default(0)
-  reviewerLevel    Int      @default(1)
-  totalReviews     Int      @default(0)
-  totalCheckIns    Int      @default(0)
-  totalPhotos      Int      @default(0)
-  totalHelpfulVotes Int     @default(0)
+  reputationScore   Int @default(0)
+  reviewerLevel     Int @default(1)
+  totalReviews      Int @default(0)
+  totalCheckIns     Int @default(0)
+  totalPhotos       Int @default(0)
+  totalHelpfulVotes Int @default(0)
 
   // Onboarding
   onboardingCompletedAt DateTime?
   onboardingSkippedAt   DateTime?
 
-  accounts    Account[]
-  sessions    Session[]
-  events      Event[]
-  venues      Venue[]
-  posts       Post[]
+  accounts               Account[]
+  sessions               Session[]
+  mobileRefreshSessions  MobileRefreshSession[]
+  events                 Event[]
+  venues                 Venue[]
+  posts                  Post[]
   notificationPreference NotificationPreference?
   eventNotifications     EventNotification[]
-  favorites   Favorite[]
-  comments    Comment[]
-  reviews     Review[]
-  venueClaims VenueClaim[]
-  reservations Reservation[]
-  routes      Route[]
-  questions   Question[]
-  checkIns    CheckIn[]
-  collections Collection[]
-  pushSubscriptions PushSubscription[]
-  osmImports  OsmImport[]
-  googleImportJobs GoogleImportJob[]
-  badges      UserBadge[]
-  interests            UserInterest[]
-  lifestylePreferences UserLifestylePreference[]
-  followingVenues      UserFollowingVenue[]
-  onboardingEvents     OnboardingEvent[]
-  
-  sentMessages      Message[]    @relation("SentMessages")
-  receivedMessages  Message[]    @relation("ReceivedMessages")
-  quickReplies      QuickReply[]
-  blockedUsers      BlockedUser[] @relation("BlockedUsers")
-  blockedBy         BlockedUser[] @relation("Blockers")
+  favorites              Favorite[]
+  comments               Comment[]
+  reviews                Review[]
+  venueClaims            VenueClaim[]
+  reservations           Reservation[]
+  routes                 Route[]
+  questions              Question[]
+  checkIns               CheckIn[]
+  collections            Collection[]
+  pushSubscriptions      PushSubscription[]
+  osmImports             OsmImport[]
+  googleImportJobs       GoogleImportJob[]
+  badges                 UserBadge[]
+  interests              UserInterest[]
+  lifestylePreferences   UserLifestylePreference[]
+  followingVenues        UserFollowingVenue[]
+  onboardingEvents       OnboardingEvent[]
+
+  sentMessages     Message[]     @relation("SentMessages")
+  receivedMessages Message[]     @relation("ReceivedMessages")
+  quickReplies     QuickReply[]
+  blockedUsers     BlockedUser[] @relation("BlockedUsers")
+  blockedBy        BlockedUser[] @relation("Blockers")
 }
 
 model UserBadge {
@@ -126,8 +143,8 @@ model UserBadge {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
   @@unique([userId, badgeType])
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -152,27 +169,27 @@ model Category {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  subcategories      Subcategory[]
-  venueCategories    VenueCategory[]
-  eventCategories    EventCategory[]
-  posts              Post[]
-  userInterests      UserInterest[]
+  subcategories   Subcategory[]
+  venueCategories VenueCategory[]
+  eventCategories EventCategory[]
+  posts           Post[]
+  userInterests   UserInterest[]
 
   @@unique([name, type])
 }
 
 model Subcategory {
-  id             String   @id @default(cuid())
-  name           String
-  slug           String   @unique
-  description    String?
-  icon           String?
-  color          String?
-  categoryId     String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  categoryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  category           Category            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category           Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   venueSubcategories VenueSubcategory[]
   eventSubcategories EventSubcategory[]
 
@@ -243,42 +260,42 @@ model EventSubcategory {
 }
 
 model Event {
-  id             String      @id @default(cuid())
-  title          String
-  slug           String      @unique
-  description    String
-  content        String?
-  image          String?
-  startDate      DateTime
-  endDate        DateTime?
-  price          Float?
-  location       String
-  lat            Float?
-  lng            Float?
-  address        String?
-  status         String      @default("PENDING")
-  featured       Boolean     @default(false)
-  isRecurring    Boolean     @default(false)
-  parentEventId  String?
-  avgRating      Float?
-  reviewCount    Int         @default(0)
-  viewCount      Int         @default(0)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  description   String
+  content       String?
+  image         String?
+  startDate     DateTime
+  endDate       DateTime?
+  price         Float?
+  location      String
+  lat           Float?
+  lng           Float?
+  address       String?
+  status        String    @default("PENDING")
+  featured      Boolean   @default(false)
+  isRecurring   Boolean   @default(false)
+  parentEventId String?
+  avgRating     Float?
+  reviewCount   Int       @default(0)
+  viewCount     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  venueId    String?
-  venue      Venue?   @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venueId            String?
+  venue              Venue?              @relation(fields: [venueId], references: [id], onDelete: SetNull)
   eventNotifications EventNotification[]
-  favorites   Favorite[]
-  comments    Comment[]
-  media       Media[]
-  reviews     Review[]
-  recurrenceRule RecurrenceRule?
-  reservations   Reservation[]
-  collections    CollectionItem[]
-  questions      Question[]
+  favorites          Favorite[]
+  comments           Comment[]
+  media              Media[]
+  reviews            Review[]
+  recurrenceRule     RecurrenceRule?
+  reservations       Reservation[]
+  collections        CollectionItem[]
+  questions          Question[]
   eventCategories    EventCategory[]
   eventSubcategories EventSubcategory[]
 
@@ -289,77 +306,77 @@ model Event {
 }
 
 model Venue {
-  id            String      @id @default(cuid())
-  name          String
-  slug          String      @unique
-  description   String
-  content       String?
-  image         String?
-  logo          String?
-  coverImage    String?
-  phone         String?
-  email         String?
-  website       String?
-  location      String
-  lat           Float?
-  lng           Float?
-  address       String?
-  priceRange    String?
-  status        String      @default("PENDING")
-  isActive      Boolean     @default(true)
-  featured      Boolean     @default(false)
-  claimed       Boolean     @default(false)
-  claimedBy     String?
-  verified      Boolean     @default(false)
-  badge         String?
-  avgRating     Float?
-  reviewCount   Int         @default(0)
-  viewCount     Int         @default(0)
-  googlePlaceId String?     @unique
-  osmId         String?     @unique
-  sourceLastSync DateTime?
-  hoursLastSync  DateTime?
+  id                String    @id @default(cuid())
+  name              String
+  slug              String    @unique
+  description       String
+  content           String?
+  image             String?
+  logo              String?
+  coverImage        String?
+  phone             String?
+  email             String?
+  website           String?
+  location          String
+  lat               Float?
+  lng               Float?
+  address           String?
+  priceRange        String?
+  status            String    @default("PENDING")
+  isActive          Boolean   @default(true)
+  featured          Boolean   @default(false)
+  claimed           Boolean   @default(false)
+  claimedBy         String?
+  verified          Boolean   @default(false)
+  badge             String?
+  avgRating         Float?
+  reviewCount       Int       @default(0)
+  viewCount         Int       @default(0)
+  googlePlaceId     String?   @unique
+  osmId             String?   @unique
+  sourceLastSync    DateTime?
+  hoursLastSync     DateTime?
   googleRating      Float?
-  googleReviewCount Int         @default(0)
+  googleReviewCount Int       @default(0)
   googleLastSyncAt  DateTime?
-  reputationScore   Float       @default(0)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  reputationScore   Float     @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  events     Event[]
-  favorites  Favorite[]
-  comments   Comment[]
-  media      Media[]
-  reviews    Review[]
-  operatingHours OperatingHours?
-  specialHours   SpecialHours[]
-  promotions     Promotion[]
-  reservations   Reservation[]
+  userId              String
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events              Event[]
+  favorites           Favorite[]
+  comments            Comment[]
+  media               Media[]
+  reviews             Review[]
+  operatingHours      OperatingHours?
+  specialHours        SpecialHours[]
+  promotions          Promotion[]
+  reservations        Reservation[]
   reservationSettings ReservationSettings?
-  venueClaims    VenueClaim[]
-  routeStops     RouteStop[]
-  questions      Question[]
-  checkIns       CheckIn[]
-  menuCategories MenuCategory[]
-  products       Product[]
-  collections    CollectionItem[]
-  businessHours  VenueBusinessHours[]
-  services       VenueService[]
-  venueCategories    VenueCategory[]
-  venueSubcategories VenueSubcategory[]
-  watchEventVenues   WatchEventVenue[]
-  followingUsers     UserFollowingVenue[]
-  
-  parentId      String?
-  parent        Venue?    @relation("VenueBranches", fields: [parentId], references: [id], onDelete: SetNull)
-  branches      Venue[]   @relation("VenueBranches")
-  
+  venueClaims         VenueClaim[]
+  routeStops          RouteStop[]
+  questions           Question[]
+  checkIns            CheckIn[]
+  menuCategories      MenuCategory[]
+  products            Product[]
+  collections         CollectionItem[]
+  businessHours       VenueBusinessHours[]
+  services            VenueService[]
+  venueCategories     VenueCategory[]
+  venueSubcategories  VenueSubcategory[]
+  watchEventVenues    WatchEventVenue[]
+  followingUsers      UserFollowingVenue[]
+
+  parentId String?
+  parent   Venue?  @relation("VenueBranches", fields: [parentId], references: [id], onDelete: SetNull)
+  branches Venue[] @relation("VenueBranches")
+
   messages      Message[]
   quickReplies  QuickReply[]
   blockedUsers  BlockedUser[]
-  branchReviews Review[]  @relation("BranchReviews")
+  branchReviews Review[]      @relation("BranchReviews")
 
   @@index([status])
   @@index([isActive])
@@ -371,28 +388,28 @@ model Venue {
 }
 
 model Post {
-  id          String      @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
-  slug        String      @unique
+  slug        String    @unique
   excerpt     String?
   content     String
   image       String?
-  status      String      @default("PENDING")
-  featured    Boolean     @default(false)
-  viewCount   Int         @default(0)
+  status      String    @default("PENDING")
+  featured    Boolean   @default(false)
+  viewCount   Int       @default(0)
   publishedAt DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
 
-  favorites  Favorite[]
-  comments   Comment[]
-  tags       PostTag[]
-  media      Media[]
+  favorites   Favorite[]
+  comments    Comment[]
+  tags        PostTag[]
+  media       Media[]
   collections CollectionItem[]
 
   @@index([status])
@@ -401,12 +418,12 @@ model Post {
 }
 
 model Tag {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  slug      String    @unique
-  createdAt DateTime  @default(now())
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
 
-  posts     PostTag[]
+  posts PostTag[]
 
   @@index([slug])
 }
@@ -455,12 +472,12 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies  Comment[] @relation("CommentReplies")
-  event    Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  venue    Venue?    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  post     Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+  event   Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  venue   Venue?    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  post    Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([parentId])
@@ -507,25 +524,25 @@ model OperatingHours {
 }
 
 model Review {
-  id           String    @id @default(cuid())
-  rating       Int
-  title        String?
-  content      String?
-  ownerReply   String?
-  ownerReplyAt DateTime?
-  userId       String
-  venueId      String?
-  eventId      String?
-  branchId     String?
+  id            String    @id @default(cuid())
+  rating        Int
+  title         String?
+  content       String?
+  ownerReply    String?
+  ownerReplyAt  DateTime?
+  userId        String
+  venueId       String?
+  eventId       String?
+  branchId      String?
   status        String    @default("APPROVED")
   flaggedReason String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  venue  Venue?       @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  event  Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  branch Venue?       @relation("BranchReviews", fields: [branchId], references: [id], onDelete: SetNull)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue  Venue?        @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  event  Event?        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  branch Venue?        @relation("BranchReviews", fields: [branchId], references: [id], onDelete: SetNull)
   photos ReviewPhoto[]
 
   @@unique([userId, venueId])
@@ -539,37 +556,37 @@ model Review {
 }
 
 model VenueClaim {
-  id              String   @id @default(cuid())
-  venueId         String
-  userId          String
-  status          String   @default("PENDING")   // PENDING | VERIFIED | APPROVED | REJECTED
+  id      String @id @default(cuid())
+  venueId String
+  userId  String
+  status  String @default("PENDING") // PENDING | VERIFIED | APPROVED | REJECTED
 
   // Claimer info (snapshot del formulario)
-  claimerName     String
-  claimerEmail    String
-  claimerPhone    String?
-  claimerRole     String?                          // Cargo
+  claimerName  String
+  claimerEmail String
+  claimerPhone String?
+  claimerRole  String? // Cargo
 
   // Verification
   verificationCode String?
   codeExpiresAt    DateTime?
-  attempts         Int      @default(0)
-  verified         Boolean  @default(false)
+  attempts         Int       @default(0)
+  verified         Boolean   @default(false)
 
   // Evidence
-  evidenceUrl      String?                          // S3 URL
-  evidenceName     String?                          // Nombre original del archivo
+  evidenceUrl  String? // S3 URL
+  evidenceName String? // Nombre original del archivo
 
   // Trust score
-  confidenceScore  Int      @default(0)             // 0-100
+  confidenceScore Int @default(0) // 0-100
 
   // Legacy / admin
-  proof           String?
-  message         String?
-  adminNotes      String?
+  proof      String?
+  message    String?
+  adminNotes String?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -582,7 +599,7 @@ model VenueClaim {
 }
 
 model Promotion {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   title       String
   description String
   image       String?
@@ -590,11 +607,11 @@ model Promotion {
   validFrom   DateTime
   validUntil  DateTime
   terms       String?
-  status      String    @default("PENDING")
-  featured    Boolean   @default(false)
+  status      String   @default("PENDING")
+  featured    Boolean  @default(false)
   venueId     String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
@@ -630,33 +647,33 @@ model Reservation {
 }
 
 model ReservationSettings {
-  id                 String   @id @default(cuid())
-  venueId            String   @unique
-  acceptsReservations Boolean @default(true)
-  maxPartySize       Int      @default(20)
-  timeSlotDuration   Int      @default(60)
-  openingTime        String   @default("09:00")
-  closingTime        String   @default("22:00")
-  autoConfirm        Boolean  @default(false)
-  cancelBeforeHours  Int      @default(2)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  venueId             String   @unique
+  acceptsReservations Boolean  @default(true)
+  maxPartySize        Int      @default(20)
+  timeSlotDuration    Int      @default(60)
+  openingTime         String   @default("09:00")
+  closingTime         String   @default("22:00")
+  autoConfirm         Boolean  @default(false)
+  cancelBeforeHours   Int      @default(2)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 }
 
 model RecurrenceRule {
-  id          String    @id @default(cuid())
-  frequency   String
-  interval    Int       @default(1)
-  daysOfWeek  String?
-  dayOfMonth  Int?
-  startDate   DateTime
-  endDate     DateTime?
-  count       Int?
-  eventId     String    @unique
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  frequency  String
+  interval   Int       @default(1)
+  daysOfWeek String?
+  dayOfMonth Int?
+  startDate  DateTime
+  endDate    DateTime?
+  count      Int?
+  eventId    String    @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
@@ -677,9 +694,9 @@ model Route {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stops     RouteStop[]
-  favorites Favorite[]
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stops       RouteStop[]
+  favorites   Favorite[]
   collections CollectionItem[]
 
   @@index([status])
@@ -688,13 +705,13 @@ model Route {
 }
 
 model RouteStop {
-  id        String   @id @default(cuid())
-  routeId   String
-  venueId   String?
-  order     Int
-  title     String
-  notes     String?
-  duration  String?
+  id       String  @id @default(cuid())
+  routeId  String
+  venueId  String?
+  order    Int
+  title    String
+  notes    String?
+  duration String?
 
   route Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
   venue Venue? @relation(fields: [venueId], references: [id], onDelete: SetNull)
@@ -704,15 +721,15 @@ model RouteStop {
 }
 
 model NewsletterSubscription {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  name       String?
-  active     Boolean  @default(true)
-  token      String   @unique
-  confirmed  Boolean  @default(false)
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  active      Boolean  @default(true)
+  token       String   @unique
+  confirmed   Boolean  @default(false)
   preferences String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([email])
   @@index([active])
@@ -747,16 +764,16 @@ model SpecialHours {
 }
 
 model Question {
-  id        String    @id @default(cuid())
-  content   String
-  userId    String
-  venueId   String?
-  eventId   String?
-  answer    String?
-  answerBy  String?
+  id         String    @id @default(cuid())
+  content    String
+  userId     String
+  venueId    String?
+  eventId    String?
+  answer     String?
+  answerBy   String?
   answeredAt DateTime?
-  status    String    @default("PENDING")
-  createdAt DateTime  @default(now())
+  status     String    @default("PENDING")
+  createdAt  DateTime  @default(now())
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   venue Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
@@ -778,7 +795,7 @@ model Collection {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   items CollectionItem[]
 
   @@index([userId])
@@ -809,13 +826,13 @@ model CollectionItem {
 }
 
 model MenuCategory {
-  id        String     @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
-  order     Int        @default(0)
+  order     Int      @default(0)
   venueId   String
-  createdAt DateTime   @default(now())
+  createdAt DateTime @default(now())
 
-  venue Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  venue Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
   items MenuItem[]
 
   @@index([venueId])
@@ -830,7 +847,7 @@ model MenuItem {
   order          Int      @default(0)
   isAvailable    Boolean  @default(true)
   isFeatured     Boolean  @default(false)
-  allergens      String?  // JSON array de alergenos
+  allergens      String? // JSON array de alergenos
   menuCategoryId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -890,25 +907,25 @@ model PushSubscription {
 }
 
 model OsmImport {
-  id              String   @id @default(cuid())
-  city            String
-  country         String
-  categories      String
-  radius          Int
-  status          String   @default("PENDING")
-  foundCount      Int      @default(0)
-  importedCount   Int      @default(0)
-  duplicateCount  Int      @default(0)
-  errorCount      Int      @default(0)
-  queryOverpass   String?
-  errorMessage    String?
-  createdBy       String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  city           String
+  country        String
+  categories     String
+  radius         Int
+  status         String   @default("PENDING")
+  foundCount     Int      @default(0)
+  importedCount  Int      @default(0)
+  duplicateCount Int      @default(0)
+  errorCount     Int      @default(0)
+  queryOverpass  String?
+  errorMessage   String?
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  user  User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  logs  OsmImportLog[]
-  jobs  OsmSyncJob[]
+  user User           @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  logs OsmImportLog[]
+  jobs OsmSyncJob[]
 
   @@index([status])
   @@index([createdAt])
@@ -964,22 +981,22 @@ model OsmConfig {
 }
 
 model Message {
-  id            String    @id @default(cuid())
-  content       String?
-  senderId      String
-  receiverId    String
-  venueId       String
-  images        String[]  @default([])
-  isRead        Boolean   @default(false)
-  readAt        DateTime?
-  isDeleted     Boolean   @default(false)
-  deletedAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  content    String?
+  senderId   String
+  receiverId String
+  venueId    String
+  images     String[]  @default([])
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-  sender        User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver      User      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
-  venue         Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  sender   User  @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User  @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  venue    Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
   @@index([senderId])
   @@index([receiverId])
@@ -997,8 +1014,8 @@ model QuickReply {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  venue     Venue?   @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([venueId])
@@ -1012,9 +1029,9 @@ model BlockedUser {
   reason        String?
   createdAt     DateTime @default(now())
 
-  venue         Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  blockedUser   User     @relation("BlockedUsers", fields: [blockedUserId], references: [id], onDelete: Cascade)
-  blocker       User     @relation("Blockers", fields: [blockedBy], references: [id], onDelete: Cascade)
+  venue       Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  blockedUser User  @relation("BlockedUsers", fields: [blockedUserId], references: [id], onDelete: Cascade)
+  blocker     User  @relation("Blockers", fields: [blockedBy], references: [id], onDelete: Cascade)
 
   @@unique([venueId, blockedUserId])
   @@index([venueId])
@@ -1022,14 +1039,14 @@ model BlockedUser {
 }
 
 model VenueBusinessHours {
-  id         String   @id @default(cuid())
-  venueId    String
-  dayOfWeek  Int      // 0 = Domingo, 1 = Lunes, ..., 6 = Sabado
-  openTime   String   // Formato "HH:MM"
-  closeTime  String   // Formato "HH:MM"
-  isClosed   Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  venueId   String
+  dayOfWeek Int // 0 = Domingo, 1 = Lunes, ..., 6 = Sabado
+  openTime  String // Formato "HH:MM"
+  closeTime String // Formato "HH:MM"
+  isClosed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
@@ -1056,32 +1073,32 @@ model VenueService {
 }
 
 model GoogleImportJob {
-  id               String   @id @default(cuid())
-  status           String   @default("PENDING")
+  id               String    @id @default(cuid())
+  status           String    @default("PENDING")
   country          String
   province         String
   city             String
   categories       String
   radius           Int
-  totalRecords     Int      @default(0)
-  processedRecords Int      @default(0)
-  importedRecords  Int      @default(0)
-  duplicateRecords Int      @default(0)
-  errorRecords     Int      @default(0)
+  totalRecords     Int       @default(0)
+  processedRecords Int       @default(0)
+  importedRecords  Int       @default(0)
+  duplicateRecords Int       @default(0)
+  errorRecords     Int       @default(0)
   startedAt        DateTime?
   finishedAt       DateTime?
   createdBy        String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  pausedAt         DateTime?
-  currentBatchIndex Int     @default(0)
-  batchData        String?
-  jobType          String   @default("IMPORT")
-  duplicateAction  String   @default("skip")
-  delayMs          Int      @default(0)
+  pausedAt          DateTime?
+  currentBatchIndex Int       @default(0)
+  batchData         String?
+  jobType           String    @default("IMPORT")
+  duplicateAction   String    @default("skip")
+  delayMs           Int       @default(0)
 
-  user User             @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  user User              @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   logs GoogleImportLog[]
 
   @@index([status])
@@ -1179,25 +1196,25 @@ model SearchConsoleOpportunity {
 // ──────────────────────────────────────────────
 
 model WatchEvent {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   name           String
-  slug           String    @unique
-  type           String    @default("SPORTS") // SPORTS | CONCERT | THEATER | ESPORTS | OTHER
+  slug           String   @unique
+  type           String   @default("SPORTS") // SPORTS | CONCERT | THEATER | ESPORTS | OTHER
   description    String?
   image          String?
   matchDate      DateTime
-  matchTime      String?           // "HH:MM"
+  matchTime      String? // "HH:MM"
   competition    String?
-  performers     String?           // JSON array of performer names (denormalized for fast reads)
-  status         String    @default("ACTIVE") // ACTIVE | CANCELLED | FINISHED
-  featured       Boolean   @default(false)
-  viewCount      Int       @default(0)
+  performers     String? // JSON array of performer names (denormalized for fast reads)
+  status         String   @default("ACTIVE") // ACTIVE | CANCELLED | FINISHED
+  featured       Boolean  @default(false)
+  viewCount      Int      @default(0)
   seoTitle       String?
   seoDescription String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  venues        WatchEventVenue[]
+  venues         WatchEventVenue[]
   performersList WatchEventPerformerLink[]
   processingLogs AIProcessingLog[]
 
@@ -1221,29 +1238,29 @@ model WatchEventPerformer {
 }
 
 model WatchEventPerformerLink {
-  watchEventId     String
-  performerId      String
-  role             String?  // HOME | AWAY | HEADLINER | SUPPORT | etc.
-  createdAt        DateTime @default(now())
+  watchEventId String
+  performerId  String
+  role         String? // HOME | AWAY | HEADLINER | SUPPORT | etc.
+  createdAt    DateTime @default(now())
 
-  watchEvent  WatchEvent           @relation(fields: [watchEventId], references: [id], onDelete: Cascade)
-  performer   WatchEventPerformer  @relation(fields: [performerId], references: [id], onDelete: Cascade)
+  watchEvent WatchEvent          @relation(fields: [watchEventId], references: [id], onDelete: Cascade)
+  performer  WatchEventPerformer @relation(fields: [performerId], references: [id], onDelete: Cascade)
 
   @@id([watchEventId, performerId])
   @@index([performerId])
 }
 
 model WatchEventVenue {
-  id             String   @id @default(cuid())
-  watchEventId   String
-  venueId        String
-  flyerUrl       String?
-  promotion      String?
-  hasBigScreen   Boolean  @default(false)
-  hasFreeEntry   Boolean  @default(false)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String   @id @default(cuid())
+  watchEventId String
+  venueId      String
+  flyerUrl     String?
+  promotion    String?
+  hasBigScreen Boolean  @default(false)
+  hasFreeEntry Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   watchEvent WatchEvent @relation(fields: [watchEventId], references: [id], onDelete: Cascade)
   venue      Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
@@ -1258,16 +1275,16 @@ model WatchEventVenue {
 // ──────────────────────────────────────────────
 
 model AIConfig {
-  id                String   @id @default(cuid())
-  provider          String   @default("openai") // openai | anthropic | google | groq | deepseek | together | fireworks | ollama | custom
-  apiKey            String?  // encrypted
-  baseUrl           String?  // override URL
-  modelVision       String?  // model for image analysis (OCR)
-  modelText         String?  // model for text extraction
-  timeout           Int      @default(30)
-  temperature       Float    @default(0.1)
-  maxTokens         Int      @default(4096)
-  updatedAt         DateTime @updatedAt
+  id          String   @id @default(cuid())
+  provider    String   @default("openai") // openai | anthropic | google | groq | deepseek | together | fireworks | ollama | custom
+  apiKey      String? // encrypted
+  baseUrl     String? // override URL
+  modelVision String? // model for image analysis (OCR)
+  modelText   String? // model for text extraction
+  timeout     Int      @default(30)
+  temperature Float    @default(0.1)
+  maxTokens   Int      @default(4096)
+  updatedAt   DateTime @updatedAt
 }
 
 // ──────────────────────────────────────────────
@@ -1334,18 +1351,18 @@ model OnboardingEvent {
 // ──────────────────────────────────────────────
 
 model AIProcessingLog {
-  id              String    @id @default(cuid())
-  sourceType      String    // IMAGE | PDF | TEXT
-  sourceUrl       String?   // R2 URL of uploaded file
-  inputText       String?   // raw text input (for TEXT source type)
-  extractedData   String?   // JSON of extracted event data
-  watchEventId    String?   // linked watch event (null if not yet confirmed)
-  tokensUsed      Int?
-  costEstimate    Float?    // in USD
+  id               String   @id @default(cuid())
+  sourceType       String // IMAGE | PDF | TEXT
+  sourceUrl        String? // R2 URL of uploaded file
+  inputText        String? // raw text input (for TEXT source type)
+  extractedData    String? // JSON of extracted event data
+  watchEventId     String? // linked watch event (null if not yet confirmed)
+  tokensUsed       Int?
+  costEstimate     Float? // in USD
   processingTimeMs Int?
-  status          String    @default("PENDING") // PENDING | COMPLETED | FAILED | CONFIRMED
-  errorMessage    String?
-  createdAt       DateTime  @default(now())
+  status           String   @default("PENDING") // PENDING | COMPLETED | FAILED | CONFIRMED
+  errorMessage     String?
+  createdAt        DateTime @default(now())
 
   watchEvent WatchEvent? @relation(fields: [watchEventId], references: [id], onDelete: SetNull)
 
@@ -1353,4 +1370,3 @@ model AIProcessingLog {
   @@index([createdAt])
   @@index([watchEventId])
 }
-

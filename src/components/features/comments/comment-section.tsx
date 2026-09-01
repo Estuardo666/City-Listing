@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 import { CornerDownRight, MessageCircle, Send, Trash2, User2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
@@ -267,7 +268,7 @@ export function CommentSection({ initialComments, eventId, venueId, postId }: Co
         </form>
       ) : (
         <div className="rounded-xl border border-dashed border-border/60 px-4 py-3 text-center text-sm text-muted-foreground">
-          <a href="/auth/signin" className="text-primary hover:underline">Inicia sesión</a> para comentar
+          <Link href="/auth/signin" className="text-primary hover:underline">Inicia sesión</Link> para comentar
         </div>
       )}
 

@@ -1,0 +1,86 @@
+name: Backend CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vive_loja_ci
+          POSTGRES_PASSWORD: ${{ github.run_id }}
+          POSTGRES_DB: vive_loja_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vive_loja_ci -d vive_loja_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://vive_loja_ci:${{ github.run_id }}@localhost:5432/vive_loja_ci?schema=public
+      DATABASE_URL_UNPOOLED: postgresql://vive_loja_ci:${{ github.run_id }}@localhost:5432/vive_loja_ci?schema=public
+      # Runtime-only value; no static credential-like string is committed.
+      NEXTAUTH_SECRET: ${{ format('{0}-{0}-{0}', github.run_id) }}
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      R2_BUCKET_NAME: ci-bucket
+      R2_ENDPOINT: https://example.r2.cloudflarestorage.com
+      R2_ACCESS_KEY_ID: ci-access-key
+      R2_SECRET_ACCESS_KEY: ci-secret-key
+      R2_PUBLIC_BASE_URL: https://example.r2.dev
+      RESEND_API_KEY: re_ci_placeholder
+      MAPBOX_ACCESS_TOKEN: pk.ci-placeholder
+      NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: pk.ci-placeholder
+      MAPBOX_STYLE: mapbox://styles/mapbox/streets-v12
+      NEXT_PUBLIC_MAPBOX_STYLE: mapbox://styles/mapbox/streets-v12
+      KV_REST_API_URL: https://example.upstash.io
+      KV_REST_API_TOKEN: ci-placeholder
+      CSP_ENFORCE: "false"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Create CI schema
+        run: npx prisma db push --skip-generate --accept-data-loss
+
+      - name: Seed CI data
+        run: npm run db:seed
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=critical
+
+      - name: Production build
+        run: npm run build:webpack
