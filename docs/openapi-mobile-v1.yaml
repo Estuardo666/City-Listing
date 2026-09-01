@@ -589,6 +589,69 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/BadRequest" }
+  /me/venues:
+    get:
+      tags: [User]
+      summary: List venues created by the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMyMobileVenues
+      responses:
+        "200": { description: User venue drafts, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Submit a venue draft for moderation
+      security: [{ bearerAuth: [] }]
+      operationId: createMobileVenueDraft
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateVenueRequest" } } }
+      responses:
+        "200": { description: Venue submitted for moderation, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+  /me/posts:
+    get:
+      tags: [User]
+      summary: List articles created by the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMyMobilePosts
+      responses:
+        "200": { description: User article drafts, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Submit an article draft for moderation
+      security: [{ bearerAuth: [] }]
+      operationId: createMobilePostDraft
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreatePostRequest" } } }
+      responses:
+        "200": { description: Article submitted for moderation, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+  /me/routes:
+    get:
+      tags: [User]
+      summary: List routes created by the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMyMobileRoutes
+      responses:
+        "200": { description: User route drafts, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Submit a route draft for moderation
+      security: [{ bearerAuth: [] }]
+      operationId: createMobileRouteDraft
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateRouteRequest" } } }
+      responses:
+        "200": { description: Route submitted for moderation, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
 components:
   securitySchemes:
     bearerAuth:
@@ -742,6 +805,53 @@ components:
         lng: { type: number, minimum: -180, maximum: 180 }
         note: { type: string, maxLength: 500 }
         photoUrl: { type: string, format: uri, maxLength: 2000 }
+    CreateVenueRequest:
+      type: object
+      required: [name, description, location]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        description: { type: string, minLength: 10, maxLength: 5000 }
+        location: { type: string, minLength: 2, maxLength: 180 }
+        address: { type: string, maxLength: 250 }
+        phone: { type: string, maxLength: 40 }
+        email: { type: string, format: email }
+        website: { type: string, format: uri }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+        priceRange: { type: string, maxLength: 20 }
+        image: { type: string, format: uri, maxLength: 2000 }
+        categoryIds: { type: array, maxItems: 10, items: { type: string } }
+    CreatePostRequest:
+      type: object
+      required: [title, content, categoryId]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 160 }
+        excerpt: { type: string, maxLength: 500 }
+        content: { type: string, minLength: 20, maxLength: 20000 }
+        image: { type: string, format: uri, maxLength: 2000 }
+        categoryId: { type: string }
+    CreateRouteRequest:
+      type: object
+      required: [title, description, type]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 160 }
+        description: { type: string, minLength: 10, maxLength: 5000 }
+        content: { type: string, maxLength: 20000 }
+        image: { type: string, format: uri, maxLength: 2000 }
+        duration: { type: string, maxLength: 80 }
+        difficulty: { type: string, maxLength: 40 }
+        type: { type: string, minLength: 2, maxLength: 40 }
+        stops:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [title]
+            properties:
+              venueId: { type: string }
+              title: { type: string, minLength: 2, maxLength: 160 }
+              notes: { type: string, maxLength: 500 }
+              duration: { type: string, maxLength: 80 }
     TokenEnvelope:
       allOf:
         - $ref: "#/components/schemas/SuccessEnvelope"

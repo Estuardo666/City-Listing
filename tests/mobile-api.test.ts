@@ -39,7 +39,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -59,6 +59,9 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/me/collections/[id]/route'),
     import('../src/app/api/mobile/v1/me/collections/[id]/items/route'),
     import('../src/app/api/mobile/v1/me/check-ins/route'),
+    import('../src/app/api/mobile/v1/me/venues/route'),
+    import('../src/app/api/mobile/v1/me/posts/route'),
+    import('../src/app/api/mobile/v1/me/routes/route'),
     import('../src/lib/prisma'),
   ])
   t.after(async () => prisma.$disconnect())
@@ -203,6 +206,27 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   }))
   assert.equal(createdEvent.status, 200)
   assert.equal(((await createdEvent.json()) as { data: { status: string }; meta?: { moderation: string } }).data.status, 'PENDING')
+  const createdVenue = await venuesRoute.POST(new Request('http://localhost/api/mobile/v1/me/venues', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({
+      name: 'Local móvil CI', description: 'Local de prueba para el contrato móvil.', location: 'Centro de Loja', categoryIds: [category!.id],
+    }),
+  }))
+  assert.equal(createdVenue.status, 200)
+  assert.equal(((await createdVenue.json()) as { data: { status: string }; meta?: { moderation: string } }).data.status, 'PENDING')
+  const createdPost = await postsRoute.POST(new Request('http://localhost/api/mobile/v1/me/posts', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({
+      title: 'Artículo móvil CI', content: 'Contenido suficientemente largo para validar el borrador móvil.', categoryId: category!.id,
+    }),
+  }))
+  assert.equal(createdPost.status, 200)
+  assert.equal(((await createdPost.json()) as { data: { status: string } }).data.status, 'PENDING')
+  const createdRoute = await routesRoute.POST(new Request('http://localhost/api/mobile/v1/me/routes', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({
+      title: 'Ruta móvil CI', description: 'Ruta de prueba para el contrato móvil.', type: 'cultural', stops: [{ venueId: venue.id, title: 'Primera parada' }],
+    }),
+  }))
+  assert.equal(createdRoute.status, 200)
+  assert.equal(((await createdRoute.json()) as { data: { status: string } }).data.status, 'PENDING')
   const favorite = await favoritesRoute.POST(jsonRequest('/me/favorites', { kind: 'venue', itemId: venue.id }, authHeaders))
   assert.equal(favorite.status, 200)
   const listed = await favoritesRoute.GET(new Request('http://localhost/api/mobile/v1/me/favorites', { headers: authHeaders }))
