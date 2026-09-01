@@ -58,7 +58,7 @@
 
 ## Evidencia
 
-- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33506434248
+- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33508187934 (typecheck, lint, integración móvil, OpenAPI y build tras estabilizar la relación opcional de fotos).
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
-- iOS CI (último gate verde antes del upload de avatar): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33503894790
+- iOS CI (último gate verde): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33507432287
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
