@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:webpack": "next dev",
-    "build": "prisma generate && next build --turbopack",
+    "build": "prisma generate && next build --webpack",
+    "build:turbopack": "prisma generate && next build --turbopack",
     "build:webpack": "prisma generate && next build --webpack",
     "start": "next start",
     "test:mobile": "node --require ./tests/register-server-only.cjs --import tsx --test tests/mobile-api.test.ts",
