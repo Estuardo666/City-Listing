@@ -7,6 +7,8 @@
 - Producción: `https://viveloja.com`; el smoke actual de `/api/mobile/v1/health`, `/home`, `/explore` y `/content` responde 200 con JSON válido. Aún hay que confirmar el commit/deployment efectivo, revisar variables canónicas en Vercel y probar rutas autenticadas antes de cerrar el gate de release.
 - Neon: inspeccionado en solo lectura; la migración aditiva `MobileRefreshSession` está preparada pero aún no aplicada.
 - Cliente iOS: proyecto XcodeGen separado en `Vive Loja Swift`; el build unsigned y XCTest se verifican en su propio repositorio.
+- Paridad Home móvil ampliada en `8fd32ac`: `/home` ahora devuelve destacados, locales recientes, eventos relacionados, posts y promociones activas, conservando los alias `venues`/`events`.
+- Paridad de detalle móvil ampliada en `874ef42`: los locales incluyen horarios, menú, productos, eventos y promociones sanitizadas; el contrato OpenAPI y las pruebas de integración validan cada sección.
 - Auditoría CP9: rama `checkpoint/cp-9-next16-audit` actualiza Next a `16.3.4`, migra `middleware` a `proxy`, usa ESLint 9/flat config con reglas del React Compiler diferidas, fija dependencias transitivas parcheadas, sirve AASA de forma fail-closed mediante `APPLE_TEAM_ID`, difiere la inicialización de Resend hasta el envío y deja el audit completo y de producción en cero. El build por defecto ahora usa Webpack, igual que `build:webpack`, y conserva `build:turbopack` como opt-in. El contrato canónico de entorno se valida con `tests/env-contract.test.ts` (incluye KV, R2, Neon y Upstash Search; rechaza aliases `uptash_redish_*`/`listing_*` y exige placeholders vacíos). [CI push 33551163790](https://github.com/Estuardo666/City-Listing/actions/runs/33551163790) y [CI PR 33551167519](https://github.com/Estuardo666/City-Listing/actions/runs/33551167519) validan el commit `900a134`; ambos ejecutan Prisma, integración móvil, lint, typecheck, audit, OpenAPI y build webpack. PR #2 queda abierta para revisión con todos sus checks en verde (GitGuardian, Vercel Preview y Backend CI). El preview de Vercel completó correctamente; su URL sigue protegida por SSO y requiere sesión para una inspección manual.
 
 ## Reglas de ejecución
@@ -63,6 +65,7 @@
 ## Evidencia
 
 - Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33551163790 y PR https://github.com/Estuardo666/City-Listing/actions/runs/33551167519 (Prisma, seed efímero, integración móvil, pruebas de configuración Resend y contrato de entorno, lint, typecheck, audit, OpenAPI y build webpack sobre `900a134`).
+- Backend CI verde sobre los cambios de paridad: [run 33567032697](https://github.com/Estuardo666/City-Listing/actions/runs/33567032697) en `874ef42` ejecuta Prisma/seed efímero, integración móvil, contrato OpenAPI, lint, typecheck, audit y build webpack; Home y detalle quedan cubiertos por aserciones de contrato.
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI (último gate verde previo a la reconexión SSE): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33513652243
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
