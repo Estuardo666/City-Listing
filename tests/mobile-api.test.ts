@@ -39,7 +39,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, reservationsRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -47,6 +47,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/me/favorites/route'),
     import('../src/app/api/mobile/v1/content/route'),
     import('../src/app/api/mobile/v1/me/profile/route'),
+    import('../src/app/api/mobile/v1/me/reservations/route'),
     import('../src/lib/prisma'),
   ])
   t.after(async () => prisma.$disconnect())
@@ -93,6 +94,21 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   }))
   assert.equal(updatedProfile.status, 200)
   assert.equal(((await updatedProfile.json()) as { data: { name: string } }).data.name, 'Mobile CI Updated')
+
+  const reservationDate = new Date(Date.now() + 86_400_000).toISOString()
+  const reservationInput = { venueId: venue.id, date: reservationDate, time: '19:00', partySize: 2, notes: 'CI contract' }
+  const reservation = await reservationsRoute.POST(new Request('http://localhost/api/mobile/v1/me/reservations', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify(reservationInput),
+  }))
+  assert.equal(reservation.status, 200)
+  const repeatedReservation = await reservationsRoute.POST(new Request('http://localhost/api/mobile/v1/me/reservations', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify(reservationInput),
+  }))
+  assert.equal(repeatedReservation.status, 200)
+  assert.equal(((await repeatedReservation.json()) as { meta?: { idempotent?: boolean } }).meta?.idempotent, true)
+  const reservations = await reservationsRoute.GET(new Request('http://localhost/api/mobile/v1/me/reservations', { headers: authHeaders }))
+  assert.equal(reservations.status, 200)
+  assert.ok(((await reservations.json()) as { data: unknown[] }).data.length >= 1)
   const favorite = await favoritesRoute.POST(jsonRequest('/me/favorites', { kind: 'venue', itemId: venue.id }, authHeaders))
   assert.equal(favorite.status, 200)
   const listed = await favoritesRoute.GET(new Request('http://localhost/api/mobile/v1/me/favorites', { headers: authHeaders }))
