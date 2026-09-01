@@ -7,7 +7,7 @@
 - Producción: `https://viveloja.com` (la web responde; las rutas nuevas `/api/mobile/v1/*` aún devuelven 404 hasta desplegar este checkpoint).
 - Neon: inspeccionado en solo lectura; la migración aditiva `MobileRefreshSession` está preparada pero aún no aplicada.
 - Cliente iOS: proyecto XcodeGen separado en `Vive Loja Swift`; el build unsigned y XCTest se verifican en su propio repositorio.
-- Auditoría CP9: rama `checkpoint/cp-9-next16-audit` actualiza Next a `16.3.4`, migra `middleware` a `proxy`, usa ESLint 9/flat config con reglas del React Compiler diferidas, fija dependencias transitivas parcheadas, sirve AASA de forma fail-closed mediante `APPLE_TEAM_ID`, difiere la inicialización de Resend hasta el envío y deja el audit completo y de producción en cero; [CI push 33544993866](https://github.com/Estuardo666/City-Listing/actions/runs/33544993866) y [CI PR 33544998871](https://github.com/Estuardo666/City-Listing/actions/runs/33544998871) validan el commit `b1d305e`. PR #2 queda abierta para revisión; Vercel Preview continúa rojo y su inspección requiere autenticación interactiva de Vercel no disponible en este workspace.
+- Auditoría CP9: rama `checkpoint/cp-9-next16-audit` actualiza Next a `16.3.4`, migra `middleware` a `proxy`, usa ESLint 9/flat config con reglas del React Compiler diferidas, fija dependencias transitivas parcheadas, sirve AASA de forma fail-closed mediante `APPLE_TEAM_ID`, difiere la inicialización de Resend hasta el envío y deja el audit completo y de producción en cero. El build por defecto ahora usa Webpack, igual que `build:webpack`, y conserva `build:turbopack` como opt-in; [CI push 33550129129](https://github.com/Estuardo666/City-Listing/actions/runs/33550129129) y [CI PR 33550134702](https://github.com/Estuardo666/City-Listing/actions/runs/33550134702) validan el commit `2d9bf65`. PR #2 queda abierta para revisión; Vercel Preview continúa rojo y su inspección requiere autenticación interactiva de Vercel no disponible en este workspace.
 
 ## Reglas de ejecución
 
@@ -62,7 +62,7 @@
 
 ## Evidencia
 
-- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33544993866 (Prisma, seed efímero, integración móvil, prueba de configuración Resend, lint, typecheck, audit, OpenAPI y build webpack).
+- Backend CI verde (último push): https://github.com/Estuardo666/City-Listing/actions/runs/33550129129 (Prisma, seed efímero, integración móvil, prueba de configuración Resend, lint, typecheck, audit, OpenAPI y build webpack).
 - PR de checkpoint: https://github.com/Estuardo666/City-Listing/pull/1
 - iOS CI (último gate verde previo a la reconexión SSE): https://github.com/Estuardo666/vive-loja-ios/actions/runs/33513652243
 - Los errores históricos de iOS quedaron documentados en los logs de Actions; el último commit contiene el fix de MapKit y las aserciones actualizadas.
