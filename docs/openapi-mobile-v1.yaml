@@ -180,10 +180,99 @@ paths:
         - name: category
           in: query
           schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 24, default: 12 }
+        - name: postSkip
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
       responses:
         "200":
           description: Public blog content
           content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
+  /me/profile:
+    get:
+      tags: [User]
+      summary: Read the authenticated user's profile
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileProfile
+      responses:
+        "200": { description: Profile, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      tags: [User]
+      summary: Update the authenticated user's profile
+      security: [{ bearerAuth: [] }]
+      operationId: updateMobileProfile
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ProfileUpdateRequest" } } }
+      responses:
+        "200": { description: Updated profile, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /me/reservations:
+    get:
+      tags: [User]
+      summary: List the authenticated user's reservations
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileReservations
+      responses:
+        "200": { description: Reservations, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Create or replay a reservation
+      security: [{ bearerAuth: [] }]
+      operationId: createMobileReservation
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ReservationRequest" } } }
+      responses:
+        "200": { description: Reservation created or replayed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+  /me/messages:
+    get:
+      tags: [User]
+      summary: List mobile conversation summaries
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileConversations
+      responses:
+        "200": { description: Conversation summaries, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Send a mobile message
+      security: [{ bearerAuth: [] }]
+      operationId: sendMobileMessage
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MessageRequest" } } }
+      responses:
+        "200": { description: Message sent, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /me/events:
+    get:
+      tags: [User]
+      summary: List events created by the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMyMobileEvents
+      responses:
+        "200": { description: User event drafts, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Submit an event draft for moderation
+      security: [{ bearerAuth: [] }]
+      operationId: createMobileEventDraft
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateEventRequest" } } }
+      responses:
+        "200": { description: Event submitted for moderation, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /me/favorites:
     get:
       tags: [User]
@@ -254,6 +343,42 @@ components:
         identityToken: { type: string, minLength: 100 }
         nonce: { type: string, minLength: 16 }
         name: { type: string, minLength: 2, maxLength: 80 }
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        image: { type: [string, 'null'], format: uri }
+    ReservationRequest:
+      type: object
+      required: [date, time, partySize]
+      properties:
+        venueId: { type: string }
+        eventId: { type: string }
+        date: { type: string, format: date-time }
+        time: { type: string, pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' }
+        partySize: { type: integer, minimum: 1, maximum: 50 }
+        notes: { type: string, maxLength: 500 }
+    MessageRequest:
+      type: object
+      required: [venueId, receiverId, content]
+      properties:
+        venueId: { type: string }
+        receiverId: { type: string }
+        content: { type: string, minLength: 1, maxLength: 2000 }
+    CreateEventRequest:
+      type: object
+      required: [title, description, startDate, location]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 120 }
+        description: { type: string, minLength: 10, maxLength: 5000 }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        location: { type: string, minLength: 2, maxLength: 180 }
+        address: { type: string, maxLength: 250 }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+        price: { type: number, minimum: 0 }
+        venueId: { type: string }
     RefreshRequest:
       type: object
       required: [refreshToken]
@@ -285,6 +410,9 @@ components:
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Unauthorized:
       description: Authentication required or invalid
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    Forbidden:
+      description: Authenticated user is not allowed to perform this action
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Conflict:
       description: Resource conflict
