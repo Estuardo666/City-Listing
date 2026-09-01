@@ -3,6 +3,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { createSessionTokens } from '@/lib/mobile-auth'
+import { checkMobileAuthRateLimit } from '@/lib/mobile-rate-limit'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
 
 const APPLE_ISSUER = 'https://appleid.apple.com'
@@ -34,6 +35,8 @@ function isAppleConfigured() {
 
 export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => null))
+  const rateLimit = await checkMobileAuthRateLimit(request)
+  if (!rateLimit.allowed) return mobileError('RATE_LIMITED', 'Demasiados intentos. Inténtalo más tarde.', 429)
   if (!parsed.success) return mobileError('VALIDATION_ERROR', 'El token de Apple no es válido.', 422, parsed.error.flatten().fieldErrors)
   if (!isAppleConfigured()) return mobileError('APPLE_NOT_CONFIGURED', 'El acceso con Apple aún no está habilitado.', 503)
 

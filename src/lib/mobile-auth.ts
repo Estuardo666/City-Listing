@@ -38,12 +38,22 @@ export async function createSessionTokens(user: { id: string; name: string | nul
 
 export async function rotateSessionTokens(refreshToken: string) {
   const current = await prisma.mobileRefreshSession.findUnique({ where: { tokenHash: hashToken(refreshToken) }, include: { user: true } })
-  if (!current || current.revokedAt || current.expiresAt <= new Date()) return null
+  if (!current) return null
   const next = createOpaqueToken()
-  await prisma.$transaction([
-    prisma.mobileRefreshSession.update({ where: { id: current.id }, data: { revokedAt: new Date() } }),
-    prisma.mobileRefreshSession.create({ data: { userId: current.userId, tokenHash: hashToken(next), expiresAt: new Date(Date.now() + REFRESH_TTL_SECONDS * 1000) } }),
-  ])
+  const now = new Date()
+  const rotated = await prisma.$transaction(async (tx) => {
+    // Conditional update makes refresh rotation single-use under concurrent requests.
+    const claimed = await tx.mobileRefreshSession.updateMany({
+      where: { id: current.id, revokedAt: null, expiresAt: { gt: now } },
+      data: { revokedAt: now },
+    })
+    if (claimed.count !== 1) return false
+    await tx.mobileRefreshSession.create({
+      data: { userId: current.userId, tokenHash: hashToken(next), expiresAt: new Date(Date.now() + REFRESH_TTL_SECONDS * 1000) },
+    })
+    return true
+  })
+  if (!rotated) return null
   return { accessToken: await createAccessToken(current.user), refreshToken: next, expiresIn: ACCESS_TTL_SECONDS, user: publicUser(current.user) }
 }
 
