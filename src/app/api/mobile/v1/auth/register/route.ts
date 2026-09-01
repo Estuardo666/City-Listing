@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { createSessionTokens } from '@/lib/mobile-auth'
@@ -15,6 +16,14 @@ export async function POST(request: Request) {
   const email = parsed.data.email.toLowerCase()
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) return mobileError('EMAIL_IN_USE', 'No se pudo crear la cuenta con esos datos.', 409)
-  const user = await prisma.user.create({ data: { name: parsed.data.name, email, password: await bcrypt.hash(parsed.data.password, 12), role: 'USER' } })
+  let user
+  try {
+    user = await prisma.user.create({ data: { name: parsed.data.name, email, password: await bcrypt.hash(parsed.data.password, 12), role: 'USER' } })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return mobileError('EMAIL_IN_USE', 'No se pudo crear la cuenta con esos datos.', 409)
+    }
+    throw error
+  }
   return mobileSuccess(await createSessionTokens(user))
 }
