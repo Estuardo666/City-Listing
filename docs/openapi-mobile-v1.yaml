@@ -224,6 +224,85 @@ paths:
       responses:
         "200": { description: Profile, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /me/following:
+    get:
+      tags: [User]
+      summary: List venues followed by the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileFollowing
+      responses:
+        "200":
+          description: Followed venues
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/FollowingRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Follow an approved venue
+      security: [{ bearerAuth: [] }]
+      operationId: followMobileVenue
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/FollowingRequest" } } }
+      responses:
+        "200": { description: Venue followed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+    delete:
+      tags: [User]
+      summary: Stop following a venue
+      security: [{ bearerAuth: [] }]
+      operationId: unfollowMobileVenue
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/FollowingRequest" } } }
+      responses:
+        "200": { description: Venue unfollowed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+  /me/badges:
+    get:
+      tags: [User]
+      summary: List badges earned by the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileBadges
+      responses:
+        "200":
+          description: Earned badges
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/MobileBadge" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /me/password:
+    patch:
+      tags: [User]
+      summary: Change the authenticated user's password
+      security: [{ bearerAuth: [] }]
+      operationId: changeMobilePassword
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PasswordChangeRequest" } } }
+      responses:
+        "200": { description: Password changed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { description: Password is not configured, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /me/interests:
     get:
       tags: [User]
@@ -1007,6 +1086,49 @@ components:
           anyOf:
             - $ref: "#/components/schemas/FavoriteSummary"
             - type: 'null'
+    FollowingRequest:
+      type: object
+      required: [venueId]
+      properties:
+        venueId: { type: string, minLength: 1 }
+    FollowingRecord:
+      type: object
+      required: [id, venueId, createdAt, venue]
+      properties:
+        id: { type: string }
+        venueId: { type: string }
+        createdAt: { type: string, format: date-time }
+        venue: { $ref: "#/components/schemas/FollowingVenue" }
+    FollowingVenue:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        location: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        phone: { type: [string, 'null'] }
+        lat: { type: [number, 'null'] }
+        lng: { type: [number, 'null'] }
+    MobileBadge:
+      type: object
+      required: [id, badgeType, name, description, earnedAt]
+      properties:
+        id: { type: string }
+        badgeType: { type: string }
+        name: { type: string }
+        description: { type: string }
+        icon: { type: [string, 'null'] }
+        earnedAt: { type: string, format: date-time }
+    PasswordChangeRequest:
+      type: object
+      required: [currentPassword, newPassword, confirmPassword]
+      properties:
+        currentPassword: { type: string, minLength: 1, maxLength: 128 }
+        newPassword: { type: string, minLength: 8, maxLength: 128 }
+        confirmPassword: { type: string, minLength: 8, maxLength: 128 }
     CollectionRequest:
       type: object
       required: [name]

@@ -68,7 +68,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, homeRoute, venueDetailRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, homeRoute, venueDetailRoute, profileRoute, followingRoute, badgesRoute, passwordRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -78,6 +78,9 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/home/route'),
     import('../src/app/api/mobile/v1/venues/[slug]/route'),
     import('../src/app/api/mobile/v1/me/profile/route'),
+    import('../src/app/api/mobile/v1/me/following/route'),
+    import('../src/app/api/mobile/v1/me/badges/route'),
+    import('../src/app/api/mobile/v1/me/password/route'),
     import('../src/app/api/mobile/v1/me/interests/route'),
     import('../src/app/api/mobile/v1/me/reservations/route'),
     import('../src/app/api/mobile/v1/me/reservations/[id]/route'),
@@ -172,6 +175,30 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   }))
   assert.equal(updatedProfile.status, 200)
   assert.equal(((await updatedProfile.json()) as { data: { name: string } }).data.name, 'Mobile CI Updated')
+  const badges = await badgesRoute.GET(new Request('http://localhost/api/mobile/v1/me/badges', { headers: authHeaders }))
+  assert.equal(badges.status, 200)
+  assert.ok(Array.isArray(((await badges.json()) as { data: unknown[] }).data))
+  const followed = await followingRoute.POST(new Request('http://localhost/api/mobile/v1/me/following', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id }),
+  }))
+  assert.equal(followed.status, 200)
+  assert.equal(((await followed.json()) as { data: { following: boolean } }).data.following, true)
+  const following = await followingRoute.GET(new Request('http://localhost/api/mobile/v1/me/following', { headers: authHeaders }))
+  assert.equal(following.status, 200)
+  assert.ok(((await following.json()) as { data: Array<{ venueId: string }> }).data.some((item) => item.venueId === venue.id))
+  const unfollowed = await followingRoute.DELETE(new Request('http://localhost/api/mobile/v1/me/following', {
+    method: 'DELETE', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id }),
+  }))
+  assert.equal(unfollowed.status, 200)
+  assert.equal(((await unfollowed.json()) as { data: { following: boolean } }).data.following, false)
+  const changedPassword = await passwordRoute.PATCH(new Request('http://localhost/api/mobile/v1/me/password', {
+    method: 'PATCH', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ currentPassword: credentials.password, newPassword: 'new-valid-password-123', confirmPassword: 'new-valid-password-123' }),
+  }))
+  assert.equal(changedPassword.status, 200)
+  const oldPasswordRejected = await login(jsonRequest('/auth/login', { email, password: credentials.password }))
+  assert.equal(oldPasswordRejected.status, 401)
+  const newPasswordAccepted = await login(jsonRequest('/auth/login', { email, password: 'new-valid-password-123' }))
+  assert.equal(newPasswordAccepted.status, 200)
   const category = await prisma.category.findFirst({ select: { id: true } })
   assert.ok(category, 'CI seed must provide a category for onboarding contract')
   const updatedInterests = await interestsRoute.PUT(new Request('http://localhost/api/mobile/v1/me/interests', {
