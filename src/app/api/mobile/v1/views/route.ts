@@ -14,9 +14,12 @@ export async function POST(request: Request) {
   if (!parsed.success) return mobileError('VALIDATION_ERROR', 'La vista no es válida.', 422, parsed.error.flatten().fieldErrors)
 
   try {
-    if (parsed.data.kind === 'venue') await prisma.venue.update({ where: { id: parsed.data.itemId }, data: { viewCount: { increment: 1 } } })
-    if (parsed.data.kind === 'event') await prisma.event.update({ where: { id: parsed.data.itemId }, data: { viewCount: { increment: 1 } } })
-    if (parsed.data.kind === 'watchEvent') await prisma.watchEvent.update({ where: { id: parsed.data.itemId }, data: { viewCount: { increment: 1 } } })
+    const result = parsed.data.kind === 'venue'
+      ? await prisma.venue.updateMany({ where: { id: parsed.data.itemId, status: 'APPROVED', isActive: true }, data: { viewCount: { increment: 1 } } })
+      : parsed.data.kind === 'event'
+        ? await prisma.event.updateMany({ where: { id: parsed.data.itemId, status: 'APPROVED' }, data: { viewCount: { increment: 1 } } })
+        : await prisma.watchEvent.updateMany({ where: { id: parsed.data.itemId, status: 'ACTIVE' }, data: { viewCount: { increment: 1 } } })
+    if (result.count !== 1) return mobileError('NOT_FOUND', 'El contenido no está disponible.', 404)
     return mobileSuccess({ recorded: true, kind: parsed.data.kind, itemId: parsed.data.itemId })
   } catch {
     return mobileError('NOT_FOUND', 'El contenido no está disponible.', 404)
