@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { sendWelcomeEmail } from '@/lib/email/templates/welcome'
-
-export const signupSchema = z.object({
-  name: z.string().trim().min(1, 'El nombre es requerido'),
-  email: z.string().email('Correo inválido'),
-  password: z.string().min(6, 'Mínimo 6 caracteres'),
-})
+import { signupSchema } from './schema'
 
 export async function POST(request: NextRequest) {
   try {
