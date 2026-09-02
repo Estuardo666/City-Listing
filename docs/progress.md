@@ -17,6 +17,7 @@
 - Cierre del gate de código: `5327df0` restringe el contador de vistas a contenido público aprobado/activo. [CI push 33581999540](https://github.com/Estuardo666/City-Listing/actions/runs/33581999540) y [CI PR 33581996365](https://github.com/Estuardo666/City-Listing/actions/runs/33581996365) pasan la integración móvil completa, Prisma/seed efímero, lint, typecheck, audit, OpenAPI y build webpack; PR #2 queda `CLEAN` con Vercel Preview y GitGuardian verdes.
 - El documento de progreso queda sincronizado con la cabeza del PR (`26a3399`); este cambio documental se ejecuta en CI para que el check requerido permanezca visible y reproducible.
 - La navegación universal de transmisiones se alinea con el cliente: AASA incluye `/partidos/*` y el router iOS reconoce `partidos`, `transmisiones` y `watch-events`; el endpoint permanece fail-closed sin Team ID.
+- Endurecimiento final de CP9 en `6b9b72e`: el alta pública ignora cualquier `role` enviado y siempre crea `USER`; el esquema Zod vive fuera del handler para cumplir el tipado de Next 16; se eliminaron los endpoints debug que permitían limpiar caché/inspeccionar configuración y se retiró `@next-auth/prisma-adapter` no utilizado. [CI push 33588245784](https://github.com/Estuardo666/City-Listing/actions/runs/33588245784) y [CI PR 33588249014](https://github.com/Estuardo666/City-Listing/actions/runs/33588249014) pasan Prisma/seed efímero, integración móvil, configuración, lint, typecheck, audit, OpenAPI y build webpack.
 
 ## Reglas de ejecución
 
