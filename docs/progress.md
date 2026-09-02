@@ -4,7 +4,7 @@
 
 - Checkpoint activo: CP9 — auditoría de seguridad y compatibilidad Next.js 16.
 - Fuente de verdad backend: `Estuardo666/City-Listing`.
-- Producción: `https://viveloja.com`; el smoke actual de `/api/mobile/v1/health`, `/home`, `/explore` y `/content` responde 200 con JSON válido. Aún hay que confirmar el commit/deployment efectivo, revisar variables canónicas en Vercel y probar rutas autenticadas antes de cerrar el gate de release.
+- Producción: `https://viveloja.com`; el smoke actual de `/api/mobile/v1/health`, `/home`, `/explore` y `/content` responde 200 con JSON válido. La comprobación de `/api/auth/providers` devuelve callbacks de NextAuth con el host histórico `city-listing-lovat.vercel.app`, por lo que `NEXTAUTH_URL` aún debe corregirse a `https://viveloja.com` en Vercel antes de cerrar el gate de release; las rutas autenticadas reales y el commit/deployment efectivo siguen pendientes de acceso manual.
 - Neon: inspeccionado en solo lectura; la migración aditiva `MobileRefreshSession` está preparada pero aún no aplicada.
 - Cliente iOS: proyecto XcodeGen separado en `Vive Loja Swift`; el build unsigned y XCTest se verifican en su propio repositorio.
 - Paridad Home móvil ampliada en `8fd32ac`: `/home` ahora devuelve destacados, locales recientes, eventos relacionados, posts y promociones activas, conservando los alias `venues`/`events`.
