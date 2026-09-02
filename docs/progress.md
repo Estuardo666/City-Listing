@@ -16,6 +16,7 @@
 - Paridad final de contenidos móviles: `/content` y los nuevos `/watch-events` + `/watch-events/{slug}` exponen transmisiones activas, intérpretes y locales participantes; `/me/recommendations` devuelve intereses/preferencias, locales seguidos y resultados personalizados; `/views` incrementa contadores públicos de locales, eventos y transmisiones. OpenAPI y `tests/mobile-api.test.ts` cubren forma, autorización, detalle y persistencia del contador. La prueba local pasa lint, typecheck, OpenAPI y smoke sin base local; la integración completa queda delegada al PostgreSQL efímero de GitHub Actions.
 - Cierre del gate de código: `5327df0` restringe el contador de vistas a contenido público aprobado/activo. [CI push 33581999540](https://github.com/Estuardo666/City-Listing/actions/runs/33581999540) y [CI PR 33581996365](https://github.com/Estuardo666/City-Listing/actions/runs/33581996365) pasan la integración móvil completa, Prisma/seed efímero, lint, typecheck, audit, OpenAPI y build webpack; PR #2 queda `CLEAN` con Vercel Preview y GitGuardian verdes.
 - El documento de progreso queda sincronizado con la cabeza del PR (`26a3399`); este cambio documental se ejecuta en CI para que el check requerido permanezca visible y reproducible.
+- La navegación universal de transmisiones se alinea con el cliente: AASA incluye `/partidos/*` y el router iOS reconoce `partidos`, `transmisiones` y `watch-events`; el endpoint permanece fail-closed sin Team ID.
 
 ## Reglas de ejecución
 
