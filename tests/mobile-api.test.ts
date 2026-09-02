@@ -50,7 +50,7 @@ test('AASA fails closed without a Team ID and emits configured app links', async
       applinks: {
         details: [{
           appIDs: ['TEAMID123.com.viveloja.app'],
-          components: [{ '/': '/locales/*' }, { '/': '/eventos/*' }, { '/': '/blog/*' }],
+          components: [{ '/': '/locales/*' }, { '/': '/eventos/*' }, { '/': '/blog/*' }, { '/': '/partidos/*' }],
         }],
       },
     })

@@ -1,4 +1,4 @@
-const PUBLIC_PATHS = ['/locales/*', '/eventos/*', '/blog/*']
+const PUBLIC_PATHS = ['/locales/*', '/eventos/*', '/blog/*', '/partidos/*']
 
 export const dynamic = 'force-dynamic'
 
