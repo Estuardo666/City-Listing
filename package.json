@@ -10,7 +10,7 @@
     "build:webpack": "prisma generate && next build --webpack",
     "start": "next start",
     "test:mobile": "node --require ./tests/register-server-only.cjs --import tsx --test tests/mobile-api.test.ts",
-    "test:config": "node --require ./tests/register-server-only.cjs --import tsx --test tests/resend-config.test.ts tests/env-contract.test.ts",
+    "test:config": "node --require ./tests/register-server-only.cjs --import tsx --test tests/resend-config.test.ts tests/env-contract.test.ts tests/signup-role.test.ts",
     "lint": "eslint .",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
@@ -23,7 +23,6 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1123.0",
     "@hookform/resolvers": "^3.10.0",
-    "@next-auth/prisma-adapter": "^1.0.7",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-alert-dialog": "^1.1.16",
     "@radix-ui/react-avatar": "^1.1.11",

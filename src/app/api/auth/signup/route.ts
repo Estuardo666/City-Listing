@@ -4,11 +4,10 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { sendWelcomeEmail } from '@/lib/email/templates/welcome'
 
-const signupSchema = z.object({
+export const signupSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es requerido'),
   email: z.string().email('Correo inválido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
-  role: z.enum(['USER', 'ADMIN']).default('USER'),
 })
 
 export async function POST(request: NextRequest) {
@@ -23,7 +22,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, email, password, role } = parsed.data
+    const { name, email, password } = parsed.data
 
     const existing = await prisma.user.findUnique({
       where: { email },
@@ -44,7 +43,7 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
-        role,
+        role: 'USER',
       },
     })
 
