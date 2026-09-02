@@ -1,6 +1,8 @@
 import { getPostCategories, getPosts } from '@/lib/queries/posts'
 import { mobileSuccess } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
+import { getActiveWatchEvents } from '@/lib/queries/watch-events'
+import { mapWatchEvent } from '@/lib/mobile-watch-events'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -22,7 +24,7 @@ export async function GET(request: Request) {
     author: user ? { id: user.id, name: user.name } : null,
     tags: tags.map(({ tag }) => tag),
   }))
-  const [promotions, routes, collections] = await Promise.all([
+  const [promotions, routes, collections, watchEvents] = await Promise.all([
     prisma.promotion.findMany({
       where: {
         status: 'ACTIVE',
@@ -79,6 +81,7 @@ export async function GET(request: Request) {
         _count: { select: { items: true } },
       },
     }),
+    getActiveWatchEvents(24),
   ])
 
   return mobileSuccess({
@@ -87,5 +90,6 @@ export async function GET(request: Request) {
     promotions,
     routes,
     collections: collections.map(({ _count, ...collection }) => ({ ...collection, itemCount: _count.items })),
+    watchEvents: watchEvents.map((event) => ({ ...mapWatchEvent(event), venueCount: event._count.venues })),
   }, { posts: { hasMore: hasMorePosts, nextSkip: postSkip + mobilePosts.length } })
 }

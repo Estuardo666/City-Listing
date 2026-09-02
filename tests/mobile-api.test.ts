@@ -68,7 +68,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, homeRoute, venueDetailRoute, profileRoute, followingRoute, badgesRoute, passwordRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, homeRoute, venueDetailRoute, profileRoute, followingRoute, badgesRoute, passwordRoute, interestsRoute, recommendationsRoute, watchEventsRoute, watchEventDetailRoute, viewsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
@@ -82,6 +82,10 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
     import('../src/app/api/mobile/v1/me/badges/route'),
     import('../src/app/api/mobile/v1/me/password/route'),
     import('../src/app/api/mobile/v1/me/interests/route'),
+    import('../src/app/api/mobile/v1/me/recommendations/route'),
+    import('../src/app/api/mobile/v1/watch-events/route'),
+    import('../src/app/api/mobile/v1/watch-events/[slug]/route'),
+    import('../src/app/api/mobile/v1/views/route'),
     import('../src/app/api/mobile/v1/me/reservations/route'),
     import('../src/app/api/mobile/v1/me/reservations/[id]/route'),
     import('../src/app/api/mobile/v1/me/messages/route'),
@@ -125,6 +129,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.ok(Array.isArray(contentBody.data.promotions))
   assert.ok(Array.isArray(contentBody.data.routes))
   assert.ok(Array.isArray(contentBody.data.collections))
+  assert.ok(Array.isArray((contentBody.data as { watchEvents?: unknown[] }).watchEvents))
 
   const home = await homeRoute.GET()
   assert.equal(home.status, 200)
@@ -208,6 +213,33 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   const listedInterests = await interestsRoute.GET(new Request('http://localhost/api/mobile/v1/me/interests', { headers: authHeaders }))
   assert.equal(listedInterests.status, 200)
   assert.equal(((await listedInterests.json()) as { data: { categories: Array<{ id: string }> } }).data.categories[0].id, category!.id)
+
+  const recommendations = await recommendationsRoute.GET(new Request('http://localhost/api/mobile/v1/me/recommendations', { headers: authHeaders }))
+  assert.equal(recommendations.status, 200)
+  const recommendationBody = await recommendations.json() as { data: { interests: { categories: unknown[]; preferences: unknown[] }; relatedEvents: unknown[]; relatedVenues: unknown[] } }
+  assert.ok(Array.isArray(recommendationBody.data.interests.categories))
+  assert.ok(Array.isArray(recommendationBody.data.interests.preferences))
+  assert.ok(Array.isArray(recommendationBody.data.relatedEvents))
+  assert.ok(Array.isArray(recommendationBody.data.relatedVenues))
+
+  const watchEvents = await watchEventsRoute.GET(new Request('http://localhost/api/mobile/v1/watch-events'))
+  assert.equal(watchEvents.status, 200)
+  const watchEventBody = await watchEvents.json() as { data: Array<{ id: string; slug: string; performers: unknown[] }> }
+  assert.ok(Array.isArray(watchEventBody.data))
+  assert.ok(watchEventBody.data.every((event) => Array.isArray(event.performers)))
+  if (watchEventBody.data[0]) {
+    const watchDetail = await watchEventDetailRoute.GET(new Request(`http://localhost/api/mobile/v1/watch-events/${watchEventBody.data[0].slug}`), { params: Promise.resolve({ slug: watchEventBody.data[0].slug }) })
+    assert.equal(watchDetail.status, 200)
+    assert.ok(Array.isArray(((await watchDetail.json()) as { data: { venues: unknown[] } }).data.venues))
+  }
+  const viewBefore = await prisma.venue.findUnique({ where: { id: venue.id }, select: { viewCount: true } })
+  const recordedView = await viewsRoute.POST(new Request('http://localhost/api/mobile/v1/views', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'venue', itemId: venue.id }),
+  }))
+  assert.equal(recordedView.status, 200)
+  assert.equal(((await recordedView.json()) as { data: { recorded: boolean } }).data.recorded, true)
+  const viewAfter = await prisma.venue.findUnique({ where: { id: venue.id }, select: { viewCount: true } })
+  assert.equal(viewAfter!.viewCount, viewBefore!.viewCount + 1)
 
   const reservationDate = new Date(Date.now() + 86_400_000).toISOString()
   const reservationInput = { venueId: venue.id, date: reservationDate, time: '19:00', partySize: 2, notes: 'CI contract' }

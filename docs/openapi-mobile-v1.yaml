@@ -11,6 +11,8 @@ tags:
   - name: Home
   - name: Explore
   - name: Content
+  - name: Transmissions
+  - name: Analytics
   - name: User
 security: []
 paths:
@@ -214,7 +216,88 @@ paths:
       responses:
         "200":
           description: Public blog content
-          content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/ContentPayload" }
+  /watch-events:
+    get:
+      tags: [Transmissions]
+      summary: List active live transmissions and watch parties
+      operationId: getMobileWatchEvents
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 50 }
+      responses:
+        "200":
+          description: Active transmissions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/MobileWatchEvent" }
+  /watch-events/{slug}:
+    get:
+      tags: [Transmissions]
+      summary: Load transmission details and participating venues
+      operationId: getMobileWatchEvent
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Transmission details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/MobileWatchEventDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /views:
+    post:
+      tags: [Analytics]
+      summary: Increment a public content view counter
+      operationId: recordMobileView
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ViewRequest" } } }
+      responses:
+        "200": { description: View recorded, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+  /me/recommendations:
+    get:
+      tags: [User]
+      summary: Load personalized recommendations for the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileRecommendations
+      responses:
+        "200":
+          description: Personalized home recommendations
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/RecommendationsPayload" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
   /me/profile:
     get:
       tags: [User]
@@ -855,6 +938,91 @@ components:
         pageInfo:
           type: object
           additionalProperties: true
+    MobileWatchPerformer:
+      type: object
+      required: [id, name, slug, type]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        type: { type: string }
+        logo: { type: [string, 'null'], format: uri }
+        role: { type: [string, 'null'] }
+    MobileWatchEvent:
+      type: object
+      required: [id, name, slug, type, matchDate, performers, featured, viewCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        type: { type: string }
+        description: { type: [string, 'null'] }
+        image: { type: [string, 'null'], format: uri }
+        matchDate: { type: string, format: date-time }
+        matchTime: { type: [string, 'null'] }
+        competition: { type: [string, 'null'] }
+        performers: { type: array, items: { $ref: "#/components/schemas/MobileWatchPerformer" } }
+        featured: { type: boolean }
+        viewCount: { type: integer, minimum: 0 }
+        venueCount: { type: [integer, 'null'], minimum: 0 }
+    MobileWatchVenue:
+      type: object
+      required: [id, venue, hasBigScreen, hasFreeEntry]
+      properties:
+        id: { type: string }
+        flyerUrl: { type: [string, 'null'], format: uri }
+        promotion: { type: [string, 'null'] }
+        hasBigScreen: { type: boolean }
+        hasFreeEntry: { type: boolean }
+        venue: { type: object, additionalProperties: true }
+    MobileRoute:
+      type: object
+      required: [id, title, slug, description, type, featured, stops]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        duration: { type: [string, 'null'] }
+        difficulty: { type: [string, 'null'] }
+        type: { type: string }
+        featured: { type: boolean }
+        stops: { type: array, items: { type: object, additionalProperties: true } }
+    MobileCollection:
+      type: object
+      required: [id, name, slug, itemCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: [string, 'null'] }
+        icon: { type: [string, 'null'] }
+        itemCount: { type: integer, minimum: 0 }
+        user: { type: [object, 'null'], additionalProperties: true }
+    ContentPayload:
+      type: object
+      required: [posts, categories, promotions, routes, collections, watchEvents]
+      properties:
+        posts: { type: array, items: { $ref: "#/components/schemas/MobilePost" } }
+        categories: { type: array, items: { $ref: "#/components/schemas/Category" } }
+        promotions: { type: array, items: { $ref: "#/components/schemas/MobilePromotion" } }
+        routes: { type: array, items: { $ref: "#/components/schemas/MobileRoute" } }
+        collections: { type: array, items: { $ref: "#/components/schemas/MobileCollection" } }
+        watchEvents: { type: array, items: { $ref: "#/components/schemas/MobileWatchEvent" } }
+    MobileWatchEventDetail:
+      allOf:
+        - $ref: "#/components/schemas/MobileWatchEvent"
+        - type: object
+          required: [venues]
+          properties:
+            venues: { type: array, items: { $ref: "#/components/schemas/MobileWatchVenue" } }
+    ViewRequest:
+      type: object
+      required: [kind, itemId]
+      properties:
+        kind: { type: string, enum: [venue, event, watchEvent] }
+        itemId: { type: string, minLength: 1, maxLength: 100 }
     Category:
       type: object
       required: [id, name, slug]
@@ -905,6 +1073,19 @@ components:
         avgRating: { type: [number, 'null'] }
         reviewCount: { type: integer }
         categories: { type: array, items: { $ref: "#/components/schemas/Category" } }
+    RecommendationsPayload:
+      type: object
+      required: [interests, followingVenues, relatedEvents, relatedVenues]
+      properties:
+        interests:
+          type: object
+          required: [categories, preferences]
+          properties:
+            categories: { type: array, items: { $ref: "#/components/schemas/Category" } }
+            preferences: { type: array, items: { type: string } }
+        followingVenues: { type: array, items: { $ref: "#/components/schemas/FollowingRecord" } }
+        relatedEvents: { type: array, items: { $ref: "#/components/schemas/MobileEvent" } }
+        relatedVenues: { type: array, items: { $ref: "#/components/schemas/MobileVenue" } }
     MobilePost:
       type: object
       required: [id, title, slug, status, featured, createdAt, tags]

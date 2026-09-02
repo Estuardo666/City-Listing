@@ -66,6 +66,15 @@ const venueOnboardingSelect = {
   name: true,
   slug: true,
   image: true,
+  description: true,
+  location: true,
+  address: true,
+  lat: true,
+  lng: true,
+  phone: true,
+  website: true,
+  priceRange: true,
+  featured: true,
   avgRating: true,
   reviewCount: true,
   verified: true,
@@ -122,6 +131,7 @@ export async function getUserFollowingVenues(userId: string) {
 
 export async function getPersonalizedHomeData(userId: string) {
   const interests = await getUserInterests(userId)
+  const preferences = await getUserLifestylePreferences(userId)
   const categoryIds = interests.map((i) => i.categoryId)
 
   const [followingVenues, relatedEvents, relatedVenues] = await Promise.all([
@@ -139,11 +149,14 @@ export async function getPersonalizedHomeData(userId: string) {
             id: true,
             title: true,
             slug: true,
+            description: true,
             image: true,
             startDate: true,
             endDate: true,
             location: true,
             address: true,
+            lat: true,
+            lng: true,
             price: true,
             avgRating: true,
             reviewCount: true,
@@ -168,5 +181,5 @@ export async function getPersonalizedHomeData(userId: string) {
       : [],
   ])
 
-  return { interests, followingVenues, relatedEvents, relatedVenues }
+  return { interests, preferences, followingVenues, relatedEvents, relatedVenues }
 }
