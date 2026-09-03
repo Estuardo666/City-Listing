@@ -530,7 +530,7 @@ paths:
                           venueSlug: { type: string }
                           confidenceScore: { type: integer }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "409": { description: Already the owner, or a claim is already open }
+        "409": { description: "Already the owner, or a claim is already open" }
         "422": { $ref: "#/components/responses/ValidationError" }
         "429": { description: Too many claim attempts }
   /me/claims/{id}/verify:
@@ -2008,6 +2008,9 @@ components:
   responses:
     BadRequest:
       description: Invalid input
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    ValidationError:
+      description: The request body failed validation (VALIDATION_ERROR)
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Unauthorized:
       description: Authentication required or invalid
