@@ -23,9 +23,7 @@ export type RouteWithStops = Prisma.RouteGetPayload<{
           }
         }
       }
-      orderBy: {
-        order: 'asc'
-      }
+      orderBy: [{ day: 'asc' }, { order: 'asc' }]
     }
     _count: {
       select: {
@@ -34,6 +32,8 @@ export type RouteWithStops = Prisma.RouteGetPayload<{
     }
   }
 }>
+
+export type RouteStopWithVenue = RouteWithStops['stops'][number]
 
 export type RouteListItem = Prisma.RouteGetPayload<{
   select: {
@@ -54,15 +54,15 @@ export type RouteListItem = Prisma.RouteGetPayload<{
         name: true
       }
     }
+    days: true
     stops: {
       select: {
         id: true
         title: true
+        day: true
         order: true
       }
-      orderBy: {
-        order: 'asc'
-      }
+      orderBy: [{ day: 'asc' }, { order: 'asc' }]
     }
     _count: {
       select: {

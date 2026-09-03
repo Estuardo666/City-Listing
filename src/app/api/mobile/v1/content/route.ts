@@ -61,9 +61,10 @@ export async function GET(request: Request) {
         difficulty: true,
         type: true,
         featured: true,
+        days: true,
         stops: {
-          orderBy: { order: 'asc' },
-          select: { id: true, title: true, notes: true, duration: true, order: true, venue: { select: { id: true, name: true, slug: true } } },
+          orderBy: [{ day: 'asc' }, { order: 'asc' }],
+          select: { id: true, title: true, notes: true, duration: true, day: true, order: true, startTime: true, venue: { select: { id: true, name: true, slug: true } } },
         },
       },
     }),

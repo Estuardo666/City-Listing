@@ -26,7 +26,9 @@ interface RouteFormProps {
 
 export function RouteForm({ venues }: RouteFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [stops, setStops] = useState<{ venueId: string | null; title: string; notes: string; duration: string }[]>([])
+  const [stops, setStops] = useState<
+    { venueId: string | null; title: string; notes: string; duration: string; day: number; startTime: string }[]
+  >([])
 
   const form = useForm<RouteInput>({
     resolver: zodResolver(routeSchema),
@@ -39,18 +41,23 @@ export function RouteForm({ venues }: RouteFormProps) {
       difficulty: null,
       type: 'gastronomic',
       featured: false,
+      days: 1,
     },
   })
 
-  function addStop() {
-    setStops((prev) => [...prev, { venueId: null, title: '', notes: '', duration: '' }])
+  // Days come from the stops, so adding a stop on day 3 extends the itinerary
+  // without a separate control to keep in sync.
+  const dayCount = Math.max(1, ...stops.map((stop) => stop.day))
+
+  function addStop(day = 1) {
+    setStops((prev) => [...prev, { venueId: null, title: '', notes: '', duration: '', day, startTime: '' }])
   }
 
   function removeStop(index: number) {
     setStops((prev) => prev.filter((_, i) => i !== index))
   }
 
-  function updateStop(index: number, field: string, value: string) {
+  function updateStop(index: number, field: string, value: string | number) {
     setStops((prev) => {
       const updated = [...prev]
       updated[index] = { ...updated[index], [field]: value || null }
@@ -61,15 +68,24 @@ export function RouteForm({ venues }: RouteFormProps) {
   async function onSubmit(data: RouteInput) {
     setIsSubmitting(true)
     try {
-      const stopsData = stops.map((stop, i) => ({
-        venueId: stop.venueId || null,
-        title: stop.title || `Parada ${i + 1}`,
-        notes: stop.notes || null,
-        duration: stop.duration || null,
-        order: i,
-      }))
+      // `order` restarts on each day: the unique key is (routeId, day, order).
+      const orderByDay = new Map<number, number>()
+      const stopsData = stops.map((stop, i) => {
+        const day = stop.day || 1
+        const order = orderByDay.get(day) ?? 0
+        orderByDay.set(day, order + 1)
+        return {
+          venueId: stop.venueId || null,
+          title: stop.title || `Parada ${i + 1}`,
+          notes: stop.notes || null,
+          duration: stop.duration || null,
+          day,
+          order,
+          startTime: stop.startTime || null,
+        }
+      })
 
-      const result = await createRouteAction(data, stopsData)
+      const result = await createRouteAction({ ...data, days: dayCount }, stopsData)
 
       if (result.success) {
         toast.success('Ruta creada correctamente')
@@ -153,8 +169,20 @@ export function RouteForm({ venues }: RouteFormProps) {
         {/* Stops */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Paradas de la ruta</h3>
-            <Button type="button" variant="outline" size="sm" onClick={addStop}>Agregar parada</Button>
+            <div>
+              <h3 className="text-sm font-semibold">Paradas de la ruta</h3>
+              <p className="text-xs text-muted-foreground">
+                {dayCount > 1 ? `Itinerario de ${dayCount} días` : 'Itinerario de un día'}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => addStop(dayCount)}>
+                Agregar parada
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => addStop(dayCount + 1)}>
+                Agregar día
+              </Button>
+            </div>
           </div>
           {stops.map((stop, index) => (
             <div key={index} className="grid grid-cols-1 gap-3 rounded-xl border border-border/50 p-4 sm:grid-cols-2">
@@ -170,6 +198,24 @@ export function RouteForm({ venues }: RouteFormProps) {
               </div>
               <Input placeholder="Título de la parada" value={stop.title} onChange={(e) => updateStop(index, 'title', e.target.value)} />
               <Input placeholder="Notas (opcional)" value={stop.notes} onChange={(e) => updateStop(index, 'notes', e.target.value)} />
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  max={14}
+                  aria-label={`Día de la parada ${index + 1}`}
+                  value={stop.day}
+                  onChange={(e) => updateStop(index, 'day', Math.max(1, Number(e.target.value) || 1))}
+                  className="w-24"
+                />
+                <Input
+                  type="time"
+                  aria-label={`Hora de inicio de la parada ${index + 1}`}
+                  value={stop.startTime}
+                  onChange={(e) => updateStop(index, 'startTime', e.target.value)}
+                  className="flex-1"
+                />
+              </div>
               <div className="flex gap-2">
                 <Input placeholder="Duración (opcional)" value={stop.duration} onChange={(e) => updateStop(index, 'duration', e.target.value)} className="flex-1" />
                 <Button type="button" variant="ghost" size="sm" onClick={() => removeStop(index)} className="shrink-0 text-destructive">Quitar</Button>

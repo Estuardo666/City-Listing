@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { venueStatusUpdateSchema } from '@/schemas/venue.schema'
 import { sendVenueApprovedEmail, sendVenueRejectedEmail } from '@/lib/email/templates/venue-status'
 import { invalidateVenueCache } from '@/lib/cache-invalidation'
+import { notifyModerationDecision } from '@/lib/notifications/moderation'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueWithRelations } from '@/types/venue'
 
@@ -97,6 +98,14 @@ export async function updateVenueStatusAction(
         sendVenueRejectedEmail(updated.user.email, updated.name, null).catch(() => {})
       }
     }
+
+    notifyModerationDecision({
+      userId: updated.user.id,
+      kind: 'venue',
+      slug: updated.slug,
+      name: updated.name,
+      status: parsed.data.status,
+    }).catch(() => {})
 
     return {
       success: true,

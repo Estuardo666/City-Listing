@@ -17,6 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/sitemaps/static`, lastModified: new Date() },
     { url: `${SITE_URL}/sitemaps/categorias`, lastModified: new Date() },
     { url: `${SITE_URL}/sitemaps/colecciones`, lastModified: new Date() },
+    { url: `${SITE_URL}/sitemaps/rutas`, lastModified: new Date() },
   ]
 
   const localesPages = Math.max(1, Math.ceil(venueCount / PAGE_SIZE))

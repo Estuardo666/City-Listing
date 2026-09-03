@@ -1,3 +1,4 @@
+import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { getVenueBySlug } from '@/lib/queries/venues'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
 
@@ -17,10 +18,14 @@ type MobileMenuCategory = {
   }>
 }
 
-export async function GET(_: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const venue = await getVenueBySlug(slug)
   if (!venue) return mobileError('NOT_FOUND', 'Local no encontrado.', 404)
+
+  // The endpoint stays public; a bearer token only adds the owner-only fields,
+  // which is what unlocks the claim CTA and the reply affordance in the app.
+  const principal = await getMobilePrincipal(request)
 
   const menuCategories = (venue as typeof venue & { menuCategories?: MobileMenuCategory[] }).menuCategories ?? []
   const data = {
@@ -40,6 +45,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     avgRating: venue.avgRating,
     reviewCount: venue.reviewCount,
     verified: venue.verified,
+    claimed: venue.claimed,
+    isOwnedByMe: principal ? venue.userId === principal.userId : false,
+    canReclaim: principal ? venue.userId !== principal.userId && !venue.claimed : false,
     categories: venue.venueCategories.map(({ category }) => category),
     media: venue.media.map(({ id, url, alt, type, order }) => ({ id, url, alt, type, order })),
     services: venue.services.map(({ id, name, description }) => ({ id, name, description })),
@@ -88,6 +96,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       title: review.title,
       content: review.content,
       createdAt: review.createdAt,
+      ownerReply: review.ownerReply,
+      ownerReplyAt: review.ownerReplyAt,
       user: { id: review.user.id, name: review.user.name, image: review.user.image },
       photos: (((review as typeof review & { photos?: { id: string; url: string; order: number }[] }).photos) ?? []).map(({ id, url, order }) => ({ id, url, order })),
     })),

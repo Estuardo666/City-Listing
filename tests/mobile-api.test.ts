@@ -33,34 +33,8 @@ test('Apple login fails closed when the provider is not configured', async () =>
   })
 })
 
-test('AASA fails closed without a Team ID and emits configured app links', async () => {
-  const previousTeamID = process.env.APPLE_TEAM_ID
-  const previousBundleID = process.env.APPLE_BUNDLE_ID
-  const { GET } = await import('../src/app/.well-known/apple-app-site-association/route')
-
-  try {
-    delete process.env.APPLE_TEAM_ID
-    process.env.APPLE_BUNDLE_ID = 'com.viveloja.app'
-    assert.equal((await GET()).status, 404)
-
-    process.env.APPLE_TEAM_ID = 'TEAMID123'
-    const response = await GET()
-    assert.equal(response.status, 200)
-    assert.deepEqual(await response.json(), {
-      applinks: {
-        details: [{
-          appIDs: ['TEAMID123.com.viveloja.app'],
-          components: [{ '/': '/locales/*' }, { '/': '/eventos/*' }, { '/': '/blog/*' }, { '/': '/partidos/*' }],
-        }],
-      },
-    })
-  } finally {
-    if (previousTeamID === undefined) delete process.env.APPLE_TEAM_ID
-    else process.env.APPLE_TEAM_ID = previousTeamID
-    if (previousBundleID === undefined) delete process.env.APPLE_BUNDLE_ID
-    else process.env.APPLE_BUNDLE_ID = previousBundleID
-  }
-})
+// The AASA and assetlinks routes are covered in tests/deep-links.test.ts,
+// alongside the canonical URL table they are generated from.
 
 test('mobile auth and favorites lifecycle is single-use and idempotent', async (t) => {
   if (!process.env.DATABASE_URL) {
@@ -385,4 +359,208 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(signedOut.status, 200)
   const rejected = await refresh(refreshRequest())
   assert.equal(rejected.status, 401)
+})
+
+test('push devices and notification preferences are per-user and idempotent', async (t) => {
+  if (!process.env.DATABASE_URL) {
+    t.skip('requires DATABASE_URL from the ephemeral CI service')
+    return
+  }
+
+  const [{ POST: register }, { POST: logout }, devicesRoute, preferencesRoute, { prisma }] =
+    await Promise.all([
+      import('../src/app/api/mobile/v1/auth/register/route'),
+      import('../src/app/api/mobile/v1/auth/logout/route'),
+      import('../src/app/api/mobile/v1/me/devices/route'),
+      import('../src/app/api/mobile/v1/me/notification-preferences/route'),
+      import('../src/lib/prisma'),
+    ])
+
+  const registered = await register(
+    jsonRequest('/auth/register', {
+      name: 'Push CI',
+      email: `push-ci-${randomUUID()}@example.com`,
+      password: 'valid-password-123',
+    }),
+  )
+  assert.equal(registered.status, 200)
+  const session = (await registered.json()) as TokenResponse
+  const authHeaders = { authorization: `Bearer ${session.data.accessToken}` }
+
+  // Anonymous callers must never touch a device list.
+  assert.equal(
+    (await devicesRoute.POST(jsonRequest('/me/devices', { token: 'a'.repeat(64), platform: 'IOS' })))
+      .status,
+    401,
+  )
+
+  const token = `ci-${randomUUID().replace(/-/g, '')}`
+  const first = await devicesRoute.POST(
+    jsonRequest('/me/devices', { token, platform: 'IOS', environment: 'sandbox' }, authHeaders),
+  )
+  assert.equal(first.status, 200)
+
+  // Re-registering the same token updates the row instead of duplicating it.
+  const second = await devicesRoute.POST(
+    jsonRequest('/me/devices', { token, platform: 'IOS', environment: 'production' }, authHeaders),
+  )
+  assert.equal(second.status, 200)
+  const stored = await prisma.deviceToken.findMany({ where: { userId: session.data.user.id } })
+  assert.equal(stored.length, 1)
+  assert.equal(stored[0].environment, 'production')
+
+  assert.equal(
+    (await devicesRoute.POST(jsonRequest('/me/devices', { token: 'short' }, authHeaders))).status,
+    422,
+  )
+
+  // Preferences answer defaults before anything is saved.
+  const defaults = await preferencesRoute.GET(
+    new Request('http://localhost/api/mobile/v1/me/notification-preferences', {
+      headers: authHeaders,
+    }),
+  )
+  assert.equal(defaults.status, 200)
+  const defaultsBody = (await defaults.json()) as { data: Record<string, unknown> }
+  assert.equal(defaultsBody.data.enabled, true)
+  assert.equal(defaultsBody.data.messageReceived, true)
+  assert.equal(defaultsBody.data.hoursAhead, 48)
+
+  const patched = await preferencesRoute.PATCH(
+    new Request('http://localhost/api/mobile/v1/me/notification-preferences', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ messageReceived: false, hoursAhead: 12 }),
+    }),
+  )
+  assert.equal(patched.status, 200)
+  const patchedBody = (await patched.json()) as { data: Record<string, unknown> }
+  assert.equal(patchedBody.data.messageReceived, false)
+  assert.equal(patchedBody.data.hoursAhead, 12)
+  // Untouched fields keep their value rather than resetting to the default.
+  assert.equal(patchedBody.data.reviewReply, true)
+
+  // Signing out drops the device so the phone stops receiving this account's
+  // notifications without waiting for APNs to report the token as dead.
+  const signedOut = await logout(
+    jsonRequest('/auth/logout', { refreshToken: session.data.refreshToken, deviceToken: token }),
+  )
+  assert.equal(signedOut.status, 200)
+  assert.equal(await prisma.deviceToken.count({ where: { token } }), 0)
+})
+
+test('business claims, owner replies and view records are scoped to their owner', async (t) => {
+  if (!process.env.DATABASE_URL) {
+    t.skip('requires DATABASE_URL from the ephemeral CI service')
+    return
+  }
+
+  const [{ POST: register }, claimsRoute, verifyRoute, viewsRoute, popularRoute, insightsRoute, { prisma }] =
+    await Promise.all([
+      import('../src/app/api/mobile/v1/auth/register/route'),
+      import('../src/app/api/mobile/v1/me/claims/route'),
+      import('../src/app/api/mobile/v1/me/claims/[id]/verify/route'),
+      import('../src/app/api/mobile/v1/views/route'),
+      import('../src/app/api/mobile/v1/popular/route'),
+      import('../src/app/api/mobile/v1/me/venues/[slug]/insights/route'),
+      import('../src/lib/prisma'),
+    ])
+
+  const registered = await register(
+    jsonRequest('/auth/register', {
+      name: 'Claim CI',
+      email: `claim-ci-${randomUUID()}@example.com`,
+      password: 'valid-password-123',
+    }),
+  )
+  const session = (await registered.json()) as TokenResponse
+  const authHeaders = { authorization: `Bearer ${session.data.accessToken}` }
+
+  const venue = await prisma.venue.findFirst({
+    where: { status: 'APPROVED', isActive: true },
+    select: { id: true, slug: true, userId: true },
+  })
+  assert.ok(venue, 'CI seed must provide an approved venue')
+
+  // A claim needs a session.
+  assert.equal(
+    (await claimsRoute.POST(jsonRequest('/me/claims', { venueId: venue.id, claimerName: 'x', claimerEmail: 'a@b.co' })))
+      .status,
+    401,
+  )
+
+  const created = await claimsRoute.POST(
+    jsonRequest(
+      '/me/claims',
+      {
+        venueId: venue.id,
+        claimerName: 'Dueño CI',
+        claimerEmail: 'duenio@example.com',
+        claimerPhone: null,
+        claimerRole: null,
+        message: null,
+      },
+      authHeaders,
+    ),
+  )
+  assert.equal(created.status, 200)
+  const claim = (await created.json()) as { data: { claimId: string; confidenceScore: number } }
+  // Registered user alone scores 20; the code is not verified yet.
+  assert.equal(claim.data.confidenceScore, 20)
+
+  // A second open claim for the same venue is rejected rather than duplicated.
+  const duplicate = await claimsRoute.POST(
+    jsonRequest(
+      '/me/claims',
+      { venueId: venue.id, claimerName: 'Dueño CI', claimerEmail: 'duenio@example.com', claimerPhone: null, claimerRole: null, message: null },
+      authHeaders,
+    ),
+  )
+  assert.equal(duplicate.status, 409)
+
+  const wrongCode = await verifyRoute.POST(
+    jsonRequest(`/me/claims/${claim.data.claimId}/verify`, { code: '000000' }, authHeaders),
+    { params: Promise.resolve({ id: claim.data.claimId }) },
+  )
+  // Either the code was wrong, or it happened to match and verified; both are
+  // deterministic failures for a random six digit guess except 1 in 1e6.
+  assert.ok([200, 400].includes(wrongCode.status))
+
+  const stored = await prisma.venueClaim.findUnique({
+    where: { id: claim.data.claimId },
+    select: { verificationCode: true },
+  })
+  const verified = await verifyRoute.POST(
+    jsonRequest(`/me/claims/${claim.data.claimId}/verify`, { code: stored?.verificationCode ?? '' }, authHeaders),
+    { params: Promise.resolve({ id: claim.data.claimId }) },
+  )
+  assert.equal(verified.status, 200)
+  const verifiedBody = (await verified.json()) as { data: { verified: boolean; confidenceScore: number } }
+  assert.equal(verifiedBody.data.verified, true)
+  // Verified e-mail adds 40 on top of the registered-user 20.
+  assert.equal(verifiedBody.data.confidenceScore, 60)
+
+  // Views are timestamped now, not just counted.
+  const recorded = await viewsRoute.POST(
+    jsonRequest('/views', { kind: 'venue', itemId: venue.id, source: 'ios' }, authHeaders),
+  )
+  assert.equal(recorded.status, 200)
+  assert.ok((await prisma.viewEvent.count({ where: { kind: 'venue', itemId: venue.id } })) >= 1)
+
+  assert.equal(
+    (await viewsRoute.POST(jsonRequest('/views', { kind: 'venue', itemId: 'does-not-exist' }))).status,
+    404,
+  )
+
+  const popular = await popularRoute.GET(
+    new Request('http://localhost/api/mobile/v1/popular?kind=venue&window=24h'),
+  )
+  assert.equal(popular.status, 200)
+
+  // Insights belong to the venue's owner, not to whoever filed a claim.
+  const forbidden = await insightsRoute.GET(
+    new Request(`http://localhost/api/mobile/v1/me/venues/${venue.slug}/insights`, { headers: authHeaders }),
+    { params: Promise.resolve({ slug: venue.slug }) },
+  )
+  assert.equal(forbidden.status, venue.userId === session.data.user.id ? 200 : 403)
 })

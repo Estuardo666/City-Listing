@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { eventStatusUpdateSchema } from '@/schemas/event.schema'
 import { invalidateEventCache } from '@/lib/cache-invalidation'
+import { notifyModerationDecision } from '@/lib/notifications/moderation'
 import type { ActionResponse } from '@/types/action-response'
 import type { EventWithRelations } from '@/types/event'
 
@@ -62,6 +63,14 @@ export async function updateEventStatusAction(
     revalidatePath('/admin/eventos')
     revalidatePath('/dashboard')
     await invalidateEventCache(parsed.data.eventId)
+
+    notifyModerationDecision({
+      userId: updated.user.id,
+      kind: 'event',
+      slug: updated.slug,
+      name: updated.title,
+      status: parsed.data.status,
+    }).catch(() => {})
 
     return {
       success: true,
