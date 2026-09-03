@@ -21,6 +21,13 @@ export const routeSchema = z.object({
   difficulty: z.enum(['Fácil', 'Moderado', 'Difícil']).nullable().optional(),
   type: z.enum(['gastronomic', 'cultural', 'adventure', 'nightlife', 'nature']),
   featured: z.coerce.boolean().optional().default(false),
+  /// Days the itinerary spans. Kept denormalised on the route so listings can
+  /// filter without loading the stops.
+  days: z.coerce.number().int().min(1).max(14).optional().default(1),
+  distanceMeters: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
+  estimatedMinutes: z.coerce.number().int().min(0).max(20_160).nullable().optional(),
+  startLat: z.coerce.number().min(-90).max(90).nullable().optional(),
+  startLng: z.coerce.number().min(-180).max(180).nullable().optional(),
 })
 
 export const routeStopSchema = z.object({
@@ -38,6 +45,23 @@ export const routeStopSchema = z.object({
     return value
   }, z.string().max(50).nullable()),
   order: z.coerce.number().int().min(0),
+  /// 1-based; day 1 keeps single-day routes behaving exactly as before.
+  day: z.coerce.number().int().min(1).max(14).optional().default(1),
+  startTime: z
+    .preprocess((value) => {
+      if (value === '' || value === null || value === undefined) return null
+      return value
+    }, z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Usa el formato HH:mm').nullable())
+    .optional(),
+  lat: z.coerce.number().min(-90).max(90).nullable().optional(),
+  lng: z.coerce.number().min(-180).max(180).nullable().optional(),
+  image: z
+    .preprocess((value) => {
+      if (value === '' || value === null || value === undefined) return null
+      return value
+    }, z.string().url('URL inválida').nullable())
+    .optional(),
+  travelMinutes: z.coerce.number().int().min(0).max(1440).nullable().optional(),
 })
 
 export const routeStatusUpdateSchema = z.object({

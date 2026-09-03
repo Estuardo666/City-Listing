@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendNewMessageEmail } from '@/lib/email/templates/new-message'
+import { notifyUser } from '@/lib/notifications'
 import type { ActionResponse } from '@/types/action-response'
 
 export async function sendMessageAction(
@@ -73,10 +74,23 @@ export async function sendMessageAction(
       },
     })
 
+    const sender = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true } })
+    const senderName = sender?.name ?? 'Un usuario'
+
     if (receiverId === venue.userId && venue.user.email && content?.trim()) {
-      const sender = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true } })
-      sendNewMessageEmail(venue.user.email, venue.user.name ?? '', sender?.name ?? 'Un usuario', venue.name, content.trim()).catch(() => {})
+      sendNewMessageEmail(venue.user.email, venue.user.name ?? '', senderName, venue.name, content.trim()).catch(() => {})
     }
+
+    // Collapsed per conversation so a burst of messages replaces itself on the
+    // lock screen instead of stacking.
+    notifyUser(receiverId, {
+      type: 'messageReceived',
+      title: `${senderName} · ${venue.name}`,
+      body: content?.trim()?.slice(0, 140) || 'Te envió una imagen.',
+      url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://viveloja.com'}/dashboard/mensajes`,
+      collapseId: `conversation-${venueId}-${session.user.id}`,
+      data: { venueId, messageId: message.id },
+    }).catch(() => {})
 
     revalidatePath(`/dashboard/locales/${venueId}/mensajes`)
     revalidatePath(`/dashboard/mensajes`)

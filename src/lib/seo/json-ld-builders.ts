@@ -322,6 +322,69 @@ export function buildArticleJsonLd(post: PostForJsonLd) {
   return jsonLd
 }
 
+export interface RouteForJsonLd {
+  title: string
+  slug: string
+  description: string
+  image?: string | null
+  days: number
+  estimatedMinutes?: number | null
+  stops: Array<{
+    title: string
+    day: number
+    order: number
+    venue?: { name: string; slug: string; lat: number | null; lng: number | null } | null
+  }>
+}
+
+/**
+ * `TouristTrip` with one `itinerary` entry per stop. Multi-day itineraries are
+ * still a single trip in schema.org terms; the day shows up in each stop's
+ * position, which is what Google reads for the ordered list.
+ */
+export function buildTouristTripJsonLd(route: RouteForJsonLd) {
+  const image = toAbsoluteUrl(route.image ?? null)
+  const sorted = [...route.stops].sort((a, b) => a.day - b.day || a.order - b.order)
+
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'TouristTrip',
+    name: route.title,
+    description: route.description,
+    url: `${SITE_URL}/rutas/${route.slug}`,
+    itinerary: {
+      '@type': 'ItemList',
+      numberOfItems: sorted.length,
+      itemListElement: sorted.map((stop, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'TouristAttraction',
+          name: stop.venue?.name ?? stop.title,
+          ...(stop.venue ? { url: `${SITE_URL}/locales/${stop.venue.slug}` } : {}),
+          ...(stop.venue?.lat != null && stop.venue?.lng != null
+            ? {
+                geo: {
+                  '@type': 'GeoCoordinates',
+                  latitude: stop.venue.lat,
+                  longitude: stop.venue.lng,
+                },
+              }
+            : {}),
+        },
+      })),
+    },
+  }
+
+  if (image) jsonLd.image = image
+  if (route.estimatedMinutes) {
+    // ISO 8601 duration; schema.org has no "days" field for a trip.
+    jsonLd.estimatedDuration = `PT${route.estimatedMinutes}M`
+  }
+
+  return jsonLd
+}
+
 export function buildBreadcrumbListJsonLd(
   items: Array<{ name: string; url?: string }>,
 ) {

@@ -9,12 +9,27 @@ datasource db {
 }
 
 model NotificationPreference {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  enabled    Boolean  @default(true)
-  hoursAhead Int      @default(48)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  // Master switch kept from the original event-reminder feature: false silences
+  // every channel and every type, whatever the flags below say.
+  enabled    Boolean @default(true)
+  hoursAhead Int     @default(48)
+
+  // Channels
+  pushEnabled  Boolean @default(true)
+  emailEnabled Boolean @default(true)
+
+  // Types
+  eventReminders       Boolean @default(true)
+  newFollowedVenuePost Boolean @default(true)
+  reviewReply          Boolean @default(true)
+  claimUpdates         Boolean @default(true)
+  messageReceived      Boolean @default(true)
+  moderationUpdates    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -111,12 +126,14 @@ model User {
   comments               Comment[]
   reviews                Review[]
   venueClaims            VenueClaim[]
+  claimedVenues          Venue[]                   @relation("VenueClaimedBy")
   reservations           Reservation[]
   routes                 Route[]
   questions              Question[]
   checkIns               CheckIn[]
   collections            Collection[]
   pushSubscriptions      PushSubscription[]
+  deviceTokens           DeviceToken[]
   osmImports             OsmImport[]
   googleImportJobs       GoogleImportJob[]
   badges                 UserBadge[]
@@ -326,6 +343,8 @@ model Venue {
   isActive          Boolean   @default(true)
   featured          Boolean   @default(false)
   claimed           Boolean   @default(false)
+  /// Set when a VenueClaim is approved. A real FK so an approved claim cannot
+  /// point at a user that no longer exists.
   claimedBy         String?
   verified          Boolean   @default(false)
   badge             String?
@@ -345,6 +364,9 @@ model Venue {
 
   userId              String
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Owner recorded when a VenueClaim is approved. Kept separate from `user`,
+  /// which is whoever created the listing.
+  claimedByUser       User?                @relation("VenueClaimedBy", fields: [claimedBy], references: [id], onDelete: SetNull)
   events              Event[]
   favorites           Favorite[]
   comments            Comment[]
@@ -440,24 +462,28 @@ model PostTag {
 }
 
 model Favorite {
-  id        String   @id @default(cuid())
-  userId    String
-  eventId   String?
-  venueId   String?
-  postId    String?
-  routeId   String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  eventId      String?
+  venueId      String?
+  postId       String?
+  routeId      String?
+  /// Lets a user save someone else's public collection.
+  collectionId String?
+  createdAt    DateTime @default(now())
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  venue Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  post  Post?  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  route Route? @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event      Event?      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  venue      Venue?      @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  post       Post?       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  route      Route?      @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  collection Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@unique([userId, venueId])
   @@unique([userId, postId])
   @@unique([userId, routeId])
+  @@unique([userId, collectionId])
   @@index([userId])
 }
 
@@ -679,20 +705,27 @@ model RecurrenceRule {
 }
 
 model Route {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  description String
-  content     String?
-  image       String?
-  duration    String?
-  difficulty  String?
-  type        String
-  status      String   @default("PENDING")
-  featured    Boolean  @default(false)
-  userId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default(cuid())
+  title            String
+  slug             String   @unique
+  description      String
+  content          String?
+  image            String?
+  duration         String?
+  difficulty       String?
+  type             String
+  status           String   @default("PENDING")
+  featured         Boolean  @default(false)
+  /// Number of days the itinerary spans; kept denormalised so listings can
+  /// filter without loading every stop.
+  days             Int      @default(1)
+  distanceMeters   Int?
+  estimatedMinutes Int?
+  startLat         Float?
+  startLng         Float?
+  userId           String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   stops       RouteStop[]
@@ -705,19 +738,34 @@ model Route {
 }
 
 model RouteStop {
-  id       String  @id @default(cuid())
-  routeId  String
-  venueId  String?
-  order    Int
-  title    String
-  notes    String?
-  duration String?
+  id            String  @id @default(cuid())
+  routeId       String
+  venueId       String?
+  /// 1-based day of the itinerary. Single-day routes stay on day 1, which is
+  /// what every pre-existing row was backfilled to.
+  day           Int     @default(1)
+  order         Int
+  title         String
+  notes         String?
+  /// Free text ("2 h"), kept as it was; `startTime` is the machine-readable one.
+  duration      String?
+  /// "HH:mm" in America/Guayaquil. String rather than DateTime because a stop
+  /// is a time of day, not an instant.
+  startTime     String?
+  /// Copied from the venue when there is one, set by hand for stops that are
+  /// just a place on the map (a viewpoint, a trailhead).
+  lat           Float?
+  lng           Float?
+  image         String?
+  /// Estimated travel time from the previous stop.
+  travelMinutes Int?
 
   route Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
   venue Venue? @relation(fields: [venueId], references: [id], onDelete: SetNull)
 
-  @@unique([routeId, order])
+  @@unique([routeId, day, order])
   @@index([routeId])
+  @@index([routeId, day, order])
 }
 
 model NewsletterSubscription {
@@ -795,8 +843,9 @@ model Collection {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items CollectionItem[]
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CollectionItem[]
+  favorites Favorite[]
 
   @@index([userId])
 }
@@ -890,6 +939,46 @@ model CheckIn {
 
   @@index([venueId])
   @@index([userId])
+  @@index([createdAt])
+}
+
+/// Native push target (APNs today, FCM when Android ships). Kept separate from
+/// PushSubscription, which stores the Web Push endpoint triple and is written by
+/// the browser's service worker.
+model DeviceToken {
+  id          String    @id @default(cuid())
+  userId      String
+  platform    String
+  token       String    @unique
+  environment String    @default("production")
+  locale      String    @default("es")
+  appVersion  String?
+  lastSeenAt  DateTime  @default(now())
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, revokedAt])
+}
+
+/// Timestamped view events. `viewCount` on each model is a lifetime counter and
+/// cannot answer "what is popular right now"; this table can, and is purged by
+/// the notifications cron so it stays small.
+model ViewEvent {
+  id     String  @id @default(cuid())
+  kind   String
+  itemId String
+  userId String?
+  /// Hash of IP + user agent for signed-out viewers. Never the raw values.
+  anonId String?
+  source String  @default("web")
+
+  createdAt DateTime @default(now())
+
+  @@index([kind, itemId, createdAt])
   @@index([createdAt])
 }
 

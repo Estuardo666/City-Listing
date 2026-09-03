@@ -372,6 +372,404 @@ paths:
                         type: array
                         items: { $ref: "#/components/schemas/MobileBadge" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /routes:
+    get:
+      tags: [Content]
+      summary: List approved itinerary routes
+      operationId: listMobileRoutes
+      parameters:
+        - { in: query, name: type, schema: { type: string } }
+        - { in: query, name: difficulty, schema: { type: string } }
+        - { in: query, name: days, schema: { type: integer, minimum: 1, maximum: 14 } }
+        - { in: query, name: featured, schema: { type: string, enum: ["true", "false"] } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - in: query
+          name: cursor
+          schema: { type: string }
+          description: Id of the last route of the previous page.
+      responses:
+        "200":
+          description: Routes page
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/MobileRouteSummary" }
+                      meta:
+                        type: object
+                        properties:
+                          hasMore: { type: boolean }
+                          nextCursor: { type: [string, 'null'] }
+        "422": { $ref: "#/components/responses/ValidationError" }
+  /routes/{slug}:
+    get:
+      tags: [Content]
+      summary: Itinerary detail with stops grouped by day
+      operationId: getMobileRoute
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Route detail
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/MobileRouteDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /popular:
+    get:
+      tags: [Content]
+      summary: Most viewed venues or events in a recent window
+      description: >-
+        Ranked from the shared view log written by the app, the site and the
+        installed PWA, so the ordering is the same everywhere. Distinct from the
+        lifetime `viewCount`, which never decays.
+      operationId: getMobilePopularNow
+      parameters:
+        - { in: query, name: kind, schema: { type: string, enum: [venue, event], default: venue } }
+        - { in: query, name: window, schema: { type: string, enum: ["24h", "7d"], default: "24h" } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 20, default: 10 } }
+      responses:
+        "200":
+          description: Ranked items with their recent view counts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            slug: { type: string }
+                            recentViews: { type: integer }
+        "422": { $ref: "#/components/responses/ValidationError" }
+  /collections/{slug}:
+    get:
+      tags: [Content]
+      summary: Public collection by slug
+      description: >-
+        A private collection answers 404 rather than 403 so the response never
+        confirms that a slug exists to someone who cannot see it. A bearer token
+        only adds `isSaved` and `isMine`.
+      operationId: getMobilePublicCollection
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Collection detail
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/MobilePublicCollection" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /me/claims:
+    get:
+      tags: [User]
+      summary: List the authenticated user's business claims
+      security: [{ bearerAuth: [] }]
+      operationId: listMobileClaims
+      responses:
+        "200":
+          description: Claims
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/MobileClaim" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Claim a business
+      description: >-
+        Mails a six digit code valid for 15 minutes. Rate limited, because it
+        sends mail on behalf of the caller.
+      security: [{ bearerAuth: [] }]
+      operationId: createMobileClaim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClaimSubmitRequest" }
+      responses:
+        "200":
+          description: Claim created, verification code sent
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          claimId: { type: string }
+                          venueSlug: { type: string }
+                          confidenceScore: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { description: "Already the owner, or a claim is already open" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { description: Too many claim attempts }
+  /me/claims/{id}/verify:
+    post:
+      tags: [User]
+      summary: Verify a claim's e-mail code
+      security: [{ bearerAuth: [] }]
+      operationId: verifyMobileClaim
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: "^\\d{6}$" }
+      responses:
+        "200":
+          description: Verified
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          verified: { type: boolean }
+                          confidenceScore: { type: integer }
+                          attemptsLeft: { type: integer }
+        "400": { description: Wrong code }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: The claim belongs to someone else }
+        "410": { description: The code expired }
+        "429": { description: Too many attempts }
+  /me/claims/{id}/evidence:
+    post:
+      tags: [User]
+      summary: Attach uploaded proof to a claim
+      description: The file is uploaded through `/me/uploads`; this records its URL.
+      security: [{ bearerAuth: [] }]
+      operationId: attachMobileClaimEvidence
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evidenceUrl]
+              properties:
+                evidenceUrl: { type: string, format: uri }
+                evidenceName: { type: [string, 'null'] }
+      responses:
+        "200":
+          description: Evidence attached and the claim re-scored
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          confidenceScore: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: The claim belongs to someone else }
+  /me/reviews/{id}/reply:
+    patch:
+      tags: [User]
+      summary: Reply to a review as the business owner
+      security: [{ bearerAuth: [] }]
+      operationId: replyToMobileReview
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reply]
+              properties:
+                reply: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        "200":
+          description: Reply published
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: string }
+                          ownerReply: { type: string }
+                          ownerReplyAt: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: Not the owner of the listing }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /me/venues/{slug}/insights:
+    get:
+      tags: [User]
+      summary: Owner metrics for one venue
+      description: >-
+        `viewSeries` only reaches back `retentionDays`, the window the view log
+        is kept for; `lifetimeViews` is the all-time counter and is reported
+        separately rather than mixed into the series.
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileVenueInsights
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Insights
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/MobileVenueInsights" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: Not the owner of the venue }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /me/devices:
+    post:
+      tags: [User]
+      summary: Register or refresh this device's push token
+      description: >-
+        Idempotent on the token. Upserting reassigns the device when another
+        account signs in on the same phone, so the previous owner stops
+        receiving its notifications.
+      security: [{ bearerAuth: [] }]
+      operationId: registerMobileDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceRegistrationRequest" }
+      responses:
+        "200":
+          description: Registered device
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/DeviceRegistration" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+    delete:
+      tags: [User]
+      summary: Revoke this device's push token
+      security: [{ bearerAuth: [] }]
+      operationId: revokeMobileDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string, minLength: 16, maxLength: 512 }
+      responses:
+        "200":
+          description: Revocation result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          revoked: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+  /me/notification-preferences:
+    get:
+      tags: [User]
+      summary: Read notification preferences
+      description: >-
+        Returns defaults when the user has never saved preferences, so the app
+        never renders blanks. The web dashboard edits the same row.
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileNotificationPreferences
+      responses:
+        "200":
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/NotificationPreferences" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      tags: [User]
+      summary: Update notification preferences
+      security: [{ bearerAuth: [] }]
+      operationId: updateMobileNotificationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationPreferences" }
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/NotificationPreferences" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
   /me/password:
     patch:
       tags: [User]
@@ -1303,6 +1701,206 @@ components:
         description: { type: string }
         icon: { type: [string, 'null'] }
         earnedAt: { type: string, format: date-time }
+    MobileRouteStop:
+      type: object
+      required: [id, day, order, title]
+      properties:
+        id: { type: string }
+        venueId: { type: [string, 'null'] }
+        day: { type: integer, minimum: 1, description: 1-based day of the itinerary. }
+        order: { type: integer, description: Position within its day; restarts each day. }
+        title: { type: string }
+        notes: { type: [string, 'null'] }
+        duration: { type: [string, 'null'] }
+        startTime: { type: [string, 'null'], description: "HH:mm in America/Guayaquil." }
+        lat: { type: [number, 'null'] }
+        lng: { type: [number, 'null'] }
+        image: { type: [string, 'null'] }
+        travelMinutes: { type: [integer, 'null'] }
+        venue:
+          type: [object, 'null']
+          properties:
+            id: { type: string }
+            name: { type: string }
+            slug: { type: string }
+            image: { type: [string, 'null'] }
+            lat: { type: [number, 'null'] }
+            lng: { type: [number, 'null'] }
+            location: { type: string }
+    MobileRouteSummary:
+      type: object
+      required: [id, title, slug, description, type, days]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'] }
+        duration: { type: [string, 'null'] }
+        difficulty: { type: [string, 'null'] }
+        type: { type: string }
+        featured: { type: boolean }
+        days: { type: integer, minimum: 1 }
+        distanceMeters: { type: [integer, 'null'] }
+        estimatedMinutes: { type: [integer, 'null'] }
+        stopCount: { type: integer }
+        favoriteCount: { type: integer }
+    MobileRouteDetail:
+      allOf:
+        - $ref: "#/components/schemas/MobileRouteSummary"
+        - type: object
+          properties:
+            content: { type: [string, 'null'] }
+            startLat: { type: [number, 'null'] }
+            startLng: { type: [number, 'null'] }
+            author:
+              type: object
+              properties:
+                id: { type: string }
+                name: { type: [string, 'null'] }
+                image: { type: [string, 'null'] }
+            stops:
+              type: array
+              items: { $ref: "#/components/schemas/MobileRouteStop" }
+            itinerary:
+              type: array
+              description: >-
+                One entry per day from 1 to `days`, including days with no stops,
+                so the client's day picker never renumbers.
+              items:
+                type: object
+                properties:
+                  day: { type: integer }
+                  stops:
+                    type: array
+                    items: { $ref: "#/components/schemas/MobileRouteStop" }
+    ClaimSubmitRequest:
+      type: object
+      required: [venueId, claimerName, claimerEmail]
+      properties:
+        venueId: { type: string }
+        claimerName: { type: string, minLength: 2, maxLength: 120 }
+        claimerEmail: { type: string, format: email, maxLength: 200 }
+        claimerPhone: { type: [string, 'null'], maxLength: 30 }
+        claimerRole: { type: [string, 'null'], maxLength: 80 }
+        message: { type: [string, 'null'], maxLength: 500 }
+    MobileClaim:
+      type: object
+      required: [id, status, verified, confidenceScore, createdAt]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [PENDING, VERIFIED, APPROVED, REJECTED] }
+        verified: { type: boolean }
+        confidenceScore: { type: integer, minimum: 0, maximum: 100 }
+        evidenceUrl: { type: [string, 'null'] }
+        evidenceName: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        venue:
+          type: [object, 'null']
+          properties:
+            id: { type: string }
+            name: { type: string }
+            slug: { type: string }
+            image: { type: [string, 'null'] }
+    MobileVenueInsights:
+      type: object
+      properties:
+        venue:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            slug: { type: string }
+            verified: { type: boolean }
+        lifetimeViews: { type: integer }
+        recentViews: { type: integer }
+        viewSeries:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              views: { type: integer }
+        avgRating: { type: [number, 'null'] }
+        reviewCount: { type: integer }
+        favorites: { type: integer }
+        pendingReviewReplies: { type: integer }
+        unansweredQuestions: { type: integer }
+        upcomingReservations: { type: integer }
+        retentionDays: { type: integer }
+    MobilePublicCollection:
+      type: object
+      required: [id, name, slug, itemCount, items]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: [string, 'null'] }
+        icon: { type: [string, 'null'] }
+        itemCount: { type: integer }
+        saveCount: { type: integer }
+        isSaved: { type: boolean, description: Requires a bearer token; false otherwise. }
+        isMine: { type: boolean }
+        author:
+          type: [object, 'null']
+          properties:
+            id: { type: string }
+            name: { type: [string, 'null'] }
+            image: { type: [string, 'null'] }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              order: { type: integer }
+              note: { type: [string, 'null'] }
+              item:
+                type: [object, 'null']
+                properties:
+                  kind: { type: string, enum: [venue, event, post, route] }
+                  id: { type: string }
+                  title: { type: string }
+                  slug: { type: string }
+                  image: { type: [string, 'null'] }
+                  subtitle: { type: [string, 'null'] }
+    DeviceRegistrationRequest:
+      type: object
+      required: [token, platform]
+      properties:
+        token: { type: string, minLength: 16, maxLength: 512 }
+        platform: { type: string, enum: [IOS, ANDROID] }
+        environment:
+          type: string
+          enum: [sandbox, production]
+          default: production
+          description: APNs environment the token belongs to.
+        locale: { type: string, minLength: 2, maxLength: 10, default: es }
+        appVersion: { type: string, maxLength: 40 }
+    DeviceRegistration:
+      type: object
+      required: [id, platform, environment, lastSeenAt]
+      properties:
+        id: { type: string }
+        platform: { type: string }
+        environment: { type: string }
+        lastSeenAt: { type: string, format: date-time }
+    NotificationPreferences:
+      type: object
+      description: >-
+        Every field is optional on PATCH; GET always returns all of them. The
+        `enabled` master switch silences every channel and type when false.
+      properties:
+        enabled: { type: boolean }
+        hoursAhead: { type: integer, minimum: 1, maximum: 168 }
+        pushEnabled: { type: boolean }
+        emailEnabled: { type: boolean }
+        eventReminders: { type: boolean }
+        newFollowedVenuePost: { type: boolean }
+        reviewReply: { type: boolean }
+        claimUpdates: { type: boolean }
+        messageReceived: { type: boolean }
+        moderationUpdates: { type: boolean }
     PasswordChangeRequest:
       type: object
       required: [currentPassword, newPassword, confirmPassword]
@@ -1410,6 +2008,9 @@ components:
   responses:
     BadRequest:
       description: Invalid input
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    ValidationError:
+      description: The request body failed validation (VALIDATION_ERROR)
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Unauthorized:
       description: Authentication required or invalid

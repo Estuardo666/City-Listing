@@ -3,6 +3,7 @@ import { getPosts } from '@/lib/queries/posts'
 import { getVenueCategories, getVenues } from '@/lib/queries/venues'
 import { mobileSuccess } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
+import { getPopularNow } from '@/lib/views'
 
 function mapVenues(venues: Awaited<ReturnType<typeof getVenues>>) {
   return venues.map(({ venueCategories, ...venue }) => ({
@@ -60,6 +61,17 @@ export async function GET() {
     tags: tags.map(({ tag }) => tag),
   }))
 
+  // "Popular ahora" is ranked by the shared view log, then hydrated from the
+  // venues already in hand — no extra query, and the section simply disappears
+  // when nothing has been viewed recently.
+  const popularRanking = await getPopularNow({ kind: 'venue', window: '24h', limit: 10 })
+  const venuesById = new Map(allVenues.map((venue) => [venue.id, venue]))
+  const popularNow = mapVenues(
+    popularRanking
+      .map((row) => venuesById.get(row.itemId))
+      .filter((venue): venue is (typeof allVenues)[number] => Boolean(venue)),
+  )
+
   return mobileSuccess({
     // `venues` and `events` remain the original featured aliases consumed by
     // older clients. The named sections make parity explicit for new clients.
@@ -68,6 +80,7 @@ export async function GET() {
     featuredVenues: mapVenues(featuredVenues),
     featuredEvents: mapEvents(featuredEvents),
     latestVenues: mapVenues(allVenues.slice(0, 12)),
+    popularNow,
     relatedEvents: mapEvents(relatedEvents),
     posts: mobilePosts,
     promotions,

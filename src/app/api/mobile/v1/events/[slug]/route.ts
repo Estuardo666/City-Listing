@@ -31,6 +31,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       title: review.title,
       content: review.content,
       createdAt: review.createdAt,
+      ownerReply: review.ownerReply,
+      ownerReplyAt: review.ownerReplyAt,
       user: { id: review.user.id, name: review.user.name, image: review.user.image },
       photos: (((review as typeof review & { photos?: { id: string; url: string; order: number }[] }).photos) ?? []).map(({ id, url, order }) => ({ id, url, order })),
     })),

@@ -1,4 +1,4 @@
-const PUBLIC_PATHS = ['/locales/*', '/eventos/*', '/blog/*', '/partidos/*']
+import { DEEP_LINK_PATH_PATTERNS } from '@/lib/canonical-urls'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,9 +19,14 @@ export function GET() {
       details: [
         {
           appIDs: [appID],
-          components: PUBLIC_PATHS.map((path) => ({ '/': path })),
+          components: DEEP_LINK_PATH_PATTERNS.map((path) => ({ '/': path })),
         },
       ],
+    },
+    // Enables Password AutoFill and Sign in with Apple credential sharing
+    // between viveloja.com and the iOS app.
+    webcredentials: {
+      apps: [appID],
     },
   }
 

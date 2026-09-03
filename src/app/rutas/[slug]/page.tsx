@@ -7,6 +7,8 @@ import { RouteDetail } from '@/components/route/route-detail'
 import { FavoriteButton } from '@/components/features/favorites/favorite-button'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
+import { JsonLd } from '@/components/json-ld'
+import { buildBreadcrumbListJsonLd, buildTouristTripJsonLd } from '@/lib/seo/json-ld-builders'
 import type { RouteWithStops } from '@/types/route'
 
 type RouteDetailPageProps = {
@@ -26,7 +28,7 @@ export default async function RouteDetailPage({ params }: RouteDetailPageProps) 
               select: { id: true, name: true, slug: true, image: true, lat: true, lng: true, location: true },
             },
           },
-          orderBy: { order: 'asc' },
+          orderBy: [{ day: 'asc' }, { order: 'asc' }],
         },
         _count: { select: { favorites: true } },
       },
@@ -43,8 +45,30 @@ export default async function RouteDetailPage({ params }: RouteDetailPageProps) 
       }).then(Boolean)
     : false
 
+  const tripJsonLd = buildTouristTripJsonLd({
+    title: route.title,
+    slug: route.slug,
+    description: route.description,
+    image: route.image,
+    days: route.days,
+    estimatedMinutes: route.estimatedMinutes,
+    stops: route.stops.map((stop) => ({
+      title: stop.title,
+      day: stop.day,
+      order: stop.order,
+      venue: stop.venue,
+    })),
+  })
+  const breadcrumbJsonLd = buildBreadcrumbListJsonLd([
+    { name: 'Inicio', url: '/' },
+    { name: 'Rutas', url: '/rutas' },
+    { name: route.title },
+  ])
+
   return (
     <div className="pb-20 pt-10 sm:pt-14">
+      <JsonLd data={tripJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <section className="section-shell space-y-8">
         <div className="flex items-center justify-between">
           <Button asChild variant="ghost" className="h-10 gap-2 rounded-xl border border-border/60 bg-card px-4 text-sm font-semibold text-foreground hover:bg-accent">
