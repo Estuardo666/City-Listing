@@ -2,8 +2,12 @@
 -- a venue pointing at nobody and nothing complained. Clean the orphans first,
 -- then constrain the column.
 
+-- `claimed` has to fall with `claimedBy`: a venue flagged as claimed with no
+-- claimer can never be claimed again, because the CTA checks that flag. The
+-- `verified` badge is editorial and stays as an admin left it.
 UPDATE "Venue"
-SET "claimedBy" = NULL
+SET "claimedBy" = NULL,
+    "claimed" = false
 WHERE "claimedBy" IS NOT NULL
   AND "claimedBy" NOT IN (SELECT "id" FROM "User");
 
