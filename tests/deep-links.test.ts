@@ -4,6 +4,7 @@ import { after, describe, it } from 'node:test'
 import {
   DEEP_LINK_PATH_PATTERNS,
   SHAREABLE_KINDS,
+  SITE_URL,
   canonicalPath,
   canonicalUrl,
   kindFromSegment,
@@ -47,7 +48,11 @@ describe('canonical urls', () => {
   })
 
   it('builds absolute urls without a double slash', () => {
-    assert.equal(canonicalUrl('route', 'centro'), 'https://viveloja.com/rutas/centro')
+    // Resolved from NEXT_PUBLIC_APP_URL, which differs per environment — CI
+    // runs against localhost — so the origin comes from the module itself.
+    assert.equal(canonicalUrl('route', 'centro'), `${SITE_URL}/rutas/centro`)
+    assert.ok(!SITE_URL.endsWith('/'))
+    assert.ok(!canonicalUrl('route', 'centro').includes('//rutas'))
   })
 })
 
