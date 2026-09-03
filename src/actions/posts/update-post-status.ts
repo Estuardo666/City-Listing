@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { postStatusUpdateSchema } from '@/schemas/post.schema'
+import { notifyModerationDecision } from '@/lib/notifications/moderation'
 import { invalidatePostCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { PostWithRelations } from '@/types/post'
@@ -52,6 +53,14 @@ export async function updatePostStatusAction(
     revalidatePath('/admin/blog')
     revalidatePath('/dashboard')
     await invalidatePostCache(parsed.data.postId)
+
+    notifyModerationDecision({
+      userId: updated.user.id,
+      kind: 'post',
+      slug: updated.slug,
+      name: updated.title,
+      status: parsed.data.status,
+    }).catch(() => {})
 
     return { success: true, data: updated }
   } catch {

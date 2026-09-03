@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import type { ActionResponse } from '@/types/action-response'
-import type { NotificationPreferenceRow } from '@/types/notification'
+import { NOTIFICATION_PREFERENCE_SELECT, type NotificationPreferenceRow } from '@/types/notification'
 
 export async function getNotificationPreferencesAction(): Promise<
   ActionResponse<NotificationPreferenceRow>
@@ -25,10 +25,7 @@ export async function getNotificationPreferencesAction(): Promise<
       create: {
         userId: session.user.id,
       },
-      select: {
-        enabled: true,
-        hoursAhead: true,
-      },
+      select: NOTIFICATION_PREFERENCE_SELECT,
     })
 
     return {

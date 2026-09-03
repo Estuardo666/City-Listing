@@ -1,10 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { MapPin, Clock, Mountain, User } from 'lucide-react'
+import { MapPin, Clock, Mountain, User, CalendarDays, Footprints } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { formatDate } from '@/lib/utils'
-import type { RouteWithStops } from '@/types/route'
+import { Button } from '@/components/ui/button'
+import type { RouteStopWithVenue, RouteWithStops } from '@/types/route'
 
 interface RouteDetailProps {
   route: RouteWithStops
@@ -18,8 +19,34 @@ const TYPE_LABELS: Record<string, string> = {
   nature: 'Naturaleza',
 }
 
+/** Days present in the itinerary, honouring `route.days` even if a day is empty. */
+function itineraryDays(route: RouteWithStops): number[] {
+  const highest = route.stops.reduce((max, stop) => Math.max(max, stop.day), 1)
+  const total = Math.max(route.days, highest, 1)
+  return Array.from({ length: total }, (_, index) => index + 1)
+}
+
+function formatDistance(meters: number): string {
+  return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${meters} m`
+}
+
+function formatMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  if (hours === 0) return `${rest} min`
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`
+}
+
 export function RouteDetail({ route }: RouteDetailProps) {
-  const sortedStops = [...route.stops].sort((a, b) => a.order - b.order)
+  const days = itineraryDays(route)
+  const [selectedDay, setSelectedDay] = useState(days[0] ?? 1)
+  const isMultiDay = days.length > 1
+  // Single-day itineraries show every stop, so the old routes keep rendering
+  // exactly as they did before days existed.
+  const visibleStops: RouteStopWithVenue[] = isMultiDay
+    ? route.stops.filter((stop) => stop.day === selectedDay)
+    : [...route.stops]
+  const sortedStops = visibleStops.sort((a, b) => a.day - b.day || a.order - b.order)
 
   return (
     <div className="space-y-6">
@@ -47,10 +74,28 @@ export function RouteDetail({ route }: RouteDetailProps) {
             {route.duration}
           </span>
         )}
+        {isMultiDay && (
+          <span className="flex items-center gap-1">
+            <CalendarDays className="h-4 w-4" />
+            {days.length} días
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <MapPin className="h-4 w-4" />
-          {sortedStops.length} paradas
+          {route.stops.length} paradas
         </span>
+        {route.distanceMeters ? (
+          <span className="flex items-center gap-1">
+            <Footprints className="h-4 w-4" />
+            {formatDistance(route.distanceMeters)}
+          </span>
+        ) : null}
+        {route.estimatedMinutes ? (
+          <span className="flex items-center gap-1">
+            <Clock className="h-4 w-4" />
+            {formatMinutes(route.estimatedMinutes)}
+          </span>
+        ) : null}
         <span className="flex items-center gap-1">
           <Mountain className="h-4 w-4" />
           {route._count.favorites} favoritos
@@ -66,7 +111,32 @@ export function RouteDetail({ route }: RouteDetailProps) {
 
       {/* Stops */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Paradas de la ruta</h2>
+        <h2 className="text-lg font-semibold mb-4">
+          {isMultiDay ? 'Itinerario' : 'Paradas de la ruta'}
+        </h2>
+
+        {isMultiDay && (
+          <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Días del itinerario">
+            {days.map((day) => (
+              <Button
+                key={day}
+                role="tab"
+                aria-selected={day === selectedDay}
+                variant={day === selectedDay ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedDay(day)}
+              >
+                Día {day}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {sortedStops.length === 0 && (
+          <p className="mb-4 text-sm text-muted-foreground">
+            Este día aún no tiene paradas.
+          </p>
+        )}
         <div className="space-y-4">
           {sortedStops.map((stop, index) => (
             <div key={stop.id} className="flex gap-4">
@@ -106,11 +176,17 @@ export function RouteDetail({ route }: RouteDetailProps) {
                 {stop.notes && (
                   <p className="text-xs text-muted-foreground mt-1 ml-3">{stop.notes}</p>
                 )}
-                {stop.duration && (
+                {(stop.startTime || stop.duration) && (
                   <p className="text-xs text-muted-foreground mt-0.5 ml-3 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> {stop.duration}
+                    <Clock className="h-3 w-3" />
+                    {[stop.startTime, stop.duration].filter(Boolean).join(' · ')}
                   </p>
                 )}
+                {stop.travelMinutes ? (
+                  <p className="text-xs text-muted-foreground mt-0.5 ml-3">
+                    {formatMinutes(stop.travelMinutes)} desde la parada anterior
+                  </p>
+                ) : null}
               </div>
             </div>
           ))}

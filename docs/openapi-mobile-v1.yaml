@@ -11,6 +11,8 @@ tags:
   - name: Home
   - name: Explore
   - name: Content
+  - name: Transmissions
+  - name: Analytics
   - name: User
 security: []
 paths:
@@ -122,7 +124,7 @@ paths:
   /home:
     get:
       tags: [Home]
-      summary: Load featured home sections
+      summary: Load featured, latest, related and editorial home sections
       operationId: getMobileHome
       responses:
         "200":
@@ -130,7 +132,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessEnvelope"
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/HomePayload"
   /explore:
     get:
       tags: [Explore]
@@ -165,7 +172,15 @@ paths:
       responses:
         "200":
           description: Venue detail
-          content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/VenueDetail"
         "404": { $ref: "#/components/responses/NotFound" }
   /events/{slug}:
     get:
@@ -201,7 +216,88 @@ paths:
       responses:
         "200":
           description: Public blog content
-          content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } }
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/ContentPayload" }
+  /watch-events:
+    get:
+      tags: [Transmissions]
+      summary: List active live transmissions and watch parties
+      operationId: getMobileWatchEvents
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 50 }
+      responses:
+        "200":
+          description: Active transmissions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/MobileWatchEvent" }
+  /watch-events/{slug}:
+    get:
+      tags: [Transmissions]
+      summary: Load transmission details and participating venues
+      operationId: getMobileWatchEvent
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Transmission details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/MobileWatchEventDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /views:
+    post:
+      tags: [Analytics]
+      summary: Increment a public content view counter
+      operationId: recordMobileView
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ViewRequest" } } }
+      responses:
+        "200": { description: View recorded, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+  /me/recommendations:
+    get:
+      tags: [User]
+      summary: Load personalized recommendations for the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileRecommendations
+      responses:
+        "200":
+          description: Personalized home recommendations
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/RecommendationsPayload" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
   /me/profile:
     get:
       tags: [User]
@@ -211,6 +307,483 @@ paths:
       responses:
         "200": { description: Profile, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
+  /me/following:
+    get:
+      tags: [User]
+      summary: List venues followed by the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileFollowing
+      responses:
+        "200":
+          description: Followed venues
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/FollowingRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Follow an approved venue
+      security: [{ bearerAuth: [] }]
+      operationId: followMobileVenue
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/FollowingRequest" } } }
+      responses:
+        "200": { description: Venue followed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+    delete:
+      tags: [User]
+      summary: Stop following a venue
+      security: [{ bearerAuth: [] }]
+      operationId: unfollowMobileVenue
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/FollowingRequest" } } }
+      responses:
+        "200": { description: Venue unfollowed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/BadRequest" }
+  /me/badges:
+    get:
+      tags: [User]
+      summary: List badges earned by the authenticated user
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileBadges
+      responses:
+        "200":
+          description: Earned badges
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/MobileBadge" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /routes:
+    get:
+      tags: [Content]
+      summary: List approved itinerary routes
+      operationId: listMobileRoutes
+      parameters:
+        - { in: query, name: type, schema: { type: string } }
+        - { in: query, name: difficulty, schema: { type: string } }
+        - { in: query, name: days, schema: { type: integer, minimum: 1, maximum: 14 } }
+        - { in: query, name: featured, schema: { type: string, enum: ["true", "false"] } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - in: query
+          name: cursor
+          schema: { type: string }
+          description: Id of the last route of the previous page.
+      responses:
+        "200":
+          description: Routes page
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/MobileRouteSummary" }
+                      meta:
+                        type: object
+                        properties:
+                          hasMore: { type: boolean }
+                          nextCursor: { type: [string, 'null'] }
+        "422": { $ref: "#/components/responses/ValidationError" }
+  /routes/{slug}:
+    get:
+      tags: [Content]
+      summary: Itinerary detail with stops grouped by day
+      operationId: getMobileRoute
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Route detail
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/MobileRouteDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /popular:
+    get:
+      tags: [Content]
+      summary: Most viewed venues or events in a recent window
+      description: >-
+        Ranked from the shared view log written by the app, the site and the
+        installed PWA, so the ordering is the same everywhere. Distinct from the
+        lifetime `viewCount`, which never decays.
+      operationId: getMobilePopularNow
+      parameters:
+        - { in: query, name: kind, schema: { type: string, enum: [venue, event], default: venue } }
+        - { in: query, name: window, schema: { type: string, enum: ["24h", "7d"], default: "24h" } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 20, default: 10 } }
+      responses:
+        "200":
+          description: Ranked items with their recent view counts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            slug: { type: string }
+                            recentViews: { type: integer }
+        "422": { $ref: "#/components/responses/ValidationError" }
+  /collections/{slug}:
+    get:
+      tags: [Content]
+      summary: Public collection by slug
+      description: >-
+        A private collection answers 404 rather than 403 so the response never
+        confirms that a slug exists to someone who cannot see it. A bearer token
+        only adds `isSaved` and `isMine`.
+      operationId: getMobilePublicCollection
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Collection detail
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/MobilePublicCollection" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /me/claims:
+    get:
+      tags: [User]
+      summary: List the authenticated user's business claims
+      security: [{ bearerAuth: [] }]
+      operationId: listMobileClaims
+      responses:
+        "200":
+          description: Claims
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/MobileClaim" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [User]
+      summary: Claim a business
+      description: >-
+        Mails a six digit code valid for 15 minutes. Rate limited, because it
+        sends mail on behalf of the caller.
+      security: [{ bearerAuth: [] }]
+      operationId: createMobileClaim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClaimSubmitRequest" }
+      responses:
+        "200":
+          description: Claim created, verification code sent
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          claimId: { type: string }
+                          venueSlug: { type: string }
+                          confidenceScore: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { description: "Already the owner, or a claim is already open" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { description: Too many claim attempts }
+  /me/claims/{id}/verify:
+    post:
+      tags: [User]
+      summary: Verify a claim's e-mail code
+      security: [{ bearerAuth: [] }]
+      operationId: verifyMobileClaim
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: "^\\d{6}$" }
+      responses:
+        "200":
+          description: Verified
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          verified: { type: boolean }
+                          confidenceScore: { type: integer }
+                          attemptsLeft: { type: integer }
+        "400": { description: Wrong code }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: The claim belongs to someone else }
+        "410": { description: The code expired }
+        "429": { description: Too many attempts }
+  /me/claims/{id}/evidence:
+    post:
+      tags: [User]
+      summary: Attach uploaded proof to a claim
+      description: The file is uploaded through `/me/uploads`; this records its URL.
+      security: [{ bearerAuth: [] }]
+      operationId: attachMobileClaimEvidence
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evidenceUrl]
+              properties:
+                evidenceUrl: { type: string, format: uri }
+                evidenceName: { type: [string, 'null'] }
+      responses:
+        "200":
+          description: Evidence attached and the claim re-scored
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          confidenceScore: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: The claim belongs to someone else }
+  /me/reviews/{id}/reply:
+    patch:
+      tags: [User]
+      summary: Reply to a review as the business owner
+      security: [{ bearerAuth: [] }]
+      operationId: replyToMobileReview
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reply]
+              properties:
+                reply: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        "200":
+          description: Reply published
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: string }
+                          ownerReply: { type: string }
+                          ownerReplyAt: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: Not the owner of the listing }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /me/venues/{slug}/insights:
+    get:
+      tags: [User]
+      summary: Owner metrics for one venue
+      description: >-
+        `viewSeries` only reaches back `retentionDays`, the window the view log
+        is kept for; `lifetimeViews` is the all-time counter and is reported
+        separately rather than mixed into the series.
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileVenueInsights
+      parameters:
+        - { in: path, name: slug, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Insights
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/MobileVenueInsights" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: Not the owner of the venue }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /me/devices:
+    post:
+      tags: [User]
+      summary: Register or refresh this device's push token
+      description: >-
+        Idempotent on the token. Upserting reassigns the device when another
+        account signs in on the same phone, so the previous owner stops
+        receiving its notifications.
+      security: [{ bearerAuth: [] }]
+      operationId: registerMobileDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceRegistrationRequest" }
+      responses:
+        "200":
+          description: Registered device
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/DeviceRegistration" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+    delete:
+      tags: [User]
+      summary: Revoke this device's push token
+      security: [{ bearerAuth: [] }]
+      operationId: revokeMobileDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string, minLength: 16, maxLength: 512 }
+      responses:
+        "200":
+          description: Revocation result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          revoked: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+  /me/notification-preferences:
+    get:
+      tags: [User]
+      summary: Read notification preferences
+      description: >-
+        Returns defaults when the user has never saved preferences, so the app
+        never renders blanks. The web dashboard edits the same row.
+      security: [{ bearerAuth: [] }]
+      operationId: getMobileNotificationPreferences
+      responses:
+        "200":
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/NotificationPreferences" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      tags: [User]
+      summary: Update notification preferences
+      security: [{ bearerAuth: [] }]
+      operationId: updateMobileNotificationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationPreferences" }
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/NotificationPreferences" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+  /me/password:
+    patch:
+      tags: [User]
+      summary: Change the authenticated user's password
+      security: [{ bearerAuth: [] }]
+      operationId: changeMobilePassword
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PasswordChangeRequest" } } }
+      responses:
+        "200": { description: Password changed, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { description: Password is not configured, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { $ref: "#/components/responses/BadRequest" }
   /me/interests:
     get:
       tags: [User]
@@ -497,7 +1070,18 @@ paths:
       security: [{ bearerAuth: [] }]
       operationId: getMobileFavorites
       responses:
-        "200": { description: Saved content, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "200":
+          description: Saved content
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/FavoriteRecord" }
         "401": { $ref: "#/components/responses/Unauthorized" }
     post:
       tags: [User]
@@ -715,6 +1299,236 @@ components:
       properties:
         data: {}
         meta: { type: object, additionalProperties: true }
+    HomePayload:
+      type: object
+      description: Featured and editorial sections returned by the mobile home endpoint.
+      required: [venues, events, featuredVenues, featuredEvents, latestVenues, relatedEvents, posts, promotions, categories]
+      properties:
+        venues:
+          type: array
+          description: Backwards-compatible alias for featuredVenues.
+          items: { $ref: "#/components/schemas/MobileVenue" }
+        events:
+          type: array
+          description: Backwards-compatible alias for featuredEvents.
+          items: { $ref: "#/components/schemas/MobileEvent" }
+        featuredVenues:
+          type: array
+          items: { $ref: "#/components/schemas/MobileVenue" }
+        featuredEvents:
+          type: array
+          items: { $ref: "#/components/schemas/MobileEvent" }
+        latestVenues:
+          type: array
+          items: { $ref: "#/components/schemas/MobileVenue" }
+        relatedEvents:
+          type: array
+          items: { $ref: "#/components/schemas/MobileEvent" }
+        posts:
+          type: array
+          items: { $ref: "#/components/schemas/MobilePost" }
+        promotions:
+          type: array
+          items: { $ref: "#/components/schemas/MobilePromotion" }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/Category" }
+        pageInfo:
+          type: object
+          additionalProperties: true
+    MobileWatchPerformer:
+      type: object
+      required: [id, name, slug, type]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        type: { type: string }
+        logo: { type: [string, 'null'], format: uri }
+        role: { type: [string, 'null'] }
+    MobileWatchEvent:
+      type: object
+      required: [id, name, slug, type, matchDate, performers, featured, viewCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        type: { type: string }
+        description: { type: [string, 'null'] }
+        image: { type: [string, 'null'], format: uri }
+        matchDate: { type: string, format: date-time }
+        matchTime: { type: [string, 'null'] }
+        competition: { type: [string, 'null'] }
+        performers: { type: array, items: { $ref: "#/components/schemas/MobileWatchPerformer" } }
+        featured: { type: boolean }
+        viewCount: { type: integer, minimum: 0 }
+        venueCount: { type: [integer, 'null'], minimum: 0 }
+    MobileWatchVenue:
+      type: object
+      required: [id, venue, hasBigScreen, hasFreeEntry]
+      properties:
+        id: { type: string }
+        flyerUrl: { type: [string, 'null'], format: uri }
+        promotion: { type: [string, 'null'] }
+        hasBigScreen: { type: boolean }
+        hasFreeEntry: { type: boolean }
+        venue: { type: object, additionalProperties: true }
+    MobileRoute:
+      type: object
+      required: [id, title, slug, description, type, featured, stops]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        duration: { type: [string, 'null'] }
+        difficulty: { type: [string, 'null'] }
+        type: { type: string }
+        featured: { type: boolean }
+        stops: { type: array, items: { type: object, additionalProperties: true } }
+    MobileCollection:
+      type: object
+      required: [id, name, slug, itemCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: [string, 'null'] }
+        icon: { type: [string, 'null'] }
+        itemCount: { type: integer, minimum: 0 }
+        user: { type: [object, 'null'], additionalProperties: true }
+    ContentPayload:
+      type: object
+      required: [posts, categories, promotions, routes, collections, watchEvents]
+      properties:
+        posts: { type: array, items: { $ref: "#/components/schemas/MobilePost" } }
+        categories: { type: array, items: { $ref: "#/components/schemas/Category" } }
+        promotions: { type: array, items: { $ref: "#/components/schemas/MobilePromotion" } }
+        routes: { type: array, items: { $ref: "#/components/schemas/MobileRoute" } }
+        collections: { type: array, items: { $ref: "#/components/schemas/MobileCollection" } }
+        watchEvents: { type: array, items: { $ref: "#/components/schemas/MobileWatchEvent" } }
+    MobileWatchEventDetail:
+      allOf:
+        - $ref: "#/components/schemas/MobileWatchEvent"
+        - type: object
+          required: [venues]
+          properties:
+            venues: { type: array, items: { $ref: "#/components/schemas/MobileWatchVenue" } }
+    ViewRequest:
+      type: object
+      required: [kind, itemId]
+      properties:
+        kind: { type: string, enum: [venue, event, watchEvent] }
+        itemId: { type: string, minLength: 1, maxLength: 100 }
+    Category:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        icon: { type: [string, 'null'] }
+        color: { type: [string, 'null'] }
+    MobileVenue:
+      type: object
+      required: [id, name, slug, categories]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        location: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        lat: { type: [number, 'null'] }
+        lng: { type: [number, 'null'] }
+        featured: { type: boolean }
+        phone: { type: [string, 'null'] }
+        website: { type: [string, 'null'], format: uri }
+        priceRange: { type: [string, 'null'] }
+        avgRating: { type: [number, 'null'] }
+        reviewCount: { type: integer }
+        verified: { type: boolean }
+        categories: { type: array, items: { $ref: "#/components/schemas/Category" } }
+    MobileEvent:
+      type: object
+      required: [id, title, slug, startDate, categories]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        startDate: { type: string, format: date-time }
+        endDate: { type: [string, 'null'], format: date-time }
+        location: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        lat: { type: [number, 'null'] }
+        lng: { type: [number, 'null'] }
+        featured: { type: boolean }
+        price: { type: [number, 'null'] }
+        avgRating: { type: [number, 'null'] }
+        reviewCount: { type: integer }
+        categories: { type: array, items: { $ref: "#/components/schemas/Category" } }
+    RecommendationsPayload:
+      type: object
+      required: [interests, followingVenues, relatedEvents, relatedVenues]
+      properties:
+        interests:
+          type: object
+          required: [categories, preferences]
+          properties:
+            categories: { type: array, items: { $ref: "#/components/schemas/Category" } }
+            preferences: { type: array, items: { type: string } }
+        followingVenues: { type: array, items: { $ref: "#/components/schemas/FollowingRecord" } }
+        relatedEvents: { type: array, items: { $ref: "#/components/schemas/MobileEvent" } }
+        relatedVenues: { type: array, items: { $ref: "#/components/schemas/MobileVenue" } }
+    MobilePost:
+      type: object
+      required: [id, title, slug, status, featured, createdAt, tags]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        excerpt: { type: [string, 'null'] }
+        image: { type: [string, 'null'], format: uri }
+        status: { type: string }
+        featured: { type: boolean }
+        publishedAt: { type: [string, 'null'], format: date-time }
+        createdAt: { type: string, format: date-time }
+        author: { type: [object, 'null'], additionalProperties: true }
+        tags: { type: array, items: { type: object, additionalProperties: true } }
+    MobilePromotion:
+      type: object
+      required: [id, title, description, validFrom, validUntil, featured, venue]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        discount: { type: [string, 'null'] }
+        validFrom: { type: string, format: date-time }
+        validUntil: { type: string, format: date-time }
+        terms: { type: [string, 'null'] }
+        featured: { type: boolean }
+        venue: { type: object, additionalProperties: true }
+    VenueDetail:
+      allOf:
+        - $ref: "#/components/schemas/MobileVenue"
+        - type: object
+          required: [media, services, businessHours, menu, products, events, promotions, reviews, questions]
+          properties:
+            operatingHours: { type: [object, 'null'], additionalProperties: true }
+            businessHours: { type: array, items: { type: object, additionalProperties: true } }
+            menu: { type: array, items: { type: object, additionalProperties: true } }
+            products: { type: array, items: { type: object, additionalProperties: true } }
+            events: { type: array, items: { type: object, additionalProperties: true } }
+            promotions: { type: array, items: { type: object, additionalProperties: true } }
+            media: { type: array, items: { type: object, additionalProperties: true } }
+            services: { type: array, items: { type: object, additionalProperties: true } }
+            reviews: { type: array, items: { type: object, additionalProperties: true } }
+            questions: { type: array, items: { type: object, additionalProperties: true } }
     RegisterRequest:
       type: object
       required: [name, email, password]
@@ -824,6 +1638,276 @@ components:
       properties:
         kind: { type: string, enum: [venue, event, post, route] }
         itemId: { type: string, minLength: 1 }
+    FavoriteSummary:
+      type: object
+      required: [kind, id, title, slug]
+      properties:
+        kind: { type: string, enum: [venue, event, post, route] }
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        description: { type: [string, 'null'] }
+        image: { type: [string, 'null'], format: uri }
+        subtitle: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        lat: { type: [number, 'null'], minimum: -90, maximum: 90 }
+        lng: { type: [number, 'null'], minimum: -180, maximum: 180 }
+        startDate: { type: [string, 'null'], format: date-time }
+    FavoriteRecord:
+      type: object
+      required: [id, kind, itemId, createdAt]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [venue, event, post, route] }
+        itemId: { type: string }
+        createdAt: { type: string, format: date-time }
+        item:
+          anyOf:
+            - $ref: "#/components/schemas/FavoriteSummary"
+            - type: 'null'
+    FollowingRequest:
+      type: object
+      required: [venueId]
+      properties:
+        venueId: { type: string, minLength: 1 }
+    FollowingRecord:
+      type: object
+      required: [id, venueId, createdAt, venue]
+      properties:
+        id: { type: string }
+        venueId: { type: string }
+        createdAt: { type: string, format: date-time }
+        venue: { $ref: "#/components/schemas/FollowingVenue" }
+    FollowingVenue:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        image: { type: [string, 'null'], format: uri }
+        location: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        phone: { type: [string, 'null'] }
+        lat: { type: [number, 'null'] }
+        lng: { type: [number, 'null'] }
+    MobileBadge:
+      type: object
+      required: [id, badgeType, name, description, earnedAt]
+      properties:
+        id: { type: string }
+        badgeType: { type: string }
+        name: { type: string }
+        description: { type: string }
+        icon: { type: [string, 'null'] }
+        earnedAt: { type: string, format: date-time }
+    MobileRouteStop:
+      type: object
+      required: [id, day, order, title]
+      properties:
+        id: { type: string }
+        venueId: { type: [string, 'null'] }
+        day: { type: integer, minimum: 1, description: 1-based day of the itinerary. }
+        order: { type: integer, description: Position within its day; restarts each day. }
+        title: { type: string }
+        notes: { type: [string, 'null'] }
+        duration: { type: [string, 'null'] }
+        startTime: { type: [string, 'null'], description: "HH:mm in America/Guayaquil." }
+        lat: { type: [number, 'null'] }
+        lng: { type: [number, 'null'] }
+        image: { type: [string, 'null'] }
+        travelMinutes: { type: [integer, 'null'] }
+        venue:
+          type: [object, 'null']
+          properties:
+            id: { type: string }
+            name: { type: string }
+            slug: { type: string }
+            image: { type: [string, 'null'] }
+            lat: { type: [number, 'null'] }
+            lng: { type: [number, 'null'] }
+            location: { type: string }
+    MobileRouteSummary:
+      type: object
+      required: [id, title, slug, description, type, days]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        image: { type: [string, 'null'] }
+        duration: { type: [string, 'null'] }
+        difficulty: { type: [string, 'null'] }
+        type: { type: string }
+        featured: { type: boolean }
+        days: { type: integer, minimum: 1 }
+        distanceMeters: { type: [integer, 'null'] }
+        estimatedMinutes: { type: [integer, 'null'] }
+        stopCount: { type: integer }
+        favoriteCount: { type: integer }
+    MobileRouteDetail:
+      allOf:
+        - $ref: "#/components/schemas/MobileRouteSummary"
+        - type: object
+          properties:
+            content: { type: [string, 'null'] }
+            startLat: { type: [number, 'null'] }
+            startLng: { type: [number, 'null'] }
+            author:
+              type: object
+              properties:
+                id: { type: string }
+                name: { type: [string, 'null'] }
+                image: { type: [string, 'null'] }
+            stops:
+              type: array
+              items: { $ref: "#/components/schemas/MobileRouteStop" }
+            itinerary:
+              type: array
+              description: >-
+                One entry per day from 1 to `days`, including days with no stops,
+                so the client's day picker never renumbers.
+              items:
+                type: object
+                properties:
+                  day: { type: integer }
+                  stops:
+                    type: array
+                    items: { $ref: "#/components/schemas/MobileRouteStop" }
+    ClaimSubmitRequest:
+      type: object
+      required: [venueId, claimerName, claimerEmail]
+      properties:
+        venueId: { type: string }
+        claimerName: { type: string, minLength: 2, maxLength: 120 }
+        claimerEmail: { type: string, format: email, maxLength: 200 }
+        claimerPhone: { type: [string, 'null'], maxLength: 30 }
+        claimerRole: { type: [string, 'null'], maxLength: 80 }
+        message: { type: [string, 'null'], maxLength: 500 }
+    MobileClaim:
+      type: object
+      required: [id, status, verified, confidenceScore, createdAt]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [PENDING, VERIFIED, APPROVED, REJECTED] }
+        verified: { type: boolean }
+        confidenceScore: { type: integer, minimum: 0, maximum: 100 }
+        evidenceUrl: { type: [string, 'null'] }
+        evidenceName: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        venue:
+          type: [object, 'null']
+          properties:
+            id: { type: string }
+            name: { type: string }
+            slug: { type: string }
+            image: { type: [string, 'null'] }
+    MobileVenueInsights:
+      type: object
+      properties:
+        venue:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            slug: { type: string }
+            verified: { type: boolean }
+        lifetimeViews: { type: integer }
+        recentViews: { type: integer }
+        viewSeries:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              views: { type: integer }
+        avgRating: { type: [number, 'null'] }
+        reviewCount: { type: integer }
+        favorites: { type: integer }
+        pendingReviewReplies: { type: integer }
+        unansweredQuestions: { type: integer }
+        upcomingReservations: { type: integer }
+        retentionDays: { type: integer }
+    MobilePublicCollection:
+      type: object
+      required: [id, name, slug, itemCount, items]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: [string, 'null'] }
+        icon: { type: [string, 'null'] }
+        itemCount: { type: integer }
+        saveCount: { type: integer }
+        isSaved: { type: boolean, description: Requires a bearer token; false otherwise. }
+        isMine: { type: boolean }
+        author:
+          type: [object, 'null']
+          properties:
+            id: { type: string }
+            name: { type: [string, 'null'] }
+            image: { type: [string, 'null'] }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              order: { type: integer }
+              note: { type: [string, 'null'] }
+              item:
+                type: [object, 'null']
+                properties:
+                  kind: { type: string, enum: [venue, event, post, route] }
+                  id: { type: string }
+                  title: { type: string }
+                  slug: { type: string }
+                  image: { type: [string, 'null'] }
+                  subtitle: { type: [string, 'null'] }
+    DeviceRegistrationRequest:
+      type: object
+      required: [token, platform]
+      properties:
+        token: { type: string, minLength: 16, maxLength: 512 }
+        platform: { type: string, enum: [IOS, ANDROID] }
+        environment:
+          type: string
+          enum: [sandbox, production]
+          default: production
+          description: APNs environment the token belongs to.
+        locale: { type: string, minLength: 2, maxLength: 10, default: es }
+        appVersion: { type: string, maxLength: 40 }
+    DeviceRegistration:
+      type: object
+      required: [id, platform, environment, lastSeenAt]
+      properties:
+        id: { type: string }
+        platform: { type: string }
+        environment: { type: string }
+        lastSeenAt: { type: string, format: date-time }
+    NotificationPreferences:
+      type: object
+      description: >-
+        Every field is optional on PATCH; GET always returns all of them. The
+        `enabled` master switch silences every channel and type when false.
+      properties:
+        enabled: { type: boolean }
+        hoursAhead: { type: integer, minimum: 1, maximum: 168 }
+        pushEnabled: { type: boolean }
+        emailEnabled: { type: boolean }
+        eventReminders: { type: boolean }
+        newFollowedVenuePost: { type: boolean }
+        reviewReply: { type: boolean }
+        claimUpdates: { type: boolean }
+        messageReceived: { type: boolean }
+        moderationUpdates: { type: boolean }
+    PasswordChangeRequest:
+      type: object
+      required: [currentPassword, newPassword, confirmPassword]
+      properties:
+        currentPassword: { type: string, minLength: 1, maxLength: 128 }
+        newPassword: { type: string, minLength: 8, maxLength: 128 }
+        confirmPassword: { type: string, minLength: 8, maxLength: 128 }
     CollectionRequest:
       type: object
       required: [name]
@@ -924,6 +2008,9 @@ components:
   responses:
     BadRequest:
       description: Invalid input
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    ValidationError:
+      description: The request body failed validation (VALIDATION_ERROR)
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Unauthorized:
       description: Authentication required or invalid

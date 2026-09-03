@@ -4,11 +4,11 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { createSessionTokens } from '@/lib/mobile-auth'
 import { checkMobileAuthRateLimit } from '@/lib/mobile-rate-limit'
-import { mobileError, mobileSuccess } from '@/lib/mobile-response'
+import { mobileError, mobileSuccess, withMobileErrors } from '@/lib/mobile-response'
 
 const schema = z.object({ name: z.string().trim().min(2).max(80), email: z.string().trim().email().max(320), password: z.string().min(8).max(128) })
 
-export async function POST(request: Request) {
+export const POST = withMobileErrors(async (request: Request) => {
   const parsed = schema.safeParse(await request.json().catch(() => null))
   const rateLimit = await checkMobileAuthRateLimit(request, parsed.success ? parsed.data.email : undefined)
   if (!rateLimit.allowed) return mobileError('RATE_LIMITED', 'Demasiados intentos. Inténtalo más tarde.', 429)
@@ -26,4 +26,4 @@ export async function POST(request: Request) {
     throw error
   }
   return mobileSuccess(await createSessionTokens(user))
-}
+})

@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { createSessionTokens } from '@/lib/mobile-auth'
 import { checkMobileAuthRateLimit } from '@/lib/mobile-rate-limit'
-import { mobileError, mobileSuccess } from '@/lib/mobile-response'
+import { mobileError, mobileSuccess, withMobileErrors } from '@/lib/mobile-response'
 
 const APPLE_ISSUER = 'https://appleid.apple.com'
 const APPLE_JWKS = createRemoteJWKSet(new URL(`${APPLE_ISSUER}/auth/keys`))
@@ -33,7 +33,7 @@ function isAppleConfigured() {
   return Boolean(process.env.APPLE_CLIENT_ID || process.env.APPLE_BUNDLE_ID)
 }
 
-export async function POST(request: Request) {
+export const POST = withMobileErrors(async (request: Request) => {
   const parsed = schema.safeParse(await request.json().catch(() => null))
   const rateLimit = await checkMobileAuthRateLimit(request)
   if (!rateLimit.allowed) return mobileError('RATE_LIMITED', 'Demasiados intentos. Inténtalo más tarde.', 429)
@@ -78,4 +78,4 @@ export async function POST(request: Request) {
     if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')) throw error
   }
   return mobileSuccess(await createSessionTokens(user))
-}
+})

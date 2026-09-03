@@ -407,6 +407,14 @@ export const getVenueBySlug = serverCache(async (slug: string): Promise<VenueWit
       products: {
         orderBy: { order: 'asc' },
       },
+      menuCategories: {
+        orderBy: { order: 'asc' },
+        include: {
+          items: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
       reviews: {
         include: {
           user: {

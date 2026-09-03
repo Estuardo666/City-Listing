@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { notifyUser } from '@/lib/notifications'
 import { prisma } from '@/lib/prisma'
 import { venueClaimUpdateSchema } from '@/schemas/venue-claim.schema'
 import type { ActionResponse } from '@/types/action-response'
@@ -27,7 +28,7 @@ export async function updateVenueClaimStatusAction(
 
     const claim = await prisma.venueClaim.findUnique({
       where: { id: parsed.data.claimId },
-      include: { venue: { select: { id: true, slug: true } } },
+      include: { venue: { select: { id: true, slug: true, name: true } } },
     })
 
     if (!claim) {
@@ -54,6 +55,24 @@ export async function updateVenueClaimStatusAction(
         },
       })
     }
+
+    // The claimant is waiting on this decision, so it is pushed to whichever
+    // surface they used to file it.
+    const outcome =
+      parsed.data.status === 'APPROVED'
+        ? `Ya administras ${claim.venue.name} en Vive Loja.`
+        : parsed.data.status === 'REJECTED'
+          ? `No pudimos verificar tu reclamo de ${claim.venue.name}.`
+          : `Tu reclamo de ${claim.venue.name} cambió a ${parsed.data.status}.`
+
+    notifyUser(claim.userId, {
+      type: 'claimUpdates',
+      title: 'Actualización de tu reclamo',
+      body: outcome,
+      target: { kind: 'venue', slug: claim.venue.slug },
+      collapseId: `claim-${claim.id}`,
+      data: { claimId: claim.id, status: parsed.data.status },
+    }).catch(() => {})
 
     revalidatePath('/admin/reclamos')
     revalidatePath(`/locales/${claim.venue.slug}`)

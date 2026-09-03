@@ -62,6 +62,13 @@ export async function createRouteAction(
         difficulty: parsed.data.difficulty,
         type: parsed.data.type,
         featured: parsed.data.featured,
+        // The stops decide the span: a route declared as 3 days whose stops
+        // stop at day 2 would render an empty tab.
+        days: Math.max(parsed.data.days ?? 1, ...validStops.map((stop) => stop.day ?? 1), 1),
+        distanceMeters: parsed.data.distanceMeters ?? null,
+        estimatedMinutes: parsed.data.estimatedMinutes ?? null,
+        startLat: parsed.data.startLat ?? null,
+        startLng: parsed.data.startLng ?? null,
         status: 'PENDING',
         userId: session.user.id,
         stops: {
@@ -70,13 +77,19 @@ export async function createRouteAction(
             title: stop.title,
             notes: stop.notes,
             duration: stop.duration,
+            day: stop.day ?? 1,
             order: stop.order,
+            startTime: stop.startTime ?? null,
+            lat: stop.lat ?? null,
+            lng: stop.lng ?? null,
+            image: stop.image ?? null,
+            travelMinutes: stop.travelMinutes ?? null,
           })),
         },
       },
       include: {
         stops: {
-          orderBy: { order: 'asc' },
+          orderBy: [{ day: 'asc' }, { order: 'asc' }],
         },
       },
     })

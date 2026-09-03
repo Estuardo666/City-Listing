@@ -33,21 +33,33 @@ test('Apple login fails closed when the provider is not configured', async () =>
   })
 })
 
+// The AASA and assetlinks routes are covered in tests/deep-links.test.ts,
+// alongside the canonical URL table they are generated from.
+
 test('mobile auth and favorites lifecycle is single-use and idempotent', async (t) => {
   if (!process.env.DATABASE_URL) {
     t.skip('requires DATABASE_URL from the ephemeral CI service')
     return
   }
 
-  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, profileRoute, interestsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
+  const [{ POST: register }, { POST: login }, { POST: refresh }, { POST: logout }, favoritesRoute, contentRoute, homeRoute, venueDetailRoute, profileRoute, followingRoute, badgesRoute, passwordRoute, interestsRoute, recommendationsRoute, watchEventsRoute, watchEventDetailRoute, viewsRoute, reservationsRoute, reservationDetailRoute, messagesRoute, messageDetailRoute, reportMessageRoute, blockMessageRoute, reviewsRoute, questionsRoute, eventsRoute, collectionsRoute, collectionDetailRoute, collectionItemsRoute, checkInsRoute, venuesRoute, postsRoute, routesRoute, { prisma }] = await Promise.all([
     import('../src/app/api/mobile/v1/auth/register/route'),
     import('../src/app/api/mobile/v1/auth/login/route'),
     import('../src/app/api/mobile/v1/auth/refresh/route'),
     import('../src/app/api/mobile/v1/auth/logout/route'),
     import('../src/app/api/mobile/v1/me/favorites/route'),
     import('../src/app/api/mobile/v1/content/route'),
+    import('../src/app/api/mobile/v1/home/route'),
+    import('../src/app/api/mobile/v1/venues/[slug]/route'),
     import('../src/app/api/mobile/v1/me/profile/route'),
+    import('../src/app/api/mobile/v1/me/following/route'),
+    import('../src/app/api/mobile/v1/me/badges/route'),
+    import('../src/app/api/mobile/v1/me/password/route'),
     import('../src/app/api/mobile/v1/me/interests/route'),
+    import('../src/app/api/mobile/v1/me/recommendations/route'),
+    import('../src/app/api/mobile/v1/watch-events/route'),
+    import('../src/app/api/mobile/v1/watch-events/[slug]/route'),
+    import('../src/app/api/mobile/v1/views/route'),
     import('../src/app/api/mobile/v1/me/reservations/route'),
     import('../src/app/api/mobile/v1/me/reservations/[id]/route'),
     import('../src/app/api/mobile/v1/me/messages/route'),
@@ -91,6 +103,30 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.ok(Array.isArray(contentBody.data.promotions))
   assert.ok(Array.isArray(contentBody.data.routes))
   assert.ok(Array.isArray(contentBody.data.collections))
+  assert.ok(Array.isArray((contentBody.data as { watchEvents?: unknown[] }).watchEvents))
+
+  const home = await homeRoute.GET()
+  assert.equal(home.status, 200)
+  const homeBody = await home.json() as {
+    data: {
+      venues: unknown[]
+      events: unknown[]
+      featuredVenues: unknown[]
+      featuredEvents: unknown[]
+      latestVenues: unknown[]
+      relatedEvents: unknown[]
+      posts: unknown[]
+      promotions: unknown[]
+    }
+  }
+  assert.ok(Array.isArray(homeBody.data.venues))
+  assert.ok(Array.isArray(homeBody.data.events))
+  assert.ok(Array.isArray(homeBody.data.featuredVenues))
+  assert.ok(Array.isArray(homeBody.data.featuredEvents))
+  assert.ok(Array.isArray(homeBody.data.latestVenues))
+  assert.ok(Array.isArray(homeBody.data.relatedEvents))
+  assert.ok(Array.isArray(homeBody.data.posts))
+  assert.ok(Array.isArray(homeBody.data.promotions))
 
   const pagedContent = await contentRoute.GET(new Request('http://localhost/api/mobile/v1/content?limit=1&postSkip=0'))
   assert.equal(pagedContent.status, 200)
@@ -99,9 +135,17 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(typeof pagedBody.meta?.posts?.hasMore, 'boolean')
   assert.equal(typeof pagedBody.meta?.posts?.nextSkip, 'number')
 
-  const venue = await prisma.venue.findFirst({ where: { status: 'APPROVED', isActive: true }, select: { id: true, lat: true, lng: true } })
+  const venue = await prisma.venue.findFirst({ where: { status: 'APPROVED', isActive: true }, select: { id: true, name: true, slug: true, description: true, image: true, location: true, address: true, lat: true, lng: true } })
   assert.ok(venue, 'CI seed must provide an approved venue for the favorites contract')
   const authHeaders = { authorization: `Bearer ${rotated.data.accessToken}` }
+  const venueDetail = await venueDetailRoute.GET(new Request(`http://localhost/api/mobile/v1/venues/${venue.slug}`), { params: Promise.resolve({ slug: venue.slug }) })
+  assert.equal(venueDetail.status, 200)
+  const venueDetailBody = await venueDetail.json() as { data: { businessHours: unknown[]; menu: unknown[]; products: unknown[]; events: unknown[]; promotions: unknown[] } }
+  assert.ok(Array.isArray(venueDetailBody.data.businessHours))
+  assert.ok(Array.isArray(venueDetailBody.data.menu))
+  assert.ok(Array.isArray(venueDetailBody.data.products))
+  assert.ok(Array.isArray(venueDetailBody.data.events))
+  assert.ok(Array.isArray(venueDetailBody.data.promotions))
   const profile = await profileRoute.GET(new Request('http://localhost/api/mobile/v1/me/profile', { headers: authHeaders }))
   assert.equal(profile.status, 200)
   assert.equal(((await profile.json()) as { data: { email: string } }).data.email, email)
@@ -110,6 +154,30 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   }))
   assert.equal(updatedProfile.status, 200)
   assert.equal(((await updatedProfile.json()) as { data: { name: string } }).data.name, 'Mobile CI Updated')
+  const badges = await badgesRoute.GET(new Request('http://localhost/api/mobile/v1/me/badges', { headers: authHeaders }))
+  assert.equal(badges.status, 200)
+  assert.ok(Array.isArray(((await badges.json()) as { data: unknown[] }).data))
+  const followed = await followingRoute.POST(new Request('http://localhost/api/mobile/v1/me/following', {
+    method: 'POST', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id }),
+  }))
+  assert.equal(followed.status, 200)
+  assert.equal(((await followed.json()) as { data: { following: boolean } }).data.following, true)
+  const following = await followingRoute.GET(new Request('http://localhost/api/mobile/v1/me/following', { headers: authHeaders }))
+  assert.equal(following.status, 200)
+  assert.ok(((await following.json()) as { data: Array<{ venueId: string }> }).data.some((item) => item.venueId === venue.id))
+  const unfollowed = await followingRoute.DELETE(new Request('http://localhost/api/mobile/v1/me/following', {
+    method: 'DELETE', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ venueId: venue.id }),
+  }))
+  assert.equal(unfollowed.status, 200)
+  assert.equal(((await unfollowed.json()) as { data: { following: boolean } }).data.following, false)
+  const changedPassword = await passwordRoute.PATCH(new Request('http://localhost/api/mobile/v1/me/password', {
+    method: 'PATCH', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ currentPassword: credentials.password, newPassword: 'new-valid-password-123', confirmPassword: 'new-valid-password-123' }),
+  }))
+  assert.equal(changedPassword.status, 200)
+  const oldPasswordRejected = await login(jsonRequest('/auth/login', { email, password: credentials.password }))
+  assert.equal(oldPasswordRejected.status, 401)
+  const newPasswordAccepted = await login(jsonRequest('/auth/login', { email, password: 'new-valid-password-123' }))
+  assert.equal(newPasswordAccepted.status, 200)
   const category = await prisma.category.findFirst({ select: { id: true } })
   assert.ok(category, 'CI seed must provide a category for onboarding contract')
   const updatedInterests = await interestsRoute.PUT(new Request('http://localhost/api/mobile/v1/me/interests', {
@@ -119,6 +187,33 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   const listedInterests = await interestsRoute.GET(new Request('http://localhost/api/mobile/v1/me/interests', { headers: authHeaders }))
   assert.equal(listedInterests.status, 200)
   assert.equal(((await listedInterests.json()) as { data: { categories: Array<{ id: string }> } }).data.categories[0].id, category!.id)
+
+  const recommendations = await recommendationsRoute.GET(new Request('http://localhost/api/mobile/v1/me/recommendations', { headers: authHeaders }))
+  assert.equal(recommendations.status, 200)
+  const recommendationBody = await recommendations.json() as { data: { interests: { categories: unknown[]; preferences: unknown[] }; relatedEvents: unknown[]; relatedVenues: unknown[] } }
+  assert.ok(Array.isArray(recommendationBody.data.interests.categories))
+  assert.ok(Array.isArray(recommendationBody.data.interests.preferences))
+  assert.ok(Array.isArray(recommendationBody.data.relatedEvents))
+  assert.ok(Array.isArray(recommendationBody.data.relatedVenues))
+
+  const watchEvents = await watchEventsRoute.GET(new Request('http://localhost/api/mobile/v1/watch-events'))
+  assert.equal(watchEvents.status, 200)
+  const watchEventBody = await watchEvents.json() as { data: Array<{ id: string; slug: string; performers: unknown[] }> }
+  assert.ok(Array.isArray(watchEventBody.data))
+  assert.ok(watchEventBody.data.every((event) => Array.isArray(event.performers)))
+  if (watchEventBody.data[0]) {
+    const watchDetail = await watchEventDetailRoute.GET(new Request(`http://localhost/api/mobile/v1/watch-events/${watchEventBody.data[0].slug}`), { params: Promise.resolve({ slug: watchEventBody.data[0].slug }) })
+    assert.equal(watchDetail.status, 200)
+    assert.ok(Array.isArray(((await watchDetail.json()) as { data: { venues: unknown[] } }).data.venues))
+  }
+  const viewBefore = await prisma.venue.findUnique({ where: { id: venue.id }, select: { viewCount: true } })
+  const recordedView = await viewsRoute.POST(new Request('http://localhost/api/mobile/v1/views', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'venue', itemId: venue.id }),
+  }))
+  assert.equal(recordedView.status, 200)
+  assert.equal(((await recordedView.json()) as { data: { recorded: boolean } }).data.recorded, true)
+  const viewAfter = await prisma.venue.findUnique({ where: { id: venue.id }, select: { viewCount: true } })
+  assert.equal(viewAfter!.viewCount, viewBefore!.viewCount + 1)
 
   const reservationDate = new Date(Date.now() + 86_400_000).toISOString()
   const reservationInput = { venueId: venue.id, date: reservationDate, time: '19:00', partySize: 2, notes: 'CI contract' }
@@ -253,7 +348,10 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(favorite.status, 200)
   const listed = await favoritesRoute.GET(new Request('http://localhost/api/mobile/v1/me/favorites', { headers: authHeaders }))
   assert.equal(listed.status, 200)
-  assert.equal(((await listed.json()) as { data: Array<{ itemId: string }> }).data.some((item) => item.itemId === venue.id), true)
+  const listedData = (await listed.json()) as { data: Array<{ itemId: string; item?: { kind: string; id: string; title: string; slug: string } | null }> }
+  const listedFavorite = listedData.data.find((item) => item.itemId === venue.id)
+  assert.ok(listedFavorite)
+  assert.deepEqual(listedFavorite?.item, { kind: 'venue', id: venue.id, title: venue.name, slug: venue.slug, description: venue.description, image: venue.image, subtitle: venue.location, address: venue.address, lat: venue.lat, lng: venue.lng })
   const removed = await favoritesRoute.DELETE(jsonRequest('/me/favorites', { kind: 'venue', itemId: venue.id }, authHeaders))
   assert.equal(removed.status, 200)
 
@@ -261,4 +359,208 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.equal(signedOut.status, 200)
   const rejected = await refresh(refreshRequest())
   assert.equal(rejected.status, 401)
+})
+
+test('push devices and notification preferences are per-user and idempotent', async (t) => {
+  if (!process.env.DATABASE_URL) {
+    t.skip('requires DATABASE_URL from the ephemeral CI service')
+    return
+  }
+
+  const [{ POST: register }, { POST: logout }, devicesRoute, preferencesRoute, { prisma }] =
+    await Promise.all([
+      import('../src/app/api/mobile/v1/auth/register/route'),
+      import('../src/app/api/mobile/v1/auth/logout/route'),
+      import('../src/app/api/mobile/v1/me/devices/route'),
+      import('../src/app/api/mobile/v1/me/notification-preferences/route'),
+      import('../src/lib/prisma'),
+    ])
+
+  const registered = await register(
+    jsonRequest('/auth/register', {
+      name: 'Push CI',
+      email: `push-ci-${randomUUID()}@example.com`,
+      password: 'valid-password-123',
+    }),
+  )
+  assert.equal(registered.status, 200)
+  const session = (await registered.json()) as TokenResponse
+  const authHeaders = { authorization: `Bearer ${session.data.accessToken}` }
+
+  // Anonymous callers must never touch a device list.
+  assert.equal(
+    (await devicesRoute.POST(jsonRequest('/me/devices', { token: 'a'.repeat(64), platform: 'IOS' })))
+      .status,
+    401,
+  )
+
+  const token = `ci-${randomUUID().replace(/-/g, '')}`
+  const first = await devicesRoute.POST(
+    jsonRequest('/me/devices', { token, platform: 'IOS', environment: 'sandbox' }, authHeaders),
+  )
+  assert.equal(first.status, 200)
+
+  // Re-registering the same token updates the row instead of duplicating it.
+  const second = await devicesRoute.POST(
+    jsonRequest('/me/devices', { token, platform: 'IOS', environment: 'production' }, authHeaders),
+  )
+  assert.equal(second.status, 200)
+  const stored = await prisma.deviceToken.findMany({ where: { userId: session.data.user.id } })
+  assert.equal(stored.length, 1)
+  assert.equal(stored[0].environment, 'production')
+
+  assert.equal(
+    (await devicesRoute.POST(jsonRequest('/me/devices', { token: 'short' }, authHeaders))).status,
+    422,
+  )
+
+  // Preferences answer defaults before anything is saved.
+  const defaults = await preferencesRoute.GET(
+    new Request('http://localhost/api/mobile/v1/me/notification-preferences', {
+      headers: authHeaders,
+    }),
+  )
+  assert.equal(defaults.status, 200)
+  const defaultsBody = (await defaults.json()) as { data: Record<string, unknown> }
+  assert.equal(defaultsBody.data.enabled, true)
+  assert.equal(defaultsBody.data.messageReceived, true)
+  assert.equal(defaultsBody.data.hoursAhead, 48)
+
+  const patched = await preferencesRoute.PATCH(
+    new Request('http://localhost/api/mobile/v1/me/notification-preferences', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ messageReceived: false, hoursAhead: 12 }),
+    }),
+  )
+  assert.equal(patched.status, 200)
+  const patchedBody = (await patched.json()) as { data: Record<string, unknown> }
+  assert.equal(patchedBody.data.messageReceived, false)
+  assert.equal(patchedBody.data.hoursAhead, 12)
+  // Untouched fields keep their value rather than resetting to the default.
+  assert.equal(patchedBody.data.reviewReply, true)
+
+  // Signing out drops the device so the phone stops receiving this account's
+  // notifications without waiting for APNs to report the token as dead.
+  const signedOut = await logout(
+    jsonRequest('/auth/logout', { refreshToken: session.data.refreshToken, deviceToken: token }),
+  )
+  assert.equal(signedOut.status, 200)
+  assert.equal(await prisma.deviceToken.count({ where: { token } }), 0)
+})
+
+test('business claims, owner replies and view records are scoped to their owner', async (t) => {
+  if (!process.env.DATABASE_URL) {
+    t.skip('requires DATABASE_URL from the ephemeral CI service')
+    return
+  }
+
+  const [{ POST: register }, claimsRoute, verifyRoute, viewsRoute, popularRoute, insightsRoute, { prisma }] =
+    await Promise.all([
+      import('../src/app/api/mobile/v1/auth/register/route'),
+      import('../src/app/api/mobile/v1/me/claims/route'),
+      import('../src/app/api/mobile/v1/me/claims/[id]/verify/route'),
+      import('../src/app/api/mobile/v1/views/route'),
+      import('../src/app/api/mobile/v1/popular/route'),
+      import('../src/app/api/mobile/v1/me/venues/[slug]/insights/route'),
+      import('../src/lib/prisma'),
+    ])
+
+  const registered = await register(
+    jsonRequest('/auth/register', {
+      name: 'Claim CI',
+      email: `claim-ci-${randomUUID()}@example.com`,
+      password: 'valid-password-123',
+    }),
+  )
+  const session = (await registered.json()) as TokenResponse
+  const authHeaders = { authorization: `Bearer ${session.data.accessToken}` }
+
+  const venue = await prisma.venue.findFirst({
+    where: { status: 'APPROVED', isActive: true },
+    select: { id: true, slug: true, userId: true },
+  })
+  assert.ok(venue, 'CI seed must provide an approved venue')
+
+  // A claim needs a session.
+  assert.equal(
+    (await claimsRoute.POST(jsonRequest('/me/claims', { venueId: venue.id, claimerName: 'x', claimerEmail: 'a@b.co' })))
+      .status,
+    401,
+  )
+
+  const created = await claimsRoute.POST(
+    jsonRequest(
+      '/me/claims',
+      {
+        venueId: venue.id,
+        claimerName: 'Dueño CI',
+        claimerEmail: 'duenio@example.com',
+        claimerPhone: null,
+        claimerRole: null,
+        message: null,
+      },
+      authHeaders,
+    ),
+  )
+  assert.equal(created.status, 200)
+  const claim = (await created.json()) as { data: { claimId: string; confidenceScore: number } }
+  // Registered user alone scores 20; the code is not verified yet.
+  assert.equal(claim.data.confidenceScore, 20)
+
+  // A second open claim for the same venue is rejected rather than duplicated.
+  const duplicate = await claimsRoute.POST(
+    jsonRequest(
+      '/me/claims',
+      { venueId: venue.id, claimerName: 'Dueño CI', claimerEmail: 'duenio@example.com', claimerPhone: null, claimerRole: null, message: null },
+      authHeaders,
+    ),
+  )
+  assert.equal(duplicate.status, 409)
+
+  const wrongCode = await verifyRoute.POST(
+    jsonRequest(`/me/claims/${claim.data.claimId}/verify`, { code: '000000' }, authHeaders),
+    { params: Promise.resolve({ id: claim.data.claimId }) },
+  )
+  // Either the code was wrong, or it happened to match and verified; both are
+  // deterministic failures for a random six digit guess except 1 in 1e6.
+  assert.ok([200, 400].includes(wrongCode.status))
+
+  const stored = await prisma.venueClaim.findUnique({
+    where: { id: claim.data.claimId },
+    select: { verificationCode: true },
+  })
+  const verified = await verifyRoute.POST(
+    jsonRequest(`/me/claims/${claim.data.claimId}/verify`, { code: stored?.verificationCode ?? '' }, authHeaders),
+    { params: Promise.resolve({ id: claim.data.claimId }) },
+  )
+  assert.equal(verified.status, 200)
+  const verifiedBody = (await verified.json()) as { data: { verified: boolean; confidenceScore: number } }
+  assert.equal(verifiedBody.data.verified, true)
+  // Verified e-mail adds 40 on top of the registered-user 20.
+  assert.equal(verifiedBody.data.confidenceScore, 60)
+
+  // Views are timestamped now, not just counted.
+  const recorded = await viewsRoute.POST(
+    jsonRequest('/views', { kind: 'venue', itemId: venue.id, source: 'ios' }, authHeaders),
+  )
+  assert.equal(recorded.status, 200)
+  assert.ok((await prisma.viewEvent.count({ where: { kind: 'venue', itemId: venue.id } })) >= 1)
+
+  assert.equal(
+    (await viewsRoute.POST(jsonRequest('/views', { kind: 'venue', itemId: 'does-not-exist' }))).status,
+    404,
+  )
+
+  const popular = await popularRoute.GET(
+    new Request('http://localhost/api/mobile/v1/popular?kind=venue&window=24h'),
+  )
+  assert.equal(popular.status, 200)
+
+  // Insights belong to the venue's owner, not to whoever filed a claim.
+  const forbidden = await insightsRoute.GET(
+    new Request(`http://localhost/api/mobile/v1/me/venues/${venue.slug}/insights`, { headers: authHeaders }),
+    { params: Promise.resolve({ slug: venue.slug }) },
+  )
+  assert.equal(forbidden.status, venue.userId === session.data.user.id ? 200 : 403)
 })

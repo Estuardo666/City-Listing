@@ -1,6 +1,6 @@
 import 'server-only'
 import { prisma } from '@/lib/prisma'
-import type { NotificationPreferenceRow } from '@/types/notification'
+import { NOTIFICATION_PREFERENCE_SELECT, type NotificationPreferenceRow } from '@/types/notification'
 import type { UpcomingEventNotification } from '@/types/event'
 
 export async function getNotificationPreferencesByUserId(
@@ -8,10 +8,7 @@ export async function getNotificationPreferencesByUserId(
 ): Promise<NotificationPreferenceRow | null> {
   return prisma.notificationPreference.findUnique({
     where: { userId },
-    select: {
-      enabled: true,
-      hoursAhead: true,
-    },
+    select: NOTIFICATION_PREFERENCE_SELECT,
   })
 }
 

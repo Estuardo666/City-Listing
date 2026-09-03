@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { notificationPreferencesSchema } from '@/schemas/notification.schema'
 import type { ActionResponse } from '@/types/action-response'
-import type { NotificationPreferenceRow } from '@/types/notification'
+import { NOTIFICATION_PREFERENCE_SELECT, type NotificationPreferenceRow } from '@/types/notification'
 
 export async function updateNotificationPreferencesAction(
   input: unknown
@@ -30,19 +30,9 @@ export async function updateNotificationPreferencesAction(
 
     const prefs = await prisma.notificationPreference.upsert({
       where: { userId: session.user.id },
-      update: {
-        enabled: parsed.data.enabled,
-        hoursAhead: parsed.data.hoursAhead,
-      },
-      create: {
-        userId: session.user.id,
-        enabled: parsed.data.enabled,
-        hoursAhead: parsed.data.hoursAhead,
-      },
-      select: {
-        enabled: true,
-        hoursAhead: true,
-      },
+      update: parsed.data,
+      create: { userId: session.user.id, ...parsed.data },
+      select: NOTIFICATION_PREFERENCE_SELECT,
     })
 
     return {
