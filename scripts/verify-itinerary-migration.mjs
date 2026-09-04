@@ -9,13 +9,8 @@
 //
 //   DATABASE_URL_UNPOOLED="postgres://…/neondb" node scripts/verify-itinerary-migration.mjs
 //
-// It only reads, except for the `--seed` mode described below, which inserts
-// clearly-labelled fixture rows so the checks have something to look at on a
-// branch with no routes. Nothing is deleted.
-//
-//   node scripts/verify-itinerary-migration.mjs --seed   # insert fixtures first
-//   node scripts/verify-itinerary-migration.mjs --clean  # remove those fixtures
-
+// Read-only by default. --history-only reads migration metadata only.
+// Seed, cleanup and write-based constraint probes are intentionally unsupported.
 import { PrismaClient } from '@prisma/client'
 
 const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL
@@ -24,9 +19,9 @@ if (!url) {
   process.exit(2)
 }
 
-// Guard against pointing this at the live database by accident.
-if (/viveloja\.com/.test(url) && !process.env.ALLOW_PRODUCTION) {
-  console.error('Refusing to run against what looks like production. Use a Neon branch.')
+const args = process.argv.slice(2)
+if (args.length > 1 || (args.length === 1 && args[0] !== '--history-only')) {
+  console.error('Unsupported mode. Only --history-only is allowed; writes are disabled.')
   process.exit(2)
 }
 
@@ -40,63 +35,7 @@ function check(name, ok, detail) {
   console.log(`${ok ? '  ok  ' : ' FAIL '} ${name}${detail ? ` — ${detail}` : ''}`)
 }
 
-async function seed() {
-  const user = await prisma.user.create({
-    data: {
-      id: `${FIXTURE_PREFIX}user`,
-      email: `${FIXTURE_PREFIX}${Date.now()}@example.com`,
-      name: 'Migration check',
-    },
-  })
-
-  const venue = await prisma.venue.create({
-    data: {
-      id: `${FIXTURE_PREFIX}venue`,
-      name: 'Local de prueba',
-      slug: `${FIXTURE_PREFIX}venue`,
-      description: 'Fixture for the migration check',
-      location: 'Loja',
-      lat: -3.99313,
-      lng: -79.20422,
-      status: 'APPROVED',
-      isActive: true,
-      userId: user.id,
-    },
-  })
-
-  // Two stops on the same ordinal but different days: impossible under the old
-  // unique key, which is the whole point of the migration.
-  await prisma.route.create({
-    data: {
-      id: `${FIXTURE_PREFIX}route`,
-      title: 'Ruta de prueba',
-      slug: `${FIXTURE_PREFIX}route`,
-      description: 'Fixture for the migration check',
-      type: 'cultural',
-      status: 'APPROVED',
-      days: 2,
-      userId: user.id,
-      stops: {
-        create: [
-          { id: `${FIXTURE_PREFIX}stop-d1`, day: 1, order: 0, title: 'Parada día 1', venueId: venue.id },
-          { id: `${FIXTURE_PREFIX}stop-d2`, day: 2, order: 0, title: 'Parada día 2' },
-        ],
-      },
-    },
-  })
-
-  console.log('Seeded fixtures.')
-}
-
-async function clean() {
-  await prisma.routeStop.deleteMany({ where: { id: { startsWith: FIXTURE_PREFIX } } })
-  await prisma.route.deleteMany({ where: { id: { startsWith: FIXTURE_PREFIX } } })
-  await prisma.venue.deleteMany({ where: { id: { startsWith: FIXTURE_PREFIX } } })
-  await prisma.user.deleteMany({ where: { id: { startsWith: FIXTURE_PREFIX } } })
-  console.log('Removed fixtures.')
-}
-
-async function verify() {
+async function verify(prisma) {
   // --- schema shape ---------------------------------------------------------
   const indexes = await prisma.$queryRaw`
     SELECT indexname FROM pg_indexes WHERE tablename = 'RouteStop'
@@ -153,26 +92,8 @@ async function verify() {
   const belowOne = await prisma.routeStop.count({ where: { day: { lt: 1 } } })
   check('Every stop is on day 1 or later', belowOne === 0)
 
-  const preExisting = await prisma.routeStop.count({
-    where: { day: 1, id: { not: { startsWith: FIXTURE_PREFIX } } },
-  })
-  check(
-    'Pre-existing stops backfilled to day 1',
-    preExisting === totalStops - (await prisma.routeStop.count({ where: { id: { startsWith: FIXTURE_PREFIX } } })) ||
-      totalStops === 0,
-    `${preExisting} on day 1`,
-  )
-
-  // Every stop that points at a venue with coordinates should have inherited
-  // them, unless it was created after the migration with its own.
-  const missingGeo = await prisma.$queryRaw`
-    SELECT count(*)::int AS count
-    FROM "RouteStop" s
-    JOIN "Venue" v ON v."id" = s."venueId"
-    WHERE s."lat" IS NULL AND v."lat" IS NOT NULL
-  `
-  check('Stop coordinates seeded from their venue', missingGeo[0].count === 0, `${missingGeo[0].count} missing`)
-
+  // Historical backfills cannot be inferred from current rows: new multi-day
+  // stops and stops with intentionally absent coordinates are valid.
   const orphanClaims = await prisma.$queryRaw`
     SELECT count(*)::int AS count
     FROM "Venue" v
@@ -188,57 +109,36 @@ async function verify() {
   })
   check('No venue is flagged claimed without a claimer', strandedClaims === 0, `${strandedClaims} stranded`)
 
-  // --- the constraint actually does its job ---------------------------------
-  const routeWithStops = await prisma.route.findFirst({
-    where: { stops: { some: {} } },
-    select: { id: true, stops: { select: { day: true, order: true }, take: 1 } },
-  })
-
-  if (routeWithStops?.stops[0]) {
-    const { day, order } = routeWithStops.stops[0]
-    let rejectedSameDay = false
-    try {
-      await prisma.routeStop.create({
-        data: { id: `${FIXTURE_PREFIX}dup`, routeId: routeWithStops.id, day, order, title: 'dup' },
-      })
-    } catch {
-      rejectedSameDay = true
-    }
-    check('Duplicate (day, order) is rejected', rejectedSameDay)
-
-    let acceptedOtherDay = false
-    try {
-      await prisma.routeStop.create({
-        data: { id: `${FIXTURE_PREFIX}otherday`, routeId: routeWithStops.id, day: day + 90, order, title: 'other day' },
-      })
-      acceptedOtherDay = true
-    } catch (error) {
-      acceptedOtherDay = false
-      console.log(`      (insert on another day failed: ${error.message.split('\n')[0]})`)
-    }
-    check('Same ordinal on another day is accepted', acceptedOtherDay)
-
-    await prisma.routeStop.deleteMany({
-      where: { id: { in: [`${FIXTURE_PREFIX}dup`, `${FIXTURE_PREFIX}otherday`] } },
-    })
-  } else {
-    console.log('  skip  constraint behaviour — no route with stops in this copy (run with --seed)')
-  }
 }
 
-const mode = process.argv[2]
+async function history(prisma) {
+  const tables = await prisma.$queryRaw`SELECT to_regclass('public."_prisma_migrations"')::text AS name`
+  check('Migration history exists', Boolean(tables[0]?.name))
+  if (!tables[0]?.name) return
+  const rows = await prisma.$queryRaw`
+    SELECT migration_name, checksum, finished_at, rolled_back_at
+    FROM public."_prisma_migrations" ORDER BY started_at
+  `
+  // Never export migration logs, which can contain sensitive data.
+  for (const row of rows) console.log(JSON.stringify(row))
+  check('MobileRefreshSession migration applied', rows.some((row) =>
+    row.migration_name === '20260901000000_add_mobile_refresh_session'
+    && row.finished_at && !row.rolled_back_at))
+  check('No unresolved failed migrations', rows.every((row) => row.finished_at || row.rolled_back_at))
+}
 
 try {
-  if (mode === '--seed') {
-    await seed()
-  } else if (mode === '--clean') {
-    await clean()
-  } else {
-    await verify()
-    const failed = results.filter((r) => !r.ok)
-    console.log(`\n${results.length - failed.length}/${results.length} checks passed.`)
-    if (failed.length > 0) process.exitCode = 1
-  }
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SET TRANSACTION READ ONLY`
+    await history(tx)
+    if (args[0] !== '--history-only') await verify(tx)
+  }, { timeout: 30000 })
+  const failed = results.filter((r) => !r.ok)
+  console.log(`\n${results.length - failed.length}/${results.length} checks passed.`)
+  if (failed.length > 0) process.exitCode = 1
+} catch {
+  console.error('Read-only verification failed. Check database access/schema privately.')
+  process.exitCode = 1
 } finally {
   await prisma.$disconnect()
 }
