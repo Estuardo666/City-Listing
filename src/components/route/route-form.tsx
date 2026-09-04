@@ -27,7 +27,7 @@ interface RouteFormProps {
 export function RouteForm({ venues }: RouteFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [stops, setStops] = useState<
-    { venueId: string | null; title: string; notes: string; duration: string; day: number; startTime: string }[]
+    { venueId: string | null; title: string; notes: string; duration: string; day: number; startTime: string; lat: string; lng: string }[]
   >([])
 
   const form = useForm<RouteInput>({
@@ -50,7 +50,7 @@ export function RouteForm({ venues }: RouteFormProps) {
   const dayCount = Math.max(1, ...stops.map((stop) => stop.day))
 
   function addStop(day = 1) {
-    setStops((prev) => [...prev, { venueId: null, title: '', notes: '', duration: '', day, startTime: '' }])
+    setStops((prev) => [...prev, { venueId: null, title: '', notes: '', duration: '', day, startTime: '', lat: '', lng: '' }])
   }
 
   function removeStop(index: number) {
@@ -60,7 +60,7 @@ export function RouteForm({ venues }: RouteFormProps) {
   function updateStop(index: number, field: string, value: string | number) {
     setStops((prev) => {
       const updated = [...prev]
-      updated[index] = { ...updated[index], [field]: value || null }
+      updated[index] = { ...updated[index], [field]: value }
       return updated
     })
   }
@@ -82,6 +82,8 @@ export function RouteForm({ venues }: RouteFormProps) {
           day,
           order,
           startTime: stop.startTime || null,
+          lat: stop.lat === '' ? null : Number(stop.lat),
+          lng: stop.lng === '' ? null : Number(stop.lng),
         }
       })
 
@@ -103,6 +105,7 @@ export function RouteForm({ venues }: RouteFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <p className="text-sm text-muted-foreground">Crea un recorrido turístico con paradas culturales, gastronómicas o de ocio. No es una ficha técnica de senderismo. Las propuestas de la comunidad pasan por revisión.</p>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <FormField control={form.control} name="title" render={({ field }) => (
             <FormItem className="md:col-span-2">
@@ -131,6 +134,11 @@ export function RouteForm({ venues }: RouteFormProps) {
               <FormControl><Input placeholder="Ej: 2 horas" value={field.value ?? ''} onChange={field.onChange} /></FormControl>
               <FormMessage />
             </FormItem>
+          )} />
+          <FormField control={form.control} name="estimatedMinutes" render={({ field }) => (
+            <FormItem><FormLabel>Duración total en minutos</FormLabel>
+              <FormControl><Input type="number" min={1} max={20160} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} placeholder="120" /></FormControl>
+              <p className="text-xs text-muted-foreground">Hasta 180 minutos para aparecer entre las rutas cortas de Hoy en Loja.</p><FormMessage /></FormItem>
           )} />
 
           <FormField control={form.control} name="difficulty" render={({ field }) => (
@@ -198,6 +206,8 @@ export function RouteForm({ venues }: RouteFormProps) {
               </div>
               <Input placeholder="Título de la parada" value={stop.title} onChange={(e) => updateStop(index, 'title', e.target.value)} />
               <Input placeholder="Notas (opcional)" value={stop.notes} onChange={(e) => updateStop(index, 'notes', e.target.value)} />
+              <Input type="number" step="any" min={-90} max={90} aria-label={`Latitud de la parada ${index + 1}`} placeholder="Latitud (si no es un local)" value={stop.lat} onChange={e => updateStop(index, 'lat', e.target.value)} />
+              <Input type="number" step="any" min={-180} max={180} aria-label={`Longitud de la parada ${index + 1}`} placeholder="Longitud (si no es un local)" value={stop.lng} onChange={e => updateStop(index, 'lng', e.target.value)} />
               <div className="flex gap-2">
                 <Input
                   type="number"

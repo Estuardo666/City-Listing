@@ -57,7 +57,8 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
   const hasRecurrence = event.isRecurring && event.recurrenceRule
 
   return (
-    <article className="space-y-0">
+      <article className="space-y-0">
+        {event.status === 'CANCELLED' && <div role="status" className="border border-destructive bg-card p-6 text-destructive"><h2 className="text-xl font-semibold">Evento cancelado</h2><p>No acudas en la fecha anunciada. Consulta al organizador si compraste entradas.</p></div>}
 
       {/* ── Hero full-bleed ── */}
       {event.image && !imageError ? (

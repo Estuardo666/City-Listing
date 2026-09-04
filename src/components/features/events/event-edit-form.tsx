@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { updateEventAction } from '@/actions/events'
+import { CancelEventButton } from './cancel-event-button'
 import { eventSchema, type EventInput } from '@/schemas/event.schema'
 import { Button } from '@/components/ui/button'
 import {
@@ -98,6 +99,9 @@ export function EventEditForm({ event, categories, venues }: EventEditFormProps)
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-3 rounded-xl border p-4"><p className="text-sm text-muted-foreground">Los cambios de fecha u horario generan un aviso a quienes guardaron este evento.</p>
+          <CancelEventButton eventId={event.id} cancelled={event.status === 'CANCELLED'} />
+        </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <FormField
             control={form.control}

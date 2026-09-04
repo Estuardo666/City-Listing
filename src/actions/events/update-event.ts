@@ -6,6 +6,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { eventSchema } from '@/schemas/event.schema'
 import { invalidateEventCache } from '@/lib/cache-invalidation'
+import { queueEventUpdate, drainEventUpdates } from '@/lib/notifications/event-updates'
+import { after } from 'next/server'
 import type { ActionResponse } from '@/types/action-response'
 import type { EventWithRelations } from '@/types/event'
 
@@ -87,6 +89,9 @@ export async function updateEventAction(
     }
 
     const updated = await prisma.$transaction(async (tx) => {
+      // Serialize schedule edits so concurrent editors cannot enqueue the same change twice.
+      await tx.$queryRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`
+      const before = await tx.event.findUniqueOrThrow({ where: { id: eventId } })
       await tx.eventCategory.deleteMany({
         where: { eventId },
       })
@@ -98,7 +103,7 @@ export async function updateEventAction(
         })),
       })
 
-      return tx.event.update({
+      const result = await tx.event.update({
         where: { id: eventId },
         data: {
           title: parsed.data.title,
@@ -141,7 +146,10 @@ export async function updateEventAction(
           recurrenceRule: true,
         },
       })
+      await queueEventUpdate(tx, before, result)
+      return result
     })
+    after(() => drainEventUpdates())
 
     revalidatePath('/eventos')
     revalidatePath(`/eventos/${updated.slug}`)

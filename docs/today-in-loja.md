@@ -1,5 +1,41 @@
 # Hoy en Loja
 
+## Agenda and tourist routes
+
+The Home events use a one-card-per-view image carousel; short routes use an image grid.
+`GET /api/mobile/v1/agenda?period=today|tomorrow|weekend|upcoming` returns up to 100
+chronological events. The weekend is Saturday/Sunday (remaining days when already
+in the weekend); upcoming spans 30 calendar days. Prices of null mean unknown, not free.
+Web `/eventos` and iOS Agenda show the same groups, times, venues and prices.
+
+Tourist itineraries already exist at `/rutas/crear` and `POST /me/routes`. These are
+ordered cultural/gastronomic/other sightseeing stops, not hiking trail records.
+The web editor now stores numeric minutes and stop coordinates; linked venues
+supply coordinates when available. iOS creation includes cover URL, numeric minutes,
+ordered stops and coordinates. `/admin/rutas` reviews submissions; admin-created
+routes publish immediately, other authors enter moderation. Collections already
+have create/edit/reorder flows at `/dashboard/colecciones` and `/me/collections`.
+
+## Schedule changes and cancellation
+
+Deploy additive migration `20260904020000_event_update_notices` before the new code.
+Authorized owners/admins change schedules in the event editor or cancel a published
+event explicitly. Edits lock the event row and persist notices for users who saved
+it in the same transaction. Retrying an unchanged edit/cancellation makes no notice.
+Draft/rejected events cannot be cancelled into public visibility. Cancelled events
+leave listings but keep a public detail with a cancellation banner and matching SEO status.
+
+Notices are visible at `/dashboard/notificaciones` and iOS Guardados → Cambios en
+eventos via authenticated `GET /me/event-updates`, even without push permission.
+Push uses the existing eventReminders preference and configured Web Push/APNs.
+An after-response worker claims at most 50 rows with a 5-minute lease. Failed
+transports remain queued; the existing daily cron retries. Delivery is at-least-once,
+not exactly-once (partial delivery/crash may cause retries). No-target/opt-out rows
+remain in the inbox but are not retried for push. Large backlogs may take multiple
+daily runs; no paid scheduling upgrade is made. No refunds or email are automated.
+
+iOS map previews measure content height rather than reserving a fixed detent.
+
 ## Shared contract
 
 Web Home and iOS Home consume `GET /api/mobile/v1/today`. It returns Loja's date,

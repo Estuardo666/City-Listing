@@ -400,7 +400,7 @@ export const getEventBySlug = serverCache(async (slug: string): Promise<EventWit
   return prisma.event.findFirst({
     where: {
       slug,
-      status: 'APPROVED',
+      status: { in: ['APPROVED', 'CANCELLED'] },
     },
     include: {
       eventCategories: { include: { category: true } },
