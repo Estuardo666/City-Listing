@@ -1,5 +1,7 @@
 'use client'
 
+import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
+
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -72,6 +74,7 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
               initialsClassName="text-xl sm:text-2xl"
             />
           )}
+        {isVenue && (!hasValidImage || imageError) && <GoogleVenuePhoto slug={item.slug} name={name} />}
           {/* Type badge on image */}
           <span
             className={cn(

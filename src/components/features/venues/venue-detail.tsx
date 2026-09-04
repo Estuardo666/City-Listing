@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { GoogleVenuePhoto } from './google-venue-photo'
 import Link from 'next/link'
 import { trackDirections } from '@/lib/track-directions'
 import {
@@ -157,6 +158,10 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
         </div>
       ) : (
         <div className="mb-6">
+          {venue.googlePlaceId && <div className="relative mb-6 flex h-72 items-center justify-center overflow-hidden rounded-3xl bg-accent sm:h-[420px]">
+            <span className="text-6xl text-muted-foreground/30">{venue.name.charAt(0)}</span>
+            <GoogleVenuePhoto slug={venue.slug} name={venue.name} large />
+          </div>}
           <div className="flex flex-wrap gap-2 mb-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-accent px-3 py-1 text-sm font-semibold text-foreground">
               {resolveIconEmoji(venue.venueCategories[0]?.category.icon, 'venue')} {venue.venueCategories[0]?.category.name}

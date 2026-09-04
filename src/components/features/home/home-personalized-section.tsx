@@ -1,5 +1,7 @@
 'use client'
 
+import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
+
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -87,7 +89,7 @@ export function HomePersonalizedSection({ data, userName }: HomePersonalizedSect
                 href={`/locales/${fv.venue.slug}`}
                 className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
-                <div className="aspect-[4/3] overflow-hidden">
+                <div className="relative aspect-[4/3] overflow-hidden">
                   {fv.venue.image ? (
                     <img
                       src={fv.venue.image}
@@ -99,6 +101,7 @@ export function HomePersonalizedSection({ data, userName }: HomePersonalizedSect
                       <MapPin className="h-8 w-8 text-primary/40" />
                     </div>
                   )}
+                  {!fv.venue.image && <GoogleVenuePhoto slug={fv.venue.slug} name={fv.venue.name} />}
                 </div>
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold text-foreground">{fv.venue.name}</p>
@@ -133,7 +136,7 @@ export function HomePersonalizedSection({ data, userName }: HomePersonalizedSect
                 href={`/locales/${venue.slug}`}
                 className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
-                <div className="aspect-[4/3] overflow-hidden">
+                <div className="relative aspect-[4/3] overflow-hidden">
                   {venue.image ? (
                     <img
                       src={venue.image}
@@ -145,6 +148,7 @@ export function HomePersonalizedSection({ data, userName }: HomePersonalizedSect
                       <MapPin className="h-8 w-8 text-primary/40" />
                     </div>
                   )}
+                  {!venue.image && <GoogleVenuePhoto slug={venue.slug} name={venue.name} />}
                 </div>
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold text-foreground">{venue.name}</p>

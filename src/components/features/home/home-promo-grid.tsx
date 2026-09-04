@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
 import { ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { ExploreVenue, ExploreEvent } from '@/types/explore'
@@ -23,7 +24,6 @@ type HomePromoGridProps = {
 
 export function HomePromoGrid({ venues, events }: HomePromoGridProps) {
   const venueItems: PromoItem[] = venues
-    .filter((v) => v.image)
     .slice(0, 4)
     .map((v) => ({
       id: v.id,
@@ -99,7 +99,8 @@ export function HomePromoGrid({ venues, events }: HomePromoGridProps) {
                     {item.categoryIcon ?? (item.type === 'venue' ? '🏬' : '🎟️')}
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                {!item.image && item.type === 'venue' && <GoogleVenuePhoto slug={item.slug.replace('/locales/', '')} name={item.title} />}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
                   <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
                     {item.categoryIcon ?? ''} {item.category}

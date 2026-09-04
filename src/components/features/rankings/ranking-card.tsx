@@ -1,5 +1,7 @@
 'use client'
 
+import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
+
 import Image from 'next/image'
 import Link from 'next/link'
 import { Star, MapPin, Phone } from 'lucide-react'
@@ -54,6 +56,7 @@ export function RankingCard({ venue, position }: RankingCardProps) {
             </span>
           </div>
         )}
+        {(!hasValidImage || imageError) && <GoogleVenuePhoto slug={venue.slug} name={venue.name} />}
       </div>
 
       {/* Contenido */}
