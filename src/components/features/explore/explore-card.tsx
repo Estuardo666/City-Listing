@@ -27,6 +27,8 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
   const category = (item.categories ?? [])[0] ?? { id: '', name: '', slug: '', color: null, icon: null }
   const address = item.address ?? item.location
   const [imageError, setImageError] = useState(false)
+  // Estado abierto/cerrado calculado en el servidor con la hora de Loja.
+  const openState = isVenue ? item.openState : undefined
   const hasValidImage = Boolean(image && image.startsWith('http'))
 
   return (
@@ -137,6 +139,24 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
               <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                 <Phone className="h-3 w-3 text-muted-foreground/50" />
                 {item.phone}
+              </span>
+            )}
+
+            {openState && (
+              <span
+                className={cn(
+                  'flex items-center gap-1 text-[11px] font-medium',
+                  openState.isOpen ? 'text-emerald' : 'text-muted-foreground'
+                )}
+              >
+                <span className={cn('h-1.5 w-1.5 rounded-full', openState.isOpen ? 'bg-emerald' : 'bg-muted-foreground/50')} />
+                {openState.isOpen
+                  ? openState.closesAt
+                    ? `Abierto · cierra ${openState.closesAt}`
+                    : 'Abierto'
+                  : openState.opensAt
+                    ? `Cerrado · abre ${openState.opensAt}`
+                    : 'Cerrado'}
               </span>
             )}
 

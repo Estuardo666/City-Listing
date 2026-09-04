@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin, unauthorized } from '@/lib/api/require-admin'
 import { googlePlacesService } from '@/lib/google-places'
+import { googleImportError } from '@/lib/google/import-error'
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,7 +9,7 @@ export async function GET(request: NextRequest) {
     if (!session) return unauthorized()
 
     const { searchParams } = new URL(request.url)
-    const address = searchParams.get('address')
+    const address = searchParams.get('address')?.trim()
 
     if (!address) {
       return NextResponse.json({ error: 'Dirección requerida' }, { status: 400 })
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Geocode error:', error)
-    return NextResponse.json({ error: 'Error al geocodificar dirección' }, { status: 500 })
+    const { status, ...diagnostic } = googleImportError(error)
+    return NextResponse.json(diagnostic, { status })
   }
 }

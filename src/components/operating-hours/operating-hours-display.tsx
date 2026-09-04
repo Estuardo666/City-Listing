@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { openStatus, operatingHoursToRows } from '@/lib/loja-day'
 
 interface OperatingHoursData {
   mon: string | null
@@ -31,27 +32,6 @@ function parseTimeRanges(schedule: string | null): { start: string; end: string 
   })
 }
 
-function isCurrentlyOpen(hours: OperatingHoursData): boolean {
-  const now = new Date()
-  const dayIndex = now.getDay()
-  const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
-  const todayKey = dayKeys[dayIndex] as keyof OperatingHoursData
-  const todaySchedule = hours[todayKey]
-
-  if (!todaySchedule) return false
-
-  const currentMinutes = now.getHours() * 60 + now.getMinutes()
-  const ranges = parseTimeRanges(todaySchedule)
-
-  return ranges.some(({ start, end }) => {
-    const [startH, startM] = start.split(':').map(Number)
-    const [endH, endM] = end.split(':').map(Number)
-    const startMinutes = startH * 60 + startM
-    const endMinutes = endH * 60 + endM
-    return currentMinutes >= startMinutes && currentMinutes < endMinutes
-  })
-}
-
 function formatTimeRange(schedule: string | null): string {
   if (!schedule) return 'Cerrado'
   return schedule.replace(/,/g, ', ')
@@ -63,7 +43,8 @@ interface OpenStatusBadgeProps {
 }
 
 export function OpenStatusBadge({ hours, className = '' }: OpenStatusBadgeProps) {
-  const open = useMemo(() => isCurrentlyOpen(hours), [hours])
+  // Mismo calculo que el resto de la app: hora de Loja y cruce de medianoche.
+  const open = useMemo(() => openStatus(operatingHoursToRows(hours)).isOpen, [hours])
 
   return (
     <span

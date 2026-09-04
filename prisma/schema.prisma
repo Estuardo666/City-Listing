@@ -1170,10 +1170,19 @@ model VenueBusinessHours {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Columnas generadas en Postgres a partir de openTime/closeTime (STORED).
+  // Nunca se escriben desde la aplicacion: permiten filtrar "abierto ahora" en SQL.
+  // NULL = horario con formato invalido, se descarta del filtro.
+  openMinute      Int?     @db.Integer
+  closeMinute     Int?     @db.Integer
+  crossesMidnight Boolean?
+  isAllDay        Boolean?
+
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
   @@index([venueId])
   @@index([venueId, dayOfWeek])
+  @@index([dayOfWeek, isClosed, openMinute, closeMinute])
 }
 
 model VenueService {

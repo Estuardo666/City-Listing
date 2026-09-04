@@ -2,18 +2,9 @@
 
 import { useMemo } from 'react'
 import type { VenueBusinessHours } from '@prisma/client'
+import { openStatus, lojaNowParts } from '@/lib/loja-day'
 
 const DAY_LABELS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-
-function minutesNow(): number {
-  const now = new Date()
-  return now.getHours() * 60 + now.getMinutes()
-}
-
-function timeToMinutes(t: string): number {
-  const [h, m] = t.split(':').map(Number)
-  return h * 60 + m
-}
 
 interface BusinessHoursDisplayProps {
   hours: VenueBusinessHours[]
@@ -21,33 +12,9 @@ interface BusinessHoursDisplayProps {
 }
 
 export function BusinessHoursDisplay({ hours, className = '' }: BusinessHoursDisplayProps) {
-  const status = useMemo(() => {
-    const now = new Date()
-    const dayOfWeek = now.getDay()
-    const currentMin = minutesNow()
-    const todaySlots = hours.filter((h) => h.dayOfWeek === dayOfWeek && !h.isClosed)
-
-    for (const slot of todaySlots) {
-      const open = timeToMinutes(slot.openTime)
-      const close = timeToMinutes(slot.closeTime)
-      if (currentMin >= open && currentMin < close) {
-        return { isOpen: true, closesAt: slot.closeTime }
-      }
-    }
-
-    const sorted = todaySlots.sort((a, b) => timeToMinutes(a.openTime) - timeToMinutes(b.openTime))
-    const nextSlot = sorted.find((s) => timeToMinutes(s.openTime) > currentMin)
-    if (nextSlot) return { isOpen: false, opensAt: nextSlot.openTime }
-
-    const tomorrow = (dayOfWeek + 1) % 7
-    const tomorrowSlots = hours.filter((h) => h.dayOfWeek === tomorrow && !h.isClosed)
-    if (tomorrowSlots.length > 0) {
-      const earliest = tomorrowSlots.sort((a, b) => timeToMinutes(a.openTime) - timeToMinutes(b.openTime))[0]
-      return { isOpen: false, opensAt: `${earliest.openTime} (mañana)` }
-    }
-
-    return { isOpen: false }
-  }, [hours])
+  // Un solo calculo compartido con el backend: hora de Loja, cruce de medianoche
+  // y horarios de 24 h incluidos.
+  const status = useMemo(() => openStatus(hours), [hours])
 
   const groupedByDay = useMemo(() => {
     const map = new Map<number, { openTime: string; closeTime: string }[]>()
@@ -57,13 +24,13 @@ export function BusinessHoursDisplay({ hours, className = '' }: BusinessHoursDis
       } else {
         const existing = map.get(h.dayOfWeek) || []
         existing.push({ openTime: h.openTime, closeTime: h.closeTime })
-        map.set(h.dayOfWeek, existing.sort((a, b) => a.openTime.localeCompare(b.openTime)))
+        map.set(h.dayOfWeek, [...existing].sort((a, b) => a.openTime.localeCompare(b.openTime)))
       }
     }
     return map
   }, [hours])
 
-  const today = new Date().getDay()
+  const today = lojaNowParts().weekday
 
   return (
     <div className={className}>

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { MapPin, Clock } from 'lucide-react'
 import type { VenueBusinessHours } from '@prisma/client'
 import type { VenueMapItem } from '@/types/venue'
+import { openStatus, operatingHoursToRows, lojaNowParts } from '@/lib/loja-day'
 
 const VenuesMap = dynamic(
   () => import('@/components/features/venues/venues-map').then((mod) => mod.VenuesMap),
@@ -12,11 +13,6 @@ const VenuesMap = dynamic(
 )
 
 const DAY_LABELS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-
-function timeToMinutes(t: string): number {
-  const [h, m] = t.split(':').map(Number)
-  return h * 60 + m
-}
 
 interface OperatingHoursLegacy {
   mon: string | null
@@ -55,47 +51,12 @@ export function LocationHoursSection({
 }: LocationHoursSectionProps) {
   const hasHours = businessHours.length > 0 || operatingHours !== null
 
-  const status = useMemo(() => {
-    const now = new Date()
-    const dayOfWeek = now.getDay()
-    const currentMin = now.getHours() * 60 + now.getMinutes()
-
-    if (businessHours.length > 0) {
-      const todaySlots = businessHours.filter((h) => h.dayOfWeek === dayOfWeek && !h.isClosed)
-      for (const slot of todaySlots) {
-        const open = timeToMinutes(slot.openTime)
-        const close = timeToMinutes(slot.closeTime)
-        if (currentMin >= open && currentMin < close) {
-          return { isOpen: true, closesAt: slot.closeTime }
-        }
-      }
-      const sorted = todaySlots.sort((a, b) => timeToMinutes(a.openTime) - timeToMinutes(b.openTime))
-      const nextSlot = sorted.find((s) => timeToMinutes(s.openTime) > currentMin)
-      if (nextSlot) return { isOpen: false, opensAt: nextSlot.openTime }
-      return { isOpen: false }
-    }
-
-    if (operatingHours) {
-      const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
-      const todayKey = dayKeys[dayOfWeek] as keyof OperatingHoursLegacy
-      const todaySchedule = operatingHours[todayKey]
-      if (!todaySchedule) return { isOpen: false }
-      const ranges = todaySchedule.split(',').map((r) => {
-        const [start, end] = r.split('-')
-        return { start, end }
-      })
-      for (const { start, end } of ranges) {
-        const [sH, sM] = start.split(':').map(Number)
-        const [eH, eM] = end.split(':').map(Number)
-        if (currentMin >= sH * 60 + sM && currentMin < eH * 60 + eM) {
-          return { isOpen: true, closesAt: end }
-        }
-      }
-      return { isOpen: false }
-    }
-
-    return { isOpen: false }
-  }, [businessHours, operatingHours])
+  // Un solo calculo compartido con el backend (hora de Loja, medianoche, 24 h).
+  // Las sedes con horario legacy se normalizan antes de evaluarlas.
+  const status = useMemo(
+    () => openStatus(businessHours.length > 0 ? businessHours : operatingHoursToRows(operatingHours)),
+    [businessHours, operatingHours]
+  )
 
   const groupedByDay = useMemo(() => {
     if (businessHours.length > 0) {
@@ -106,7 +67,7 @@ export function LocationHoursSection({
         } else {
           const existing = map.get(h.dayOfWeek) || []
           existing.push({ openTime: h.openTime, closeTime: h.closeTime })
-          map.set(h.dayOfWeek, existing.sort((a, b) => a.openTime.localeCompare(b.openTime)))
+          map.set(h.dayOfWeek, [...existing].sort((a, b) => a.openTime.localeCompare(b.openTime)))
         }
       }
       return map
@@ -114,7 +75,7 @@ export function LocationHoursSection({
     return null
   }, [businessHours])
 
-  const today = new Date().getDay()
+  const today = lojaNowParts().weekday
 
   return (
     <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">

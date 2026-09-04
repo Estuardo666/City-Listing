@@ -4,6 +4,16 @@ Esta guía explica cómo configurar y utilizar la integración con Google Places
 
 ## Cobertura del importador `/admin/imports/google`
 
+### Fotos de Google en el frontend
+
+Las tarjetas de Explorar, locales, rankings y secciones de inicio usan una foto de Google cuando falta la imagen propia (las tarjetas con manejo de errores también lo hacen si falla esa imagen). La ficha del local muestra la foto grande. No requiere volver a importar: utiliza el `googlePlaceId` existente.
+
+`GET /api/venues/[slug]/google-photo?size=small|large` obtiene metadatos recientes y una URL de imagen de Google; solo atiende locales aprobados y activos. El navegador solicita la foto cuando entra en pantalla y la muestra directamente desde Google, sin pasar por el optimizador de Next ni guardar fotos o referencias en la base de datos. El endpoint y sus consultas usan `no-store`. Las tarjetas conservan su fondo si no hay foto o falla Google. La clave `GOOGLE_PLACES_API_KEY` permanece en el servidor.
+
+La atribución **Google Maps** abre la foto con sus autores y un enlace a la fuente original. Las miniaturas solicitan un ancho máximo de 400 px y la ficha 1200 px. Cada carga puede consumir una consulta de detalles y otra de foto. El limitador distribuido existente permite hasta 120 solicitudes por IP y minuto cuando Redis está configurado; no sustituye los límites de cuota de Google Cloud.
+
+Validación sin consumir Google: `node --require ./tests/register-server-only.cjs --import tsx --test tests/google-photo.test.ts`.
+
 El asistente normal y la importación lenta comparten la búsqueda paginada. El catálogo incluye 95 categorías de comercios, servicios, profesionales y lugares, con una búsqueda general de negocios para complementar las categorías específicas.
 
 Cada selección se consulta primero en el área completa y luego en nueve sectores. Las búsquedas están restringidas geográficamente y los resultados fuera del radio circular se descartan. Cada consulta conserva sus parámetros al avanzar con `nextPageToken`; los resultados se unen por el ID de Google.
@@ -33,7 +43,7 @@ node --require ./tests/register-server-only.cjs --import tsx --test tests/google
 Ve a [Google Cloud Console](https://console.cloud.google.com/) y habilita las siguientes APIs:
 
 - **Places API (New)** - La API principal para buscar lugares
-- **Geocoding API** - Para convertir direcciones a coordenadas
+- **Geocoding API** - Opcional; el asistente actual resuelve direcciones mediante Text Search de Places API (New)
 - **Maps Static API** - Para obtener fotos de los lugares (opcional)
 
 ### 2. Crear una API Key
@@ -48,16 +58,14 @@ Ve a [Google Cloud Console](https://console.cloud.google.com/) y habilita las si
 Edita tu API Key y añade las siguientes restricciones:
 
 #### Restricciones de aplicación:
-- Selecciona **HTTP referrers**
-- Añade: `*tudominio.com/*` (reemplaza con tu dominio)
+Esta clave se usa desde el servidor de Vercel, no desde el navegador. No uses **HTTP referrers / Websites**: Google rechazará las peticiones con `API_KEY_HTTP_REFERRER_BLOCKED`. Utiliza una clave separada para el backend; si dispones de IP de salida fija, restríngela a esas IP. En Vercel sin salida fija, la clave de servidor requiere **None** en restricciones de aplicación y restricciones de API a **Places API (New)**. No cambies ni reutilices una clave pública del frontend para este fin.
 - Para desarrollo: `localhost:*`
 
 #### Restricciones de API:
 - Selecciona **Restrict key**
-- Marca solo las APIs que necesitas:
-  - Places API
-  - Geocoding API
-  - Maps Static API
+- Para la clave del importador selecciona **Places API (New)**.
+- Guárdala en Vercel como `GOOGLE_PLACES_API_KEY` para el entorno de producción y vuelve a desplegar.
+- Si aparece `SERVICE_DISABLED`, habilita Places API (New) en el mismo proyecto de la clave.
 
 ### 4. Configurar cuotas y límites
 
