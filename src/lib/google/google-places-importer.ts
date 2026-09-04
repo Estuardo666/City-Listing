@@ -129,7 +129,8 @@ export function normalizeOpeningHours(
     }
 
     if (/open 24 hours|abierto las 24 horas|abierto 24 horas/i.test(timePart)) {
-      result.push({ dayOfWeek, openTime: '00:00', closeTime: '23:59', isClosed: false })
+      // openTime === closeTime = abierto 24 h (lo entiende openStatus y la columna isAllDay).
+      result.push({ dayOfWeek, openTime: '00:00', closeTime: '00:00', isClosed: false })
       continue
     }
 

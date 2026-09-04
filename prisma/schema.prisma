@@ -48,6 +48,24 @@ model EventNotification {
   @@index([eventId])
 }
 
+// Durable inbox and push outbox for schedule changes. Snapshot the message so
+// later edits cannot erase the change a person saved the event before.
+model EventUpdateNotice {
+  id String @id @default(cuid())
+  userId String
+  eventId String
+  title String
+  body String
+  slug String
+  createdAt DateTime @default(now())
+  deliveredAt DateTime?
+  leaseUntil DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+  @@index([deliveredAt, leaseUntil])
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -122,6 +140,7 @@ model User {
   posts                  Post[]
   notificationPreference NotificationPreference?
   eventNotifications     EventNotification[]
+  eventUpdateNotices      EventUpdateNotice[]
   favorites              Favorite[]
   comments               Comment[]
   reviews                Review[]
@@ -305,6 +324,7 @@ model Event {
   venueId            String?
   venue              Venue?              @relation(fields: [venueId], references: [id], onDelete: SetNull)
   eventNotifications EventNotification[]
+  eventUpdateNotices EventUpdateNotice[]
   favorites          Favorite[]
   comments           Comment[]
   media              Media[]
@@ -1150,10 +1170,19 @@ model VenueBusinessHours {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Columnas generadas en Postgres a partir de openTime/closeTime (STORED).
+  // Nunca se escriben desde la aplicacion: permiten filtrar "abierto ahora" en SQL.
+  // NULL = horario con formato invalido, se descarta del filtro.
+  openMinute      Int?     @db.Integer
+  closeMinute     Int?     @db.Integer
+  crossesMidnight Boolean?
+  isAllDay        Boolean?
+
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
   @@index([venueId])
   @@index([venueId, dayOfWeek])
+  @@index([dayOfWeek, isClosed, openMinute, closeMinute])
 }
 
 model VenueService {

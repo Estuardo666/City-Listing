@@ -16,6 +16,8 @@ export const CACHE_TTL = {
   EVENTS: 15 * 60, // 15 minutes - events can change
   VENUES: 2 * 60 * 60, // 2 hours - venues rarely change
   POSTS: 1 * 60 * 60, // 1 hour - posts
+  EXPLORE: 5 * 60, // 5 minutes - explore results
+  OPEN_NOW: 60, // 1 minute - "abierto ahora" cambia con el reloj
 } as const
 
 // Función para generar clave de cache

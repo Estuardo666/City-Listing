@@ -2,6 +2,7 @@ import { canonicalUrl } from '@/lib/canonical-urls'
 import { notifyUser } from '@/lib/notifications'
 import { prisma } from '@/lib/prisma'
 import { VIEW_RETENTION_DAYS } from '@/lib/views'
+import { drainEventUpdates } from '@/lib/notifications/event-updates'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
   }
 
   const now = new Date()
+  await drainEventUpdates()
   // Widest window any user can configure; each row is filtered against its own
   // `hoursAhead` below.
   const horizon = new Date(now.getTime() + 168 * 60 * 60 * 1000)

@@ -27,6 +27,8 @@ export default async function CollectionsPage() {
           </div>
           <CollectionCreateForm />
         </div>
+        <p className="text-sm text-muted-foreground">Crea una colección y agrega locales desde el botón «Añadir a colección» de cada ficha. Puedes ordenar las paradas y escribir consejos para cada lugar.
+          {session.user.role === 'ADMIN' && ' Las colecciones públicas del equipo, con al menos un local y solo locales activos y aprobados, aparecen en Hoy en Loja.'}</p>
 
         {collections.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">

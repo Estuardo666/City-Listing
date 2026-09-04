@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { GOOGLE_CATEGORIES } from '@/types/google-import'
 import { googlePlacesImporter } from '@/lib/google/google-places-importer'
+import { googleImportError } from '@/lib/google/import-error'
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,6 +82,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error searching Google Places:', error)
-    return NextResponse.json({ error: 'Error al buscar en Google Places' }, { status: 500 })
+    const { status, ...diagnostic } = googleImportError(error)
+    return NextResponse.json(diagnostic, { status })
   }
 }

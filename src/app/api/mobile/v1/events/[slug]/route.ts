@@ -8,6 +8,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
 
   const data = {
     id: event.id,
+    status: event.status,
     title: event.title,
     slug: event.slug,
     description: event.description,

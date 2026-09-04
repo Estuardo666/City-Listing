@@ -16,6 +16,7 @@ const routeSchema = z.object({
   difficulty: z.string().trim().max(40).optional(),
   type: z.string().trim().min(2).max(40),
   days: z.coerce.number().int().min(1).max(14).optional(),
+  estimatedMinutes: z.number().int().min(1).max(20160).optional(),
   stops: z
     .array(
       z.object({
@@ -126,6 +127,7 @@ export const POST = withMobileErrors(async (request: Request) => {
       difficulty: parsed.data.difficulty,
       type: parsed.data.type,
       days,
+      estimatedMinutes: parsed.data.estimatedMinutes,
       status: 'PENDING',
       stops: { create: stopRows },
     },

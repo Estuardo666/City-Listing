@@ -47,9 +47,15 @@ export async function createRouteAction(
     const slug = await generateUniqueRouteSlug(parsed.data.title)
 
     const parsedStops = stops.map((stop) => routeStopSchema.safeParse(stop))
-    const validStops = parsedStops
-      .filter((r) => r.success)
-      .map((r) => (r as { success: true; data: typeof routeStopSchema._type }).data)
+    if (!parsedStops.length || parsedStops.length > 100 || parsedStops.some(r => !r.success)) {
+      return { success: false, error: 'Añade entre 1 y 100 paradas válidas.' }
+    }
+    const validStops = parsedStops.map(r => r.data!)
+    const venueIds = [...new Set(validStops.flatMap(s => s.venueId ? [s.venueId] : []))]
+    const venues = await prisma.venue.findMany({ where: { id: { in: venueIds }, status: 'APPROVED', isActive: true }, select: { id: true, lat: true, lng: true } })
+    if (venues.length !== venueIds.length) return { success: false, error: 'Selecciona locales publicados y activos.' }
+    const positions = validStops.map(s => `${s.day}:${s.order}`)
+    if (new Set(positions).size !== positions.length) return { success: false, error: 'Hay paradas repetidas en la misma posición.' }
 
     const created = await prisma.route.create({
       data: {
@@ -61,7 +67,7 @@ export async function createRouteAction(
         duration: parsed.data.duration,
         difficulty: parsed.data.difficulty,
         type: parsed.data.type,
-        featured: parsed.data.featured,
+        featured: session.user.role === 'ADMIN' && parsed.data.featured,
         // The stops decide the span: a route declared as 3 days whose stops
         // stop at day 2 would render an empty tab.
         days: Math.max(parsed.data.days ?? 1, ...validStops.map((stop) => stop.day ?? 1), 1),
@@ -69,7 +75,7 @@ export async function createRouteAction(
         estimatedMinutes: parsed.data.estimatedMinutes ?? null,
         startLat: parsed.data.startLat ?? null,
         startLng: parsed.data.startLng ?? null,
-        status: 'PENDING',
+        status: session.user.role === 'ADMIN' ? 'APPROVED' : 'PENDING',
         userId: session.user.id,
         stops: {
           create: validStops.map((stop) => ({
@@ -80,8 +86,8 @@ export async function createRouteAction(
             day: stop.day ?? 1,
             order: stop.order,
             startTime: stop.startTime ?? null,
-            lat: stop.lat ?? null,
-            lng: stop.lng ?? null,
+            lat: stop.lat ?? venues.find(v => v.id === stop.venueId)?.lat ?? null,
+            lng: stop.lng ?? venues.find(v => v.id === stop.venueId)?.lng ?? null,
             image: stop.image ?? null,
             travelMinutes: stop.travelMinutes ?? null,
           })),

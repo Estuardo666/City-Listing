@@ -20,6 +20,8 @@ export type ExploreVenue = {
   promotions?: { id: string; title: string; discount: string | null }[]
   services?: { name: string }[]
   businessHours?: { dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }[]
+  /** Estado calculado en el servidor con la hora de Loja. Los clientes no recalculan. */
+  openState?: { isOpen: boolean; closesAt?: string; opensAt?: string }
   categories: {
     id: string
     name: string

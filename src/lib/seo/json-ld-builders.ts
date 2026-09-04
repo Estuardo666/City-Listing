@@ -39,6 +39,7 @@ type VenueForJsonLd = {
 }
 
 type EventForJsonLd = {
+  status?: string
   title: string
   slug: string
   description: string
@@ -218,7 +219,7 @@ export function buildEventJsonLd(event: EventForJsonLd) {
     description: event.description,
     startDate: toIsoDate(event.startDate),
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    eventStatus: 'https://schema.org/EventScheduled',
+    eventStatus: event.status === 'CANCELLED' ? 'https://schema.org/EventCancelled' : 'https://schema.org/EventScheduled',
     url: `${SITE_URL}/eventos/${event.slug}`,
   }
 

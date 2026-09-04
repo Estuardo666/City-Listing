@@ -16,6 +16,67 @@ tags:
   - name: User
 security: []
 paths:
+  /agenda:
+    get:
+      tags: [Content]
+      operationId: getAgenda
+      summary: Chronological agenda in America/Guayaquil
+      description: Up to 100 approved remaining or ongoing events. Weekend means Saturday and Sunday, or the remaining part of the current weekend. Unknown price is null, never free. Cancelled events are excluded.
+      parameters:
+        - in: query
+          name: period
+          schema: { type: string, enum: [today, tomorrow, weekend, upcoming], default: today }
+      responses:
+        '200':
+          description: Chronologically sorted events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, title, slug, startDate, location]
+                      properties:
+                        id: { type: string }
+                        title: { type: string }
+                        slug: { type: string }
+                        image: { type: [string, 'null'] }
+                        startDate: { type: string, format: date-time }
+                        endDate: { type: [string, 'null'], format: date-time }
+                        location: { type: string }
+                        price: { type: [number, 'null'] }
+        '422': { description: Invalid period }
+        '500': { description: Agenda unavailable }
+  /me/event-updates:
+    get:
+      tags: [User]
+      operationId: getSavedEventUpdates
+      summary: Latest 50 schedule-change and cancellation notices for the signed-in user
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Persisted inbox, regardless of push permission or transport availability
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, title, body, slug, createdAt]
+                      properties:
+                        id: { type: string }
+                        title: { type: string }
+                        body: { type: string }
+                        slug: { type: string }
+                        createdAt: { type: string, format: date-time }
+        '401': { description: Authentication required }
+        '500': { description: Inbox unavailable }
   /today:
     get:
       tags: [Home]

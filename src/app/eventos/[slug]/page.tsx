@@ -90,6 +90,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   const categorySlug = event.eventCategories[0]?.category?.slug || 'eventos'
 
   const eventJsonLd = buildEventJsonLd({
+    status: event.status,
     title: event.title,
     slug: event.slug,
     description: event.description,

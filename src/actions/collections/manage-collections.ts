@@ -83,8 +83,8 @@ export async function addToCollectionAction(input: unknown): Promise<ActionRespo
     if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
 
     const { collectionId, ...itemData } = parsed.data
-    if (!itemData.venueId && !itemData.eventId && !itemData.postId && !itemData.routeId) {
-      return { success: false, error: 'Selecciona un elemento.' }
+    if ([itemData.venueId, itemData.eventId, itemData.postId, itemData.routeId].filter(Boolean).length !== 1) {
+      return { success: false, error: 'Selecciona exactamente un elemento.' }
     }
 
     const collection = await prisma.collection.findUnique({ where: { id: collectionId }, select: { userId: true } })
@@ -157,6 +157,10 @@ export async function reorderCollectionItemsAction(
     const collection = await prisma.collection.findUnique({ where: { id: collectionId }, select: { userId: true } })
     if (!collection || collection.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
 
+    const owned = await prisma.collectionItem.count({ where: { collectionId, id: { in: items.map(item => item.id) } } })
+    if (owned !== items.length || items.some(item => !Number.isInteger(item.order) || item.order < 0)) {
+      return { success: false, error: 'Orden o elementos inválidos.' }
+    }
     await prisma.$transaction(
       items.map((item) =>
         prisma.collectionItem.update({

@@ -78,7 +78,10 @@ export function SlowImportWizard() {
 
     try {
       const res = await fetch(`/api/admin/imports/google/geocode?address=${encodeURIComponent(address)}`)
-      if (!res.ok) throw new Error('Dirección no encontrada')
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Error al buscar dirección')
+      }
       const data = await res.json()
       setGeoResult(data.data)
       addLog(createLog('success', `${data.data.formattedAddress} → (${data.data.lat.toFixed(4)}, ${data.data.lng.toFixed(4)})`))
@@ -107,7 +110,10 @@ export function SlowImportWizard() {
       })
 
       const res = await fetch(`/api/admin/imports/google/search?${params}`)
-      if (!res.ok) throw new Error('Error en la búsqueda')
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Error en la búsqueda')
+      }
       const data = await res.json()
 
       const merged = new Map<string, PlaceResult>((append ? searchResults : []).map((place) => [place.google_place_id, place]))

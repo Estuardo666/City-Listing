@@ -1,6 +1,8 @@
 import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { getVenueBySlug } from '@/lib/queries/venues'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
+import { openStatus, operatingHoursToRows, lojaNowParts, lojaDay } from '@/lib/loja-day'
+import { prisma } from '@/lib/prisma'
 
 type MobileMenuCategory = {
   id: string
@@ -16,6 +18,29 @@ type MobileMenuCategory = {
     isAvailable: boolean
     isFeatured: boolean
   }>
+}
+
+/** Estado abierto/cerrado del local, respetando SpecialHours del dia y del anterior. */
+async function venueOpenState(venue: { id: string; businessHours: Array<{ dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }>; operatingHours: unknown }) {
+  const { date, prevDate } = lojaNowParts()
+  const specials = await prisma.specialHours.findMany({
+    where: {
+      venueId: venue.id,
+      date: {
+        gte: new Date(`${prevDate}T00:00:00Z`),
+        lt: new Date(new Date(`${date}T00:00:00Z`).getTime() + 86400_000),
+      },
+    },
+    select: { date: true, openTime: true, closeTime: true, isClosed: true },
+  })
+  const specialToday = specials.find((s) => lojaDay(s.date).date === date) ?? null
+  const specialYesterday = specials.find((s) => lojaDay(s.date).date === prevDate) ?? null
+
+  const rows = venue.businessHours.length > 0
+    ? venue.businessHours
+    : operatingHoursToRows(venue.operatingHours as Parameters<typeof operatingHoursToRows>[0])
+
+  return openStatus(rows, { specialToday, specialYesterday })
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -53,6 +78,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     services: venue.services.map(({ id, name, description }) => ({ id, name, description })),
     operatingHours: venue.operatingHours,
     businessHours: venue.businessHours,
+    // Estado abierto/cerrado con la hora de Loja, feriados incluidos: la app no recalcula.
+    openState: await venueOpenState(venue),
     menu: menuCategories.map((category) => ({
       id: category.id,
       name: category.name,

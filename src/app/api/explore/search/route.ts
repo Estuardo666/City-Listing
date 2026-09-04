@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withCache, getCacheKey, CACHE_TTL } from '@/lib/cache'
+import { lojaDay, lojaNowParts, openStatus } from '@/lib/loja-day'
+import { pageSlice } from '@/lib/explore-page'
 import { Prisma } from '@prisma/client'
 
 const DEFAULT_TAKE = 60
@@ -69,12 +71,82 @@ function getDateRange(preset: string): { start: Date; end: Date } {
   return { start, end }
 }
 
-function getCurrentDayAndTime(): { dayOfWeek: number; currentTime: string } {
-  const now = new Date()
-  const dayOfWeek = now.getDay()
-  const hours = String(now.getHours()).padStart(2, '0')
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  return { dayOfWeek, currentTime: `${hours}:${minutes}` }
+type SpecialEntry = { today?: { openTime: string | null; closeTime: string | null; isClosed: boolean }
+                      yesterday?: { openTime: string | null; closeTime: string | null; isClosed: boolean } }
+
+/**
+ * Horarios especiales (feriados, cierres puntuales) de hoy y ayer en Loja, por venue.
+ * Se consulta por rango porque SpecialHours.date puede venir con offset segun como
+ * se haya guardado; la clasificacion final la hace la fecha de Loja.
+ */
+async function getSpecialHoursByVenue(now = new Date()): Promise<Map<string, SpecialEntry>> {
+  const { date, prevDate } = lojaNowParts(now)
+  const rows = await prisma.specialHours.findMany({
+    where: {
+      date: {
+        gte: new Date(`${prevDate}T00:00:00Z`),
+        lt: new Date(new Date(`${date}T00:00:00Z`).getTime() + 86400_000),
+      },
+    },
+    select: { venueId: true, date: true, openTime: true, closeTime: true, isClosed: true },
+  })
+
+  const byVenue = new Map<string, SpecialEntry>()
+  for (const row of rows) {
+    const day = lojaDay(row.date).date
+    const entry = byVenue.get(row.venueId) ?? {}
+    if (day === date) entry.today = row
+    else if (day === prevDate) entry.yesterday = row
+    else continue
+    byVenue.set(row.venueId, entry)
+  }
+  return byVenue
+}
+
+/**
+ * Venues abiertos ahora segun la hora de Loja (UTC-5), resuelto en SQL.
+ * Cubre horario normal, horario partido y cierre pasada la medianoche.
+ * SpecialHours sustituye por completo el horario regular de ese dia.
+ */
+function buildOpenNowFilter(specialsByVenue: Map<string, SpecialEntry>, now = new Date()): Prisma.VenueWhereInput {
+  const { weekday, prevWeekday, minute } = lojaNowParts(now)
+
+  const regular: Prisma.VenueWhereInput = {
+    businessHours: {
+      some: {
+        OR: [
+          // Ventana normal de hoy: 09:00 -> 18:00
+          { dayOfWeek: weekday, isClosed: false, crossesMidnight: false, openMinute: { lte: minute }, closeMinute: { gt: minute } },
+          // Abierto 24 h (openTime === closeTime)
+          { dayOfWeek: weekday, isClosed: false, isAllDay: true },
+          // Abrio hoy y cierra manana: 20:00 -> 02:00, antes de medianoche
+          { dayOfWeek: weekday, isClosed: false, crossesMidnight: true, openMinute: { lte: minute } },
+          // Abrio ayer y todavia no cierra: 20:00 -> 02:00, pasada la medianoche
+          { dayOfWeek: prevWeekday, isClosed: false, crossesMidnight: true, closeMinute: { gt: minute } },
+        ],
+      },
+    },
+  }
+
+  if (specialsByVenue.size === 0) return regular
+
+  // Los venues con horario especial hoy o ayer salen del calculo regular y se
+  // reincorporan solo si su horario especial los deja abiertos ahora mismo.
+  const overriddenIds: string[] = []
+  const openBySpecialIds: string[] = []
+  for (const [venueId, entry] of specialsByVenue) {
+    overriddenIds.push(venueId)
+    if (openStatus([], { specialToday: entry.today ?? null, specialYesterday: entry.yesterday ?? null, now }).isOpen) {
+      openBySpecialIds.push(venueId)
+    }
+  }
+
+  return {
+    OR: [
+      { AND: [regular, { id: { notIn: overriddenIds } }] },
+      ...(openBySpecialIds.length > 0 ? [{ id: { in: openBySpecialIds } }] : []),
+    ],
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -139,6 +211,10 @@ export async function GET(request: NextRequest) {
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     }
 
+    // "Abierto ahora" cambia de minuto a minuto: la clave lleva el minuto de Loja
+    // y el TTL baja a 60 s para no servir un estado caducado.
+    const openNowBucket = openNow ? `${lojaDay().date}T${lojaNowParts().minute}` : ''
+
     const cacheKey = getCacheKey(
       'explore', q, type, category, String(featured), String(take),
       String(venueSkip), String(eventSkip),
@@ -147,7 +223,7 @@ export async function GET(request: NextRequest) {
       String(hasPromotions), String(hasUpcomingEvents),
       priceRange ?? '', services.join(','), foodTypes.join(','),
       eventDatePreset ?? '', eventPrice ?? '', String(eventMaxPrice ?? ''),
-      eventType ?? ''
+      eventType ?? '', openNowBucket
     )
 
     const result = await withCache(
@@ -159,9 +235,14 @@ export async function GET(request: NextRequest) {
         const categorySlugs = category ? await resolveCategorySlugs(category.split(',').filter(Boolean)) : []
 
         // ── Venue query ──
-        const venueQuery = type === 'events' ? Promise.resolve([]) : (async () => {
+        // Se consultan siempre: el badge openState tambien debe respetar feriados.
+        const specialsByVenue = await getSpecialHoursByVenue()
+        const openNowFilter = openNow ? buildOpenNowFilter(specialsByVenue) : null
+
+        const venueQuery = type === 'events' ? Promise.resolve({ items: [] as any[], consumed: 0, hasMore: false }) : (async () => {
           const where: Prisma.VenueWhereInput = {
             status: 'APPROVED',
+            ...(openNowFilter && { AND: [openNowFilter] }),
             ...(textFilter && {
               OR: [
                 { name: textFilter },
@@ -183,7 +264,8 @@ export async function GET(request: NextRequest) {
           }
 
           // Post-fetch filters need extra data
-          const needsPostFilter = services.length > 0 || hasPromotions || hasUpcomingEvents || openNow
+          // openNow ya no post-filtra: vive en el where, asi que skip/take de Prisma es exacto.
+          const needsPostFilter = services.length > 0 || hasPromotions || hasUpcomingEvents
 
           const venueRows = await prisma.venue.findMany({
             where,
@@ -252,16 +334,6 @@ export async function GET(request: NextRequest) {
             })
           }
 
-          if (openNow) {
-            const { dayOfWeek, currentTime } = getCurrentDayAndTime()
-            filtered = filtered.filter((v) => {
-              const hours = (v as any).businessHours as { dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }[] | undefined
-              if (!hours || hours.length === 0) return false
-              const todayHours = hours.filter((h) => h.dayOfWeek === dayOfWeek && !h.isClosed)
-              return todayHours.some((h) => h.openTime <= currentTime && h.closeTime > currentTime)
-            })
-          }
-
           if (foodTypes.length > 0) {
             const keywords = foodTypes.map((f) => f.toLowerCase())
             filtered = filtered.filter((v) => {
@@ -278,19 +350,30 @@ export async function GET(request: NextRequest) {
             })
           }
 
+          const { items: page, consumed, hasMore } = pageSlice(
+            venueRows, filtered, take, needsPostFilter ? MAX_TAKE : pageTake
+          )
+
           // Clean up extra fields before returning
-          return filtered.slice(0, take).map((v) => {
+          const items = page.map((v) => {
             const { events: _e, venueCategories, ...rest } = v as any
             return {
               ...rest,
               venueCategories,
               categories: venueCategories?.map((vc: any) => vc.category) ?? [],
+              // Estado abierto/cerrado calculado en el servidor con la hora de Loja,
+              // para que web e iOS pinten el mismo badge sin recalcular.
+              openState: openStatus((v as any).businessHours ?? [], {
+                specialToday: specialsByVenue.get(v.id)?.today ?? null,
+                specialYesterday: specialsByVenue.get(v.id)?.yesterday ?? null,
+              }),
             }
           })
+          return { items, consumed, hasMore }
         })()
 
         // ── Event query ──
-        const eventQuery = type === 'venues' ? Promise.resolve([]) : (async () => {
+        const eventQuery = type === 'venues' ? Promise.resolve({ items: [] as any[], consumed: 0, hasMore: false }) : (async () => {
           const where: Prisma.EventWhereInput = {
             status: 'APPROVED',
             ...(textFilter && {
@@ -358,7 +441,10 @@ export async function GET(request: NextRequest) {
             })
           }
 
-          return filteredEvents.slice(0, take).map((e) => {
+          const { items: eventPageItems, consumed: eventsConsumed, hasMore: eventsHaveMore } =
+            pageSlice(eventRows, filteredEvents, take, pageTake)
+
+          const items = eventPageItems.map((e) => {
             const { eventCategories, ...rest } = e as any
             return {
               ...rest,
@@ -366,14 +452,17 @@ export async function GET(request: NextRequest) {
               categories: eventCategories?.map((ec: any) => ec.category) ?? [],
             }
           })
+          return { items, consumed: eventsConsumed, hasMore: eventsHaveMore }
         })()
 
-        const [venues, events] = await Promise.all([venueQuery, eventQuery])
+        const [venuePage, eventPage] = await Promise.all([venueQuery, eventQuery])
+        const venues = venuePage.items
+        const events = eventPage.items
 
-        const hasMoreVenues = type !== 'events' && venues.length >= take
-        const hasMoreEvents = type !== 'venues' && events.length >= take
-        const nextVenueSkip = venueSkip + venues.length
-        const nextEventSkip = eventSkip + events.length
+        const hasMoreVenues = type !== 'events' && venuePage.hasMore
+        const hasMoreEvents = type !== 'venues' && eventPage.hasMore
+        const nextVenueSkip = venueSkip + venuePage.consumed
+        const nextEventSkip = eventSkip + eventPage.consumed
 
         return {
           venues,
@@ -386,7 +475,7 @@ export async function GET(request: NextRequest) {
           },
         }
       },
-      5 * 60
+      openNow ? CACHE_TTL.OPEN_NOW : CACHE_TTL.EXPLORE
     )
 
     return NextResponse.json(result)

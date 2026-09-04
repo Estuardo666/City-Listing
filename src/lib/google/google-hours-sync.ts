@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '@/lib/prisma'
+import { invalidateCache } from '@/lib/cache'
 import { googlePlacesService } from '@/lib/google-places'
 import { normalizeOpeningHours } from './google-places-importer'
 
@@ -76,6 +77,8 @@ class GoogleHoursSyncService {
         await prisma.venueBusinessHours.createMany({
           data: hours.map((h) => ({ ...h, venueId })),
         })
+        // El filtro "abierto ahora" se sirve cacheado: hay que tirarlo tras sincronizar.
+        await invalidateCache('explore:*')
       }
 
       const { recalculateVenueReputation } = await import('@/lib/reputation')

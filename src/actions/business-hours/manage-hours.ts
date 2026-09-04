@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { invalidateCache } from '@/lib/cache'
 import { z } from 'zod'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueBusinessHours } from '@prisma/client'
@@ -16,8 +17,10 @@ const hourSchema = z.object({
   openTime: z.string().regex(TIME_REGEX, 'Formato HH:MM requerido'),
   closeTime: z.string().regex(TIME_REGEX, 'Formato HH:MM requerido'),
   isClosed: z.boolean().default(false),
-}).refine((d) => d.isClosed || d.openTime < d.closeTime, {
-  message: 'La hora de apertura debe ser menor que la de cierre',
+}).refine((d) => d.isClosed || d.openTime !== d.closeTime, {
+  // openTime > closeTime es valido: el local cierra pasada la medianoche (20:00 -> 02:00).
+  // openTime === closeTime queda reservado para "abierto 24 horas" y no se captura aqui.
+  message: 'La hora de apertura y la de cierre no pueden ser iguales',
   path: ['openTime'],
 })
 
@@ -26,18 +29,28 @@ function timeToMinutes(t: string): number {
   return h * 60 + m
 }
 
+/** Los turnos que cruzan medianoche se extienden mas alla de 1440 para poder compararlos. */
+function toInterval(slot: { openTime: string; closeTime: string }): { start: number; end: number } {
+  const start = timeToMinutes(slot.openTime)
+  const end = timeToMinutes(slot.closeTime)
+  return { start, end: end > start ? end : end + 1440 }
+}
+
 function hasOverlap(slots: { openTime: string; closeTime: string }[], excludeId?: string): boolean {
   const filtered = slots.filter((_, i) => !excludeId || String(i) !== excludeId)
   for (let i = 0; i < filtered.length; i++) {
     for (let j = i + 1; j < filtered.length; j++) {
-      const aStart = timeToMinutes(filtered[i].openTime)
-      const aEnd = timeToMinutes(filtered[i].closeTime)
-      const bStart = timeToMinutes(filtered[j].openTime)
-      const bEnd = timeToMinutes(filtered[j].closeTime)
-      if (aStart < bEnd && bStart < aEnd) return true
+      const a = toInterval(filtered[i])
+      const b = toInterval(filtered[j])
+      if (a.start < b.end && b.start < a.end) return true
     }
   }
   return false
+}
+
+/** El filtro "abierto ahora" se sirve desde Redis: al tocar horarios hay que tirarlo. */
+async function invalidateHoursCache(): Promise<void> {
+  await invalidateCache('explore:*')
 }
 
 export async function getBusinessHoursAction(venueId: string): Promise<VenueBusinessHours[]> {
@@ -84,6 +97,7 @@ export async function upsertBusinessHoursAction(
       },
     })
 
+    await invalidateHoursCache()
     revalidatePath(`/locales/${venue.slug}`)
     revalidatePath(`/dashboard/locales/${venue.slug}/horarios`)
     return { success: true, data: created }
@@ -105,6 +119,7 @@ export async function deleteBusinessHoursAction(id: string): Promise<ActionRespo
     if (session.user.role !== 'ADMIN' && hour.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
 
     await prisma.venueBusinessHours.delete({ where: { id } })
+    await invalidateHoursCache()
     revalidatePath(`/locales/${hour.venue.slug}`)
     revalidatePath(`/dashboard/locales/${hour.venue.slug}/horarios`)
     return { success: true }
@@ -135,6 +150,7 @@ export async function setDayClosedAction(
       await prisma.venueBusinessHours.deleteMany({ where: { venueId, dayOfWeek, isClosed: true } })
     }
 
+    await invalidateHoursCache()
     revalidatePath(`/locales/${venue.slug}`)
     revalidatePath(`/dashboard/locales/${venue.slug}/horarios`)
     return { success: true }
@@ -175,6 +191,7 @@ export async function duplicateDayScheduleAction(
       }
     }
 
+    await invalidateHoursCache()
     revalidatePath(`/locales/${venue.slug}`)
     revalidatePath(`/dashboard/locales/${venue.slug}/horarios`)
     return { success: true }

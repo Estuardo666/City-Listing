@@ -1,5 +1,6 @@
 import { CalendarDays, Star, Sparkles, Tag, Ticket, LayoutGrid } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { Agenda } from '@/components/features/events/agenda'
 import { getEvents } from '@/lib/queries/events'
 import { ExploreClient } from '@/components/features/explore/explore-client'
 import { ListingSection } from '@/components/features/listing/listing-section'
@@ -51,7 +52,7 @@ export default async function EventosPage() {
       },
     }),
     prisma.event.findMany({
-      where: { status: 'APPROVED', OR: [{ price: null }, { price: 0 }] },
+      where: { status: 'APPROVED', price: 0 },
       orderBy: { startDate: 'asc' },
       take: FREE_TAKE,
       select: {
@@ -119,6 +120,7 @@ export default async function EventosPage() {
 
   return (
     <div className="bg-background pt-14">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6"><h1 className="mb-6 text-4xl font-semibold">Agenda de Loja</h1><Agenda /></div>
       {/* Mapa */}
       <div className="h-[70vh] w-full overflow-hidden">
         <ExploreClient
@@ -139,9 +141,9 @@ export default async function EventosPage() {
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
             Agenda verificada
           </span>
-          <h1 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+          <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
             Eventos en Loja
-          </h1>
+          </h2>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
             Conciertos, cultura, deportes y actividades recomendadas por la comunidad. Filtra por categoria y encuentra ubicaciones en el mapa.
           </p>

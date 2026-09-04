@@ -242,7 +242,7 @@ export function ExploreClient({
         venueSkip: '0',
         eventSkip: '0',
       })
-      if (f.categories.length > 0) params.set('categories', f.categories.join(','))
+      if (f.categories.length > 0) params.set('category', f.categories.join(','))
       if (f.minRating !== null) params.set('minRating', String(f.minRating))
       if (f.openNow) params.set('openNow', 'true')
       if (f.verified) params.set('verified', 'true')
@@ -298,7 +298,7 @@ export function ExploreClient({
         venueSkip: String(pagination.nextVenueSkip),
         eventSkip: String(pagination.nextEventSkip),
       })
-      if (filters.categories.length > 0) params.set('categories', filters.categories.join(','))
+      if (filters.categories.length > 0) params.set('category', filters.categories.join(','))
       if (filters.minRating !== null) params.set('minRating', String(filters.minRating))
       if (filters.openNow) params.set('openNow', 'true')
       if (filters.verified) params.set('verified', 'true')
