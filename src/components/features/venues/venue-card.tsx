@@ -1,5 +1,7 @@
 'use client'
 
+import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
+
 import Image from 'next/image'
 import Link from 'next/link'
 import { Globe, ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star } from 'lucide-react'
@@ -44,6 +46,7 @@ export function VenueCard({ venue, badges }: VenueCardProps) {
             initialsClassName="text-3xl"
           />
         )}
+        {(!hasValidImage || imageError) && <GoogleVenuePhoto slug={venue.slug} name={venue.name} />}
         <div className="absolute right-3 top-3 flex flex-wrap gap-1.5">
           {venue.featured && (
             <span className="inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-1 text-xs font-semibold text-white shadow-sm">

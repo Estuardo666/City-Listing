@@ -1,5 +1,7 @@
 'use client'
 
+import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
@@ -38,6 +40,7 @@ function LatestVenueCard({ venue }: { venue: ExploreVenue }) {
             initialsClassName="text-3xl sm:text-4xl"
           />
         )}
+        {(!venue.image || imageError) && <GoogleVenuePhoto slug={venue.slug} name={venue.name} />}
         <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
           {venue.categories[0]?.icon ?? ''} {venue.categories[0]?.name ?? ''}
         </span>

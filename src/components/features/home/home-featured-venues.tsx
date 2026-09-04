@@ -1,5 +1,7 @@
 'use client'
 
+import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
@@ -38,6 +40,7 @@ function FeaturedVenueCard({ venue }: { venue: ExploreVenue }) {
             initialsClassName="text-3xl sm:text-4xl"
           />
         )}
+        {(!venue.image || imageError) && <GoogleVenuePhoto slug={venue.slug} name={venue.name} />}
       </div>
       <div className="flex min-w-0 flex-col justify-center gap-2">
         <div className="flex items-center gap-2">
