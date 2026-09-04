@@ -2,7 +2,7 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { googlePlacesService } from '@/lib/google-places'
 import type { GooglePlaceNormalized, DuplicateCheckResult } from '@/types/google-import'
-import { GOOGLE_CATEGORIES } from '@/types/google-import'
+import { buildSearchPlan, isWithinSearchRadius } from './search-plan'
 import { getCategoriesFromGoogleTypes } from '@/lib/google/google-type-mapper'
 
 function normalizeString(s: string): string {
@@ -156,103 +156,42 @@ class GooglePlacesImporter {
     categoryKeys?: string[],
     maxResults: number = 20
   ): Promise<any[]> {
-    const typesToSearch = categoryKeys && categoryKeys.length > 0
-      ? categoryKeys
-      : ['restaurant']
-
-    const seenIds = new Set<string>()
-    const allResults: any[] = []
-
-    const queryVariations = [
-      (label: string) => `${label} en ${query}`,
-      (label: string) => `${label} cerca de ${query}`,
-    ]
-
-    for (const key of typesToSearch) {
-      const cat = GOOGLE_CATEGORIES[key]
-      if (!cat) continue
-
-      if (allResults.length >= maxResults) break
-
-      for (const buildQuery of queryVariations) {
-        if (allResults.length >= maxResults) break
-
-        const typeQuery = buildQuery(cat.label)
-
-        try {
-          const { places: results } = await googlePlacesService.searchPlaces(typeQuery, {
-            location,
-            radius,
-            maxResultCount: 20,
-          })
-
-          for (const place of results) {
-            if (place.id && !seenIds.has(place.id)) {
-              seenIds.add(place.id)
-              allResults.push(place)
-            }
-          }
-        } catch (error) {
-          console.error(`Error searching for ${key}:`, error)
-        }
-      }
-    }
-
-    return allResults.slice(0, maxResults)
+    const results = new Map<string, any>()
+    let variationIndex = 0
+    let pageToken: string | undefined
+    do {
+      const page = await this.searchPlacesPage(query, location, radius, variationIndex, categoryKeys, pageToken)
+      for (const place of page.data) results.set(place.id, place)
+      if (!page.hasMore || results.size >= maxResults) break
+      pageToken = page.nextPageToken
+      if (!pageToken) variationIndex++
+    } while (true)
+    return [...results.values()].slice(0, maxResults)
   }
 
   async searchPlacesPage(
-    query: string,
+    _query: string,
     location: { lat: number; lng: number },
     radius: number,
     variationIndex: number,
-    categoryKeys?: string[],
+    categoryKeys: string[] = ['business'],
     pageToken?: string
-  ): Promise<{ data: any[]; nextPageToken?: string; hasMore: boolean }> {
-    const typesToSearch = categoryKeys && categoryKeys.length > 0
-      ? categoryKeys
-      : ['restaurant']
+  ): Promise<{ data: any[]; nextPageToken?: string; hasMore: boolean; totalVariations: number }> {
+    const plan = buildSearchPlan(location, radius, categoryKeys)
+    const combo = plan[variationIndex]
+    if (!combo) return { data: [], hasMore: false, totalVariations: plan.length }
 
-    const variations = [
-      (label: string) => `${label} en ${query}`,
-      (label: string) => `${label} cerca de ${query}`,
-    ]
-
-    const allCombos: Array<{ key: string; label: string; buildQuery: (label: string) => string }> = []
-    for (const key of typesToSearch) {
-      const cat = GOOGLE_CATEGORIES[key]
-      if (!cat) continue
-      for (const buildQuery of variations) {
-        allCombos.push({ key, label: cat.label, buildQuery })
-      }
-    }
-
-    if (variationIndex >= allCombos.length) {
-      return { data: [], hasMore: false }
-    }
-
-    const combo = allCombos[variationIndex]
-    const typeQuery = combo.buildQuery(combo.label)
-
-    try {
-      if (pageToken) {
-        await new Promise((r) => setTimeout(r, 1000))
-      }
-
-      const { places, nextPageToken } = await googlePlacesService.searchPlaces(typeQuery, {
-        location,
-        radius,
-        maxResultCount: 20,
-        pageToken,
-      })
-
-      const hasMoreVariations = variationIndex < allCombos.length - 1
-      const hasMore = !!nextPageToken || hasMoreVariations
-
-      return { data: places, nextPageToken, hasMore }
-    } catch (error) {
-      console.error(`Error searching variation ${variationIndex}:`, error)
-      return { data: [], hasMore: variationIndex < allCombos.length - 1 }
+    // Let errors reach the client: an API/quota failure must not skip a page.
+    const { places, nextPageToken } = await googlePlacesService.searchPlaces(combo.query, {
+      locationRestriction: combo.area,
+      maxResultCount: 20,
+      pageToken,
+    })
+    return {
+      data: places.filter((place) => isWithinSearchRadius(place.location, location, radius)),
+      nextPageToken,
+      hasMore: !!nextPageToken || variationIndex < plan.length - 1,
+      totalVariations: plan.length,
     }
   }
 

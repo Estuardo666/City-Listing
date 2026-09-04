@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, X, AlertCircle, ArrowLeft, Loader2, ChevronDown, Star, Globe, Clock } from 'lucide-react'
+import { SearchContinuation } from './search-continuation'
+import { Check, X, AlertCircle, ArrowLeft, Star, Globe, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
@@ -25,7 +26,7 @@ interface WizardResultsProps {
   places: PlaceResult[]
   hasMore: boolean
   isLoadingMore: boolean
-  onLoadMore: () => void
+  onLoadMore: () => Promise<boolean>
   onSelectForImport: (places: PlaceResult[]) => void
   onImportAll: () => void
   onBack: () => void
@@ -220,30 +221,10 @@ export function WizardResults({
         </div>
       </div>
 
-      {hasMore && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            onClick={onLoadMore}
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Cargando...
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4 mr-2" />
-                Cargar más resultados
-              </>
-            )}
-          </Button>
-        </div>
-      )}
+      <SearchContinuation hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={onLoadMore} />
 
       <div className="flex flex-wrap gap-2 justify-end">
-        <Button variant="outline" onClick={onBack}>
+        <Button variant="outline" onClick={onBack} disabled={isLoadingMore}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Nueva búsqueda
         </Button>
@@ -251,12 +232,12 @@ export function WizardResults({
           variant="default"
           size="sm"
           onClick={handleImportSelected}
-          disabled={selectedCount === 0}
+          disabled={selectedCount === 0 || isLoadingMore}
         >
           <Check className="h-4 w-4 mr-1" />
           Importar seleccionados ({selectedCount})
         </Button>
-        <Button variant="secondary" size="sm" onClick={onImportAll}>
+        <Button variant="secondary" size="sm" onClick={onImportAll} disabled={isLoadingMore}>
           Importar todos ({totalAvailable})
         </Button>
       </div>

@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { LogFeed, createLog, type LogEntry } from './log-feed'
 import { MapPreview } from './map-preview'
 import { SlowJobProgress } from './slow-job-progress'
+import { SearchContinuation } from './search-continuation'
 import { GOOGLE_CATEGORIES } from '@/types/google-import'
 
 type Step = 'search' | 'categorize' | 'duplicates' | 'save' | 'job'
@@ -57,10 +58,12 @@ export function SlowImportWizard() {
   const [address, setAddress] = useState('')
   const [geoResult, setGeoResult] = useState<GeoResult | null>(null)
   const [radius, setRadius] = useState(5000)
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['restaurant'])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(Object.keys(GOOGLE_CATEGORIES))
   const [searchResults, setSearchResults] = useState<PlaceResult[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [delayMs, setDelayMs] = useState(72000)
+  const [cursor, setCursor] = useState({ variationIndex: 0, pageToken: '' })
+  const [hasMore, setHasMore] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [isGeocoding, setIsGeocoding] = useState(false)
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
@@ -87,8 +90,8 @@ export function SlowImportWizard() {
   }
 
   // Step 2: Search places
-  const handleSearch = async () => {
-    if (!geoResult) return
+  const handleSearch = async (append = false): Promise<boolean> => {
+    if (!geoResult || isSearching) return false
     setIsSearching(true)
     addLog(createLog('info', `Buscando ${selectedCategories.length} categorías en radio ${radius >= 1000 ? `${radius/1000}km` : `${radius}m`}`))
 
@@ -99,24 +102,34 @@ export function SlowImportWizard() {
         radius: radius.toString(),
         categories: selectedCategories.join(','),
         address: geoResult.formattedAddress,
-        maxResults: '500',
+        variationIndex: append ? String(cursor.variationIndex) : '0',
+        ...(append && cursor.pageToken ? { pageToken: cursor.pageToken } : {}),
       })
 
       const res = await fetch(`/api/admin/imports/google/search?${params}`)
       if (!res.ok) throw new Error('Error en la búsqueda')
       const data = await res.json()
 
-      setSearchResults(data.data)
-      setSelectedIds(new Set(data.data.filter((p: PlaceResult) => !p.alreadyImported).map((p: PlaceResult) => p.google_place_id)))
-      addLog(createLog('success', `${data.data.length} resultados encontrados`))
+      const merged = new Map<string, PlaceResult>((append ? searchResults : []).map((place) => [place.google_place_id, place]))
+      for (const place of data.data as PlaceResult[]) merged.set(place.google_place_id, place)
+      setSearchResults([...merged.values()])
+      setSelectedIds((previous) => new Set([
+        ...(append ? [...previous] : []),
+        ...data.data.filter((p: PlaceResult) => !p.alreadyImported && (!append || !searchResults.some((old) => old.google_place_id === p.google_place_id))).map((p: PlaceResult) => p.google_place_id),
+      ]))
+      setHasMore(data.hasMore)
+      setCursor({ variationIndex: data.nextPageToken ? data.variationIndex : data.variationIndex + 1, pageToken: data.nextPageToken || '' })
+      addLog(createLog('success', `${data.data.length} resultados en consulta ${data.variationIndex + 1}/${data.totalVariations}`))
 
       const duplicates = data.data.filter((p: PlaceResult) => p.alreadyImported).length
       if (duplicates > 0) addLog(createLog('warning', `${duplicates} ya importados`))
 
-      if (data.data.length > 0) setStep('duplicates')
+      if (data.data.length > 0 || data.hasMore || append) setStep('duplicates')
       else addLog(createLog('warning', 'Sin resultados'))
+      return true
     } catch (err) {
       addLog(createLog('error', err instanceof Error ? err.message : 'Error'))
+      return false
     } finally {
       setIsSearching(false)
     }
@@ -277,24 +290,28 @@ export function SlowImportWizard() {
             <CardTitle>Seleccionar categorías</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <p className="text-sm text-muted-foreground">{selectedCategories.length} categorías: {selectedCategories.length * 10} búsquedas de cobertura, más sus páginas adicionales. La carga continua puede aumentar el costo de Google.</p>
+            <Button variant="outline" disabled={isSearching} onClick={() => setSelectedCategories(selectedCategories.length === Object.keys(GOOGLE_CATEGORIES).length ? [] : Object.keys(GOOGLE_CATEGORIES))}>
+              {selectedCategories.length === Object.keys(GOOGLE_CATEGORIES).length ? 'Deseleccionar todas' : 'Seleccionar todas'}
+            </Button>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
               {Object.entries(GOOGLE_CATEGORIES).map(([key, cat]) => (
                 <div
                   key={key}
                   className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer ${selectedCategories.includes(key) ? 'bg-primary/5 border-primary/30' : ''}`}
-                  onClick={() => toggleCategory(key)}
+                  onClick={() => { if (!isSearching) toggleCategory(key) }}
                 >
-                  <Checkbox checked={selectedCategories.includes(key)} onCheckedChange={() => toggleCategory(key)} />
+                  <Checkbox disabled={isSearching} onClick={(event) => event.stopPropagation()} aria-label={cat.label} checked={selectedCategories.includes(key)} onCheckedChange={() => toggleCategory(key)} />
                   <Label className="cursor-pointer text-sm">{cat.label}</Label>
                 </div>
               ))}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep('search')}>
+              <Button variant="outline" onClick={() => setStep('search')} disabled={isSearching}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Atrás
               </Button>
-              <Button onClick={handleSearch} disabled={selectedCategories.length === 0 || isSearching} className="flex-1">
+              <Button onClick={() => void handleSearch()} disabled={selectedCategories.length === 0 || isSearching} className="flex-1">
                 {isSearching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
                 Buscar negocios
               </Button>
@@ -353,12 +370,13 @@ export function SlowImportWizard() {
               </table>
             </div>
 
+            <SearchContinuation hasMore={hasMore} isLoading={isSearching} onLoadMore={() => handleSearch(true)} />
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep('categorize')}>
+              <Button variant="outline" onClick={() => setStep('categorize')} disabled={isSearching}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Atrás
               </Button>
-              <Button onClick={() => setStep('save')} disabled={selectedIds.size === 0} className="flex-1">
+              <Button onClick={() => setStep('save')} disabled={selectedIds.size === 0 || isSearching} className="flex-1">
                 Siguiente: Configurar importación
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
