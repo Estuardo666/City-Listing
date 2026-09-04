@@ -100,6 +100,7 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
       setVariationIndex(0)
       setPageToken(null)
       setHasMore(false)
+      setSearchResults([])
 
       addLog(createLog('info', `Iniciando búsqueda en: ${geoResult.formattedAddress}`))
       addLog(
@@ -141,7 +142,7 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
           addLog(createLog('warning', `${imported} negocios ya importados (duplicados)`))
         }
 
-        if (result.data.length === 0) {
+        if (result.data.length === 0 && !result.hasMore) {
           toast.info('No se encontraron negocios con esos criterios')
           addLog(createLog('warning', 'Sin resultados. Intenta con otro radio o más categorías.'))
         } else {
@@ -193,7 +194,7 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
   }, [searchResults])
 
   const handleLoadMore = useCallback(async () => {
-    if (!geoResult || isLoadingMore || !hasMore) return
+    if (!geoResult || isLoadingMore || !hasMore) return false
 
     setIsLoadingMore(true)
     addLog(createLog('info', `Cargando más resultados...`))
@@ -237,12 +238,14 @@ export function GooglePlacesWizard({ categories }: { categories: Category[] }) {
       addLog(
         createLog(
           'success',
-          `+${newResults.length} resultados nuevos (${searchResults.length + newResults.length} total)`
+          `+${newResults.length} resultados nuevos (${searchResults.length + newResults.length} total). Consulta ${result.variationIndex + 1}/${result.totalVariations}`
         )
       )
+      return true
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Error al cargar más'
       addLog(createLog('error', msg))
+      return false
     } finally {
       setIsLoadingMore(false)
     }

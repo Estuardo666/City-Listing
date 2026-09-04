@@ -235,6 +235,7 @@ class GooglePlacesService {
       language?: string;
       maxResultCount?: number;
       pageToken?: string;
+      locationRestriction?: { low: { latitude: number; longitude: number }; high: { latitude: number; longitude: number } };
     } = {}
   ): Promise<{ places: GooglePlace[]; nextPageToken?: string }> {
     const url = `${this.baseUrl}/places:searchText`;
@@ -243,10 +244,12 @@ class GooglePlacesService {
     const body: any = {
       textQuery: query,
       languageCode: 'es',
-      maxResultCount: options.maxResultCount || 20,
+      pageSize: options.maxResultCount || 20,
     };
 
-    if (options.location) {
+    if (options.locationRestriction) {
+      body.locationRestriction = { rectangle: options.locationRestriction };
+    } else if (options.location) {
       body.locationBias = {
         circle: {
           center: {

@@ -2,6 +2,24 @@
 
 Esta guía explica cómo configurar y utilizar la integración con Google Places API para importar locales a tu aplicación Vive Loja.
 
+## Cobertura del importador `/admin/imports/google`
+
+El asistente normal y la importación lenta comparten la búsqueda paginada. El catálogo incluye 95 categorías de comercios, servicios, profesionales y lugares, con una búsqueda general de negocios para complementar las categorías específicas.
+
+Cada selección se consulta primero en el área completa y luego en nueve sectores. Las búsquedas están restringidas geográficamente y los resultados fuera del radio circular se descartan. Cada consulta conserva sus parámetros al avanzar con `nextPageToken`; los resultados se unen por el ID de Google.
+
+La primera respuesta es parcial. Usa **Continuar todas las categorías y sectores** para recorrer las consultas pendientes, o **Cargar más resultados** para avanzar una página. La carga continua se puede pausar; conserva los resultados y termina la solicitud en curso. Una página vacía o con duplicados no significa que la búsqueda haya terminado. Los errores detienen la carga y permiten reintentar la misma página.
+
+La cobertura ampliada realiza diez búsquedas por categoría, cada una con las páginas que devuelva Google, por lo que aumenta el consumo de cuota y puede aumentar el costo. Con las 95 categorías son 950 búsquedas antes de contar páginas adicionales. Puedes seleccionar menos categorías o pausar cuando tengas suficientes resultados.
+
+Google Text Search devuelve resultados ordenados y limitados, no un inventario exhaustivo. Incluso completando todos los sectores pueden faltar locales que aparecen en Maps. Para profundizar en una zona densa, vuelve a buscar usando una dirección de ese barrio y un radio menor. Consulta la [documentación oficial de Text Search](https://developers.google.com/maps/documentation/places/web-service/text-search).
+
+Prueba de regresión sin llamadas reales a Google ni escrituras en la base de datos:
+
+```bash
+node --require ./tests/register-server-only.cjs --import tsx --test tests/google-import-search.test.ts
+```
+
 ## 📋 Requisitos previos
 
 1. Tener una cuenta en Google Cloud Platform

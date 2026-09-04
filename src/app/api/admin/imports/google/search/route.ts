@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { GOOGLE_CATEGORIES } from '@/types/google-import'
 import { googlePlacesImporter } from '@/lib/google/google-places-importer'
 
 export async function GET(request: NextRequest) {
@@ -27,11 +28,17 @@ export async function GET(request: NextRequest) {
     }
 
     const categories = categoriesParam.split(',').filter(Boolean)
-    if (categories.length === 0) {
+    if (categories.length === 0 || categories.some((key) => !Object.prototype.hasOwnProperty.call(GOOGLE_CATEGORIES, key))) {
       return NextResponse.json({ error: 'Selecciona al menos una categoría' }, { status: 400 })
     }
 
     const location = { lat: Number(lat), lng: Number(lng) }
+    if (!Number.isFinite(location.lat) || Math.abs(location.lat) > 90
+      || !Number.isFinite(location.lng) || Math.abs(location.lng) > 180
+      || !Number.isFinite(Number(radius)) || Number(radius) <= 0 || Number(radius) > 50000
+      || !Number.isSafeInteger(variationIndex) || variationIndex < 0) {
+      return NextResponse.json({ error: 'Coordenadas, radio o página inválidos' }, { status: 400 })
+    }
     const locationQuery = address || `${lat}, ${lng}`
 
     const result = await googlePlacesImporter.searchPlacesPage(
@@ -51,7 +58,6 @@ export async function GET(request: NextRequest) {
         ? await prisma.venue.findMany({
             where: {
               googlePlaceId: { in: placeIds },
-              status: { in: ['APPROVED', 'PENDING'] },
             } as any,
             select: { id: true, name: true, slug: true, googlePlaceId: true } as any,
           })
@@ -71,6 +77,7 @@ export async function GET(request: NextRequest) {
       nextPageToken: result.nextPageToken || null,
       hasMore: result.hasMore,
       variationIndex,
+      totalVariations: result.totalVariations,
     })
   } catch (error) {
     console.error('Error searching Google Places:', error)
