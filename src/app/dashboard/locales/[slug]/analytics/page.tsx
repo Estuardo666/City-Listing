@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getInteractionMetrics } from '@/lib/interactions'
 import { getVenueOwnerAnalytics } from '@/lib/queries/features'
 import { StarRatingDisplay } from '@/components/review/star-rating'
 import { Eye, Heart, MessageCircle, Calendar, Star, MapPin } from 'lucide-react'
@@ -25,6 +26,7 @@ export default async function VenueAnalyticsPage({ params }: { params: Promise<{
   const venueData = analytics.venues.find((v) => v.id === venue.id)
 
   if (!venueData) redirect('/dashboard/locales')
+  const interactions = await getInteractionMetrics('venue', venue.id)
 
   return (
     <div className="pb-16 pt-8">
@@ -68,6 +70,11 @@ export default async function VenueAnalyticsPage({ params }: { params: Promise<{
         </div>
 
         {/* Rating distribution */}
+        <section className="rounded-2xl border p-5 space-y-2">
+          <h2 className="font-semibold">Intención de visita · últimos 30 días</h2>
+          <p>{interactions.saves} nuevos guardados · {interactions.directions} clics en «Cómo llegar»</p>
+          <p className="text-sm text-muted-foreground">Web y app. Los clics no son visitas físicas. Los guardados actuales se muestran arriba.</p>
+        </section>
         {analytics.ratingDistribution.length > 0 && (
           <div className="rounded-2xl border border-border/50 bg-card p-5">
             <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-4">Distribución de ratings</h2>

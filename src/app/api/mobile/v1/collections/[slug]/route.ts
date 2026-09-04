@@ -26,6 +26,12 @@ export const GET = withMobileErrors(
         user: { select: { id: true, name: true, image: true } },
         _count: { select: { items: true, favorites: true } },
         items: {
+          where: { OR: [
+            { venue: { status: 'APPROVED', isActive: true } },
+            { event: { status: 'APPROVED' } },
+            { post: { status: 'APPROVED' } },
+            { route: { status: 'APPROVED' } },
+          ] },
           orderBy: { order: 'asc' },
           take: 200,
           select: {
@@ -58,7 +64,7 @@ export const GET = withMobileErrors(
       slug: collection.slug,
       description: collection.description,
       icon: collection.icon,
-      itemCount: collection._count.items,
+      itemCount: collection.items.length,
       saveCount: collection._count.favorites,
       isSaved,
       isMine: principal ? collection.user.id === principal.userId : false,

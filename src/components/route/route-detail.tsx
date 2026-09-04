@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { trackDirections } from '@/lib/track-directions'
 import { MapPin, Clock, Mountain, User, CalendarDays, Footprints } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -149,6 +150,10 @@ export function RouteDetail({ route }: RouteDetailProps) {
                 )}
               </div>
               <div className="flex-1 pb-4">
+                {(stop.lat ?? stop.venue?.lat) != null && (stop.lng ?? stop.venue?.lng) != null && <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${stop.lat ?? stop.venue?.lat},${stop.lng ?? stop.venue?.lng}&travelmode=walking`}
+                  target="_blank" rel="noopener noreferrer" className="mb-2 inline-block text-sm underline"
+                  onClick={() => trackDirections('route', route.id)}>Cómo llegar</a>}
                 {stop.venue ? (
                   <Link
                     href={`/locales/${stop.venue.slug}`}

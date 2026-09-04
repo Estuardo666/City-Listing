@@ -967,6 +967,19 @@ model DeviceToken {
 /// Timestamped view events. `viewCount` on each model is a lifetime counter and
 /// cannot answer "what is popular right now"; this table can, and is purged by
 /// the notifications cron so it stays small.
+model InteractionEvent {
+  id        String   @id @default(cuid())
+  dedupeKey String   @unique
+  action    String
+  kind      String
+  itemId    String
+  source    String
+  createdAt DateTime @default(now())
+
+  @@index([kind, itemId, createdAt])
+  @@index([createdAt])
+}
+
 model ViewEvent {
   id     String  @id @default(cuid())
   kind   String

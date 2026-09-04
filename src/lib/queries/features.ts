@@ -88,6 +88,12 @@ export const getCollectionBySlug = serverCache(async (slug: string) => {
     include: {
       user: { select: { id: true, name: true, image: true } },
       items: {
+        where: { OR: [
+          { venue: { status: 'APPROVED', isActive: true } },
+          { event: { status: 'APPROVED' } },
+          { post: { status: 'APPROVED' } },
+          { route: { status: 'APPROVED' } },
+        ] },
         orderBy: { order: 'asc' },
         include: {
           venue: {

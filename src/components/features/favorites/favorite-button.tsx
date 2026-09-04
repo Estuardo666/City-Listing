@@ -14,6 +14,7 @@ type FavoriteButtonProps = {
   venueId?: string
   postId?: string
   routeId?: string
+  collectionId?: string
   initialIsFavorite: boolean
   size?: 'sm' | 'md'
 }
@@ -23,6 +24,7 @@ export function FavoriteButton({
   venueId,
   postId,
   routeId,
+  collectionId,
   initialIsFavorite,
   size = 'md',
 }: FavoriteButtonProps) {
@@ -44,7 +46,7 @@ export function FavoriteButton({
     setIsFavorite(optimistic)
 
     startTransition(async () => {
-      const result = await toggleFavoriteAction({ eventId, venueId, postId, routeId })
+      const result = await toggleFavoriteAction({ eventId, venueId, postId, routeId, collectionId })
       if (!result.success) {
         setIsFavorite(!optimistic)
         toast.error(result.error ?? 'Error al actualizar favorito')

@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
+import { trackDirections } from '@/lib/track-directions'
 import { motion, useInView } from 'framer-motion'
 import {
   Building2, CalendarDays, Clock3, DollarSign, Edit, ExternalLink, Info, LogIn,
@@ -215,6 +216,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Lugar</p>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                  onClick={() => trackDirections('event', event.id)}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm font-semibold text-foreground hover:text-primary"
@@ -338,6 +340,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
             )}
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+              onClick={() => trackDirections('event', event.id)}
               target="_blank"
               rel="noreferrer"
               className="flex min-w-[140px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
@@ -424,6 +427,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
                     <p className="text-xs text-muted-foreground">Ubicación</p>
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                      onClick={() => trackDirections('event', event.id)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-sm font-semibold text-foreground hover:text-primary"

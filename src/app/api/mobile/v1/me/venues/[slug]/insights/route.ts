@@ -1,6 +1,7 @@
 import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { mobileError, mobileSuccess, withMobileErrors } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
+import { getInteractionMetrics } from '@/lib/interactions'
 import { getViewSeries, VIEW_RETENTION_DAYS } from '@/lib/views'
 
 /**
@@ -60,6 +61,7 @@ export const GET = withMobileErrors(
       unansweredQuestions: pendingQuestions,
       upcomingReservations,
       retentionDays: VIEW_RETENTION_DAYS,
+      interactions: await getInteractionMetrics('venue', venue.id),
     })
   },
 )

@@ -76,6 +76,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/resenas', label: 'Moderar Reseñas', icon: MessageSquare, adminOnly: true },
   { href: '/admin/usuarios', label: 'Usuarios', icon: Users, adminOnly: true },
   { href: '/admin/reclamos', label: 'Reclamos', icon: ClipboardList, adminOnly: true },
+  { href: '/admin/descubrimiento', label: 'Descubrimiento', icon: ClipboardList, adminOnly: true },
   { href: '/admin/ofertas', label: 'Ofertas', icon: Tag, adminOnly: true },
   { href: '/admin/categorias', label: 'Categorías', icon: FolderTree, adminOnly: true },
   { href: '/admin/transmisiones', label: 'Transmisiones', icon: Tv, adminOnly: true },

@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { FavoriteButton } from '@/components/features/favorites/favorite-button'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -20,6 +21,8 @@ export default async function CollectionDetailPage({ params }: { params: Promise
   const collection = await getCollectionBySlug(slug)
 
   if (!collection) notFound()
+  const session = await getServerSession(authOptions)
+  const isSaved = session?.user?.id ? await prisma.favorite.count({ where: { userId: session.user.id, collectionId: collection.id } }) > 0 : false
 
   return (
     <div className="pb-20 pt-10 sm:pt-14">
@@ -29,6 +32,7 @@ export default async function CollectionDetailPage({ params }: { params: Promise
             <span className="text-4xl">{collection.icon ?? '📁'}</span>
             <div>
               <h1 className="text-2xl font-medium sm:text-3xl">{collection.name}</h1>
+              <FavoriteButton collectionId={collection.id} initialIsFavorite={isSaved} />
               {collection.description && <p className="text-sm text-muted-foreground mt-1">{collection.description}</p>}
             </div>
           </div>
@@ -51,7 +55,7 @@ export default async function CollectionDetailPage({ params }: { params: Promise
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {collection.items.map((item) => {
-            if (item.venue) return <VenueCard key={item.id} venue={item.venue} />
+            if (item.venue) return <div key={item.id} className="space-y-2"><VenueCard venue={item.venue} />{item.note && <p className="px-3 text-sm text-muted-foreground">{item.note}</p>}</div>
             if (item.event) return <EventCard key={item.id} event={item.event} />
             return null
           })}

@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { TodayInLoja } from '@/components/features/home/today-in-loja'
 import { getServerSession } from 'next-auth'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -83,6 +84,7 @@ export default async function HomePage() {
         </Suspense>
 
         <div className="section-shell space-y-20 sm:space-y-24">
+          <TodayInLoja />
           {/* Categories Grid with Suspense */}
           <Suspense fallback={<HomeCategoriesGridSkeleton />}>
             <HomeCategoriesGridSection />

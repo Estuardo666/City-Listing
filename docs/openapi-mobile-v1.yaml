@@ -16,6 +16,60 @@ tags:
   - name: User
 security: []
 paths:
+  /today:
+    get:
+      tags: [Home]
+      operationId: getTodayInLoja
+      summary: Today's remaining events, open venues, short routes and editorial venue collections
+      description: Uses America/Guayaquil day boundaries. No-store. Only public approved content. Unknown hours are excluded. Collections must be public, authored by an admin and contain only approved active venues.
+      responses:
+        "200":
+          description: Today's discovery sections, including empty arrays when no content qualifies
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [date, timeZone, generatedAt, events, openVenues, routes, collections]
+                    properties:
+                      date: { type: string, format: date }
+                      timeZone: { type: string, const: America/Guayaquil }
+                      generatedAt: { type: string, format: date-time }
+                      events: { type: array, items: { $ref: '#/components/schemas/TodayCard' } }
+                      openVenues: { type: array, items: { $ref: '#/components/schemas/TodayCard' } }
+                      routes: { type: array, items: { $ref: '#/components/schemas/TodayCard' } }
+                      collections: { type: array, items: { $ref: '#/components/schemas/TodayCard' } }
+        "500":
+          description: Temporary discovery service failure
+  /interactions:
+    post:
+      tags: [Analytics]
+      operationId: recordDirectionsIntent
+      summary: Record a directions click, never a physical visit
+      description: Public, rate limited, deduplicated in 30-minute buckets. Save events are recorded atomically by the authenticated favorites mutation, never accepted here. Analytics failures must not block navigation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action, kind, itemId, source]
+              properties:
+                action: { type: string, const: directions }
+                kind: { type: string, enum: [venue, event, route] }
+                itemId: { type: string, minLength: 1, maxLength: 100 }
+                source: { type: string, enum: [web, ios, android] }
+      responses:
+        "200": { description: Accepted; data.recorded is false for a duplicate }
+        "403": { description: Cross-origin browser request rejected }
+        "404": { description: Content is not public }
+        "422": { description: Invalid input }
+        "429": { description: Rate limit reached }
+        "500": { description: Recording unavailable }
   /health:
     get:
       tags: [Health]
@@ -1293,6 +1347,21 @@ components:
     Longitude: { name: lng, in: query, schema: { type: number, format: double } }
     Radius: { name: radius, in: query, schema: { type: number, minimum: 1 } }
   schemas:
+    TodayCard:
+      type: object
+      required: [id, kind, title, slug, image, subtitle]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [venue, event, route, collection] }
+        title: { type: string }
+        slug: { type: string }
+        image: { type: [string, 'null'] }
+        subtitle: { type: [string, 'null'] }
+        startDate: { type: string, format: date-time }
+        price: { type: [number, 'null'] }
+        author: { type: [string, 'null'] }
+        itemCount: { type: integer }
+        updatedAt: { type: string, format: date-time }
     SuccessEnvelope:
       type: object
       required: [data]

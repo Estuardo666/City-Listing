@@ -132,6 +132,10 @@ export async function GET(request: Request) {
     where: { createdAt: { lt: new Date(Date.now() - VIEW_RETENTION_DAYS * 24 * 60 * 60 * 1000) } },
   })
 
+  await prisma.interactionEvent.deleteMany({
+    where: { createdAt: { lt: new Date(Date.now() - 30 * 86400_000) } },
+  })
+
   return Response.json({
     scanned: favorites.length,
     examined: candidates.length,

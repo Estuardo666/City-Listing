@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { recordSave } from '@/lib/interactions'
 import type { ActionResponse } from '@/types/action-response'
 
 const schema = z.object({
@@ -12,6 +13,7 @@ const schema = z.object({
   venueId: z.string().optional(),
   postId:  z.string().optional(),
   routeId: z.string().optional(),
+  collectionId: z.string().optional(),
 })
 
 type ToggleFavoriteInput = z.infer<typeof schema>
@@ -27,8 +29,11 @@ export async function toggleFavoriteAction(
     const parsed = schema.safeParse(input)
     if (!parsed.success) return { success: false, error: 'Datos inválidos' }
 
-    const { eventId, venueId, postId, routeId } = parsed.data
-    if (!eventId && !venueId && !postId && !routeId) return { success: false, error: 'Debes especificar un elemento' }
+    const { eventId, venueId, postId, routeId, collectionId } = parsed.data
+    if ([eventId, venueId, postId, routeId, collectionId].filter(Boolean).length !== 1) return { success: false, error: 'Debes especificar un único elemento' }
+    if (collectionId && !await prisma.collection.count({ where: { id: collectionId, isPublic: true } })) {
+      return { success: false, error: 'Colección no disponible' }
+    }
 
     const userId = session.user.id
 
@@ -38,7 +43,8 @@ export async function toggleFavoriteAction(
       ? { userId_venueId: { userId, venueId } }
       : postId
       ? { userId_postId: { userId, postId } }
-      : { userId_routeId: { userId, routeId: routeId! } }
+      : routeId ? { userId_routeId: { userId, routeId } }
+      : { userId_collectionId: { userId, collectionId: collectionId! } }
 
     const existing = await prisma.favorite.findUnique({ where })
 
@@ -48,8 +54,10 @@ export async function toggleFavoriteAction(
       return { success: true, data: { isFavorite: false } }
     }
 
-    await prisma.favorite.create({
-      data: { userId, eventId, venueId, postId, routeId },
+    await prisma.$transaction(async tx => {
+      const favorite = await tx.favorite.create({ data: { userId, eventId, venueId, postId, routeId, collectionId } })
+      await recordSave(tx, favorite.id, eventId ? 'event' : venueId ? 'venue' : postId ? 'post' : routeId ? 'route' : 'collection',
+        (eventId ?? venueId ?? postId ?? routeId ?? collectionId)!, 'web')
     })
 
     revalidatePaths(eventId, venueId, postId, routeId)

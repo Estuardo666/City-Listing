@@ -17,6 +17,13 @@
 // migration fails the build.
 import { spawnSync } from 'node:child_process'
 
+// Preview currently shares the production database. Build validation must not
+// apply schema changes to it; migrations are reserved for production deploys.
+if (process.env.VERCEL_ENV === 'preview') {
+  console.log('[migrate] Preview build: skipping migrations to protect the shared production database.')
+  process.exit(0)
+}
+
 const EXPECTED = 'DATABASE_URL_UNPOOLED'
 const KNOWN_ALIASES = ['POSTGRES_URL_NON_POOLING', 'POSTGRES_URL_NO_SSL']
 

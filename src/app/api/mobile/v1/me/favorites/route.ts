@@ -3,10 +3,12 @@ import { z } from 'zod'
 import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
+import { recordSave } from '@/lib/interactions'
 
 const favoriteSchema = z.object({
   kind: z.enum(['venue', 'event', 'post', 'route', 'collection']),
   itemId: z.string().trim().min(1).max(100),
+  source: z.enum(['ios', 'android']).default('ios'),
 })
 
 function fieldFor(kind: z.infer<typeof favoriteSchema>['kind']) {
@@ -58,7 +60,11 @@ export async function POST(request: Request) {
   if (existing) return mobileSuccess({ id: existing.id, kind: parsed.data.kind, itemId: parsed.data.itemId, createdAt: existing.createdAt })
 
   try {
-    const created = await prisma.favorite.create({ data: { userId: principal.userId, [field]: parsed.data.itemId } as Prisma.FavoriteUncheckedCreateInput })
+    const created = await prisma.$transaction(async tx => {
+      const favorite = await tx.favorite.create({ data: { userId: principal.userId, [field]: parsed.data.itemId } as Prisma.FavoriteUncheckedCreateInput })
+      await recordSave(tx, favorite.id, parsed.data.kind, parsed.data.itemId, parsed.data.source)
+      return favorite
+    })
     return mobileSuccess({ id: created.id, kind: parsed.data.kind, itemId: parsed.data.itemId, createdAt: created.createdAt })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {

@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { trackDirections } from '@/lib/track-directions'
 import {
   CalendarDays, Edit, ExternalLink, Globe, Info, Link2, LogIn,
   ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star, Tag, Ticket, UserCircle2, DollarSign, Clock, Map
@@ -238,6 +239,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Dirección</p>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                  onClick={() => trackDirections('venue', venue.id)}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm font-semibold text-foreground hover:text-primary"
@@ -400,6 +402,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
             )}
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+              onClick={() => trackDirections('venue', venue.id)}
               target="_blank"
               rel="noreferrer"
               className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
@@ -498,6 +501,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
                     <p className="text-xs text-muted-foreground">Dirección</p>
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                      onClick={() => trackDirections('venue', venue.id)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-sm font-semibold text-foreground hover:text-primary"
