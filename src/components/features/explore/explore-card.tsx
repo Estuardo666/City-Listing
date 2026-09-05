@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { CalendarDays, MapPin, Phone, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatExploreEventDate } from './explore-date'
 import type { ExploreItem } from '@/types/explore'
 import { resolveIconEmoji } from './explore-map-panel'
 import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
@@ -123,10 +124,7 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
             {!isVenue && 'startDate' in item && (
               <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                 <CalendarDays className="h-3 w-3 text-coral/70" />
-                {new Date(item.startDate).toLocaleDateString('es-EC', {
-                  day: 'numeric',
-                  month: 'short',
-                })}
+                {formatExploreEventDate(item.startDate)}
               </span>
             )}
 

@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { CalendarDays, CheckSquare, MapPin, Square, X } from 'lucide-react'
 import { useMapThemeStyle } from '@/components/theme/use-map-theme-style'
 import { cn } from '@/lib/utils'
+import { formatExploreEventDate } from './explore-date'
 import type { ExploreMapMarker, ExploreItem, MapBounds, UserLocation } from '@/types/explore'
 
 type ExploreMapPanelProps = {
@@ -1232,7 +1233,7 @@ export function ExploreMapPanel({
                 {'startDate' in activeItem && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'hsl(var(--muted-foreground))', marginBottom: '4px' }}>
                     <CalendarDays style={{ width: '12px', height: '12px', flexShrink: 0 }} />
-                    {new Date(activeItem.startDate).toLocaleDateString('es-EC', { day: 'numeric', month: 'short' })}
+                    {formatExploreEventDate(activeItem.startDate)}
                   </div>
                 )}
 
