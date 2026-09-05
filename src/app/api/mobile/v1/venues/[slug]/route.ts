@@ -3,6 +3,8 @@ import { getVenueBySlug } from '@/lib/queries/venues'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
 import { openStatus, operatingHoursToRows, lojaNowParts, lojaDay } from '@/lib/loja-day'
 import { prisma } from '@/lib/prisma'
+import { isGoogleDataStale, googlePlaceUrl } from '@/lib/google/freshness'
+import { getBadgeInfo, getGoogleBadges } from '@/lib/badges'
 
 type MobileMenuCategory = {
   id: string
@@ -53,6 +55,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const principal = await getMobilePrincipal(request)
 
   const menuCategories = (venue as typeof venue & { menuCategories?: MobileMenuCategory[] }).menuCategories ?? []
+
+  // Same rule as the web detail page: Google caps cached Places content at 30
+  // days, so a stale row drops the rating, its count and the badges derived
+  // from them rather than showing numbers Google no longer backs.
+  const googleExpired = isGoogleDataStale((venue as any).googleLastSyncAt)
+  const googleRating = googleExpired ? null : ((venue as any).googleRating ?? null)
+  const googleReviewCount = googleExpired ? 0 : ((venue as any).googleReviewCount ?? 0)
+  const googlePlaceId = (venue as any).googlePlaceId ?? null
+  const googleBadges = getGoogleBadges({ googleRating, googleReviewCount }).map((type) => {
+    const info = getBadgeInfo(type)
+    return { type, label: info.label, icon: info.icon }
+  })
   const data = {
     id: venue.id,
     name: venue.name,
@@ -69,6 +83,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     priceRange: venue.priceRange,
     avgRating: venue.avgRating,
     reviewCount: venue.reviewCount,
+    // Google's own rating, shown in preference to the ViveLoja average when the
+    // place has one, exactly as the web detail page does. Attribution is
+    // mandatory whenever it is displayed, hence googleMapsUrl.
+    googleRating,
+    googleReviewCount,
+    googleBadges,
+    googleMapsUrl: googlePlaceId ? googlePlaceUrl(googlePlaceId) : null,
     verified: venue.verified,
     claimed: venue.claimed,
     isOwnedByMe: principal ? venue.userId === principal.userId : false,
