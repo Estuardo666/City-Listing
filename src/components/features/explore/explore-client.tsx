@@ -28,6 +28,8 @@ import type {
   UserLocation,
 } from '@/types/explore'
 import { PROXIMITY_STEPS } from '@/types/explore'
+import { toast } from 'sonner'
+import { requestUserLocation } from './user-geolocation'
 
 type Category = {
   id: string
@@ -206,20 +208,23 @@ export function ExploreClient({
     setMapBounds(bounds)
   }, [])
 
-  const handleRequestLocation = useCallback(() => {
-    if (!navigator.geolocation) return
+  const handleRequestLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      toast.error('Tu navegador no admite geolocalización.')
+      return
+    }
+
     setLocationLoading(true)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-        setUserLocation(loc)
-        setProximityRadius(PROXIMITY_STEPS[2]) // default 1km
-        setLocationLoading(false)
-        mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 14, duration: 800 })
-      },
-      () => setLocationLoading(false),
-      { enableHighAccuracy: true, timeout: 8000 }
-    )
+    try {
+      const loc = await requestUserLocation(navigator.geolocation)
+      setUserLocation(loc)
+      setProximityRadius(PROXIMITY_STEPS[2]) // default 1km
+      mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 14, duration: 800 })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No pudimos obtener tu ubicación.')
+    } finally {
+      setLocationLoading(false)
+    }
   }, [])
 
   const handleClearLocation = useCallback(() => {

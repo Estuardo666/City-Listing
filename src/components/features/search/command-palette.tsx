@@ -34,6 +34,7 @@ type SearchVenue = {
   name: string
   slug: string
   image: string | null
+  logo: string | null
   location: string
   venueCategories: { category: CategoryInfo }[]
 }
@@ -274,7 +275,8 @@ export function CommandPalette() {
                     return (
                       <ResultRow
                         key={v.id}
-                        image={v.image}
+                        image={v.logo ?? v.image}
+                        rounded
                         title={v.name}
                         meta={v.location}
                         categorySlug={v.venueCategories[0]?.category?.slug}
@@ -356,6 +358,7 @@ function ResultSection({
 
 function ResultRow({
   image,
+  rounded = false,
   title,
   meta,
   categorySlug,
@@ -366,6 +369,7 @@ function ResultRow({
   onClick,
 }: {
   image: string | null
+  rounded?: boolean
   title: string
   meta?: string
   categorySlug?: string
@@ -389,7 +393,12 @@ function ResultRow({
       )}
     >
       {/* Thumbnail */}
-      <div className="relative h-9 w-12 shrink-0 overflow-hidden rounded-lg bg-muted">
+      <div
+        className={cn(
+          'relative shrink-0 overflow-hidden bg-muted',
+          rounded ? 'h-9 w-9 rounded-full' : 'h-9 w-12 rounded-lg'
+        )}
+      >
         {hasValidImage && !imageError ? (
           <Image src={image!} alt={title} fill className="object-cover" sizes="48px" onError={() => setImageError(true)} />
         ) : (

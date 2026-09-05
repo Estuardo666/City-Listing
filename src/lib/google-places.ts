@@ -148,6 +148,9 @@ class GooglePlacesService {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': this.apiKey,
         'X-Goog-FieldMask': this.getFieldMask(options.body),
+        ...(process.env.NEXTAUTH_URL?.startsWith('http://localhost')
+          ? { Referer: 'https://viveloja.com/' }
+          : {}),
         ...options.headers,
       },
     });

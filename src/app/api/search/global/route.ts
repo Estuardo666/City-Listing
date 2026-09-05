@@ -57,6 +57,7 @@ async function searchInDatabase(query: string) {
         name: true,
         slug: true,
         image: true,
+        logo: true,
         location: true,
         venueCategories: { select: { category: { select: { name: true, slug: true, color: true } } } }
       },

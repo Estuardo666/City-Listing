@@ -378,7 +378,9 @@ class GooglePlacesImporter {
             googleReviewCount: place.userRatingCount ?? 0,
             googleLastSyncAt: now,
             sourceLastSync: now,
-            hoursLastSync: hours.length > 0 ? now : undefined,
+            // Always stamped: records when Google was last asked for hours,
+            // not whether it had any.
+            hoursLastSync: now,
           } as any,
         })
 
@@ -424,7 +426,7 @@ class GooglePlacesImporter {
         googleReviewCount: place.userRatingCount ?? 0,
         googleLastSyncAt: now,
         sourceLastSync: now,
-        hoursLastSync: hours.length > 0 ? now : null,
+        hoursLastSync: now,
       } as any,
     })
 

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { invalidateCache } from '@/lib/cache'
 import { googlePlacesService } from '@/lib/google-places'
 import { normalizeOpeningHours } from './google-places-importer'
+import { googleRefreshCutoff } from './freshness'
 
 export interface SyncResult {
   venueId: string
@@ -34,12 +35,28 @@ function normalizeWebsite(details: any): string | null {
 }
 
 class GoogleHoursSyncService {
-  async getVenuesForSync(limit: number = 100): Promise<Array<{ id: string; googlePlaceId: string | null; name: string }>> {
+  /**
+   * Rows due for a Google refresh, oldest first.
+   *
+   * Ordered by `googleLastSyncAt`, not `hoursLastSync`: this sync also rewrites
+   * rating, phone and website, so a venue whose hours happen to be fresh still
+   * has to come round before its Places content hits the 30-day cap.
+   *
+   * `staleOnly` restricts the batch to rows past the refresh cutoff — what the
+   * cron wants. Admin-triggered runs pass false to sweep everything.
+   */
+  async getVenuesForSync(
+    limit: number = 100,
+    staleOnly: boolean = false
+  ): Promise<Array<{ id: string; googlePlaceId: string | null; name: string }>> {
     return prisma.venue.findMany({
       where: {
         googlePlaceId: { not: null },
+        ...(staleOnly
+          ? { OR: [{ googleLastSyncAt: null }, { googleLastSyncAt: { lt: googleRefreshCutoff() } }] }
+          : {}),
       } as any,
-      orderBy: { hoursLastSync: 'asc' },
+      orderBy: { googleLastSyncAt: { sort: 'asc', nulls: 'first' } },
       take: limit,
       select: { id: true, googlePlaceId: true, name: true },
     })
@@ -68,7 +85,10 @@ class GoogleHoursSyncService {
           googleReviewCount,
           googleLastSyncAt: now,
           sourceLastSync: now,
-          hoursLastSync: hours.length > 0 ? now : undefined,
+          // Stamped even when Google returned no hours: the field records when
+          // we last asked, so a venue that simply has none stops being re-read
+          // on every run.
+          hoursLastSync: now,
         } as any,
       })
 
@@ -158,11 +178,12 @@ class GoogleHoursSyncService {
     maxRecords: number = 100,
     batchSize: number = 20,
     userId?: string,
-    jobId?: string
+    jobId?: string,
+    staleOnly: boolean = false
   ): Promise<RunResult> {
     const start = Date.now()
 
-    const venues = await this.getVenuesForSync(maxRecords)
+    const venues = await this.getVenuesForSync(maxRecords, staleOnly)
 
     if (venues.length === 0) {
       return { processed: 0, updated: 0, skipped: 0, errors: 0, elapsed: 0 }

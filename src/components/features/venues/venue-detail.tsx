@@ -29,6 +29,7 @@ import { ClaimVenueWizard } from '@/components/venue-claim/claim-venue-wizard'
 import { AnimatedModal } from '@/components/ui/animated-modal'
 import { GoogleRatingSection } from '@/components/features/venues/google-rating-section'
 import { getGoogleBadges, getBadgeInfo } from '@/lib/badges'
+import { isGoogleDataStale } from '@/lib/google/freshness'
 import { UberIcon } from '@/components/ui/uber-icon'
 import { generateUberLink } from '@/lib/transport/uber-link'
 import { formatDateTime } from '@/lib/utils'
@@ -73,6 +74,14 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
   const hasProducts = venue.products.length > 0
   const acceptsReservations = venue.reservationSettings?.acceptsReservations ?? false
   const isGastronomic = venue.venueCategories.some((vc) => GASTRONOMIC_CATEGORY_SLUGS.includes(vc.category.slug))
+
+  // Google caps cached Places content at 30 days. The nightly refresh normally
+  // keeps rows well inside that, so this only fires when sync has been down —
+  // in which case the rating, its count and the badges derived from them are
+  // dropped rather than shown stale.
+  const googleExpired = isGoogleDataStale((venue as any).googleLastSyncAt)
+  const googleRating = googleExpired ? null : ((venue as any).googleRating ?? null)
+  const googleReviewCount = googleExpired ? 0 : ((venue as any).googleReviewCount ?? 0)
 
   return (
     <article className="space-y-0">
@@ -123,10 +132,10 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
             </p>
             {/* Rating in hero */}
             {(() => {
-              const hasGoogle = (venue as any).googleRating != null && (venue as any).googleRating > 0
+              const hasGoogle = googleRating != null && googleRating > 0
               const hasViveLoja = venue.avgRating !== null && venue.reviewCount > 0
-              const showRating = hasGoogle ? (venue as any).googleRating : venue.avgRating
-              const showCount = hasGoogle ? (venue as any).googleReviewCount : venue.reviewCount
+              const showRating = hasGoogle ? googleRating : venue.avgRating
+              const showCount = hasGoogle ? googleReviewCount : venue.reviewCount
               const source = hasGoogle ? 'Google' : 'ViveLoja'
 
               if (!hasGoogle && !hasViveLoja) return null
@@ -191,15 +200,16 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
             </p>
           )}
           <GoogleRatingSection
-            googleRating={(venue as any).googleRating ?? null}
-            googleReviewCount={(venue as any).googleReviewCount ?? 0}
+            googleRating={googleRating}
+            googleReviewCount={googleReviewCount}
+            googlePlaceId={googleExpired ? null : ((venue as any).googlePlaceId ?? null)}
             avgRating={venue.avgRating}
             reviewCount={venue.reviewCount}
           />
           {(() => {
             const googleBadges = getGoogleBadges({
-              googleRating: (venue as any).googleRating ?? null,
-              googleReviewCount: (venue as any).googleReviewCount ?? 0,
+              googleRating,
+              googleReviewCount,
             })
             if (googleBadges.length === 0) return null
             return (

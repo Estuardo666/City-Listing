@@ -2,15 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-
-type Photo = {
-  photoUri: string
-  googleMapsUri: string
-  authors: Array<{ displayName: string; uri?: string; photoUri?: string }>
-}
+import { getGooglePhoto, invalidateGooglePhoto, type GooglePhoto as Photo } from '@/lib/google/photo-cache'
 
 /** Live display only: no persistent URL cache and no Next image optimizer. */
 export function GoogleVenuePhoto({ slug, name, large = false }: { slug: string; name: string; large?: boolean }) {
+  const size = large ? 'large' : 'small'
   const container = useRef<HTMLDivElement>(null)
   const [photo, setPhoto] = useState<Photo | null>(null)
   const [ready, setReady] = useState(false)
@@ -19,18 +15,16 @@ export function GoogleVenuePhoto({ slug, name, large = false }: { slug: string; 
   useEffect(() => {
     setPhoto(null)
     setReady(false)
-    const controller = new AbortController()
+    // The request is shared through the cache, so it cannot be aborted on
+    // unmount without cancelling it for other viewers. Drop the result instead.
+    let active = true
     let requested = false
     const load = async () => {
       if (requested) return
       requested = true
       try {
-        const response = await fetch(`/api/venues/${encodeURIComponent(slug)}/google-photo?size=${large ? 'large' : 'small'}`, {
-          cache: 'no-store', signal: controller.signal,
-        })
-        if (!response.ok) return
-        const data = await response.json()
-        if (!controller.signal.aborted) setPhoto(data.photo)
+        const result = await getGooglePhoto(slug, size)
+        if (active) setPhoto(result)
       } catch { /* Keep the existing fallback. */ }
     }
     const observer = new IntersectionObserver((entries) => {
@@ -40,8 +34,8 @@ export function GoogleVenuePhoto({ slug, name, large = false }: { slug: string; 
       }
     })
     if (container.current) observer.observe(container.current)
-    return () => { observer.disconnect(); controller.abort() }
-  }, [slug, large])
+    return () => { observer.disconnect(); active = false }
+  }, [slug, size])
 
   return (
     <div ref={container} className="pointer-events-none absolute inset-0" onClick={(event) => event.stopPropagation()}>
@@ -49,7 +43,8 @@ export function GoogleVenuePhoto({ slug, name, large = false }: { slug: string; 
         {/* Google serves the image directly; do not route it through /_next/image. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo.photoUri} alt={name} className={`h-full w-full object-cover ${ready ? '' : 'invisible'}`}
-          onLoad={() => setReady(true)} onError={() => { setPhoto(null); setReady(false) }} />
+          onLoad={() => setReady(true)}
+          onError={() => { invalidateGooglePhoto(slug, size); setPhoto(null); setReady(false) }} />
         {ready && <button type="button" translate="no"
           className="pointer-events-auto absolute bottom-1 right-1 z-20 whitespace-nowrap rounded bg-white px-1.5 py-1 font-sans text-xs font-normal not-italic tracking-normal text-[#1F1F1F] shadow"
           aria-label={`Ver foto de ${name} y atribución de Google Maps`}

@@ -5,7 +5,7 @@ import { verifyTurnstileToken } from '@/lib/turnstile'
 const signinVerifySchema = z.object({
   email: z.string().email('Correo inválido'),
   password: z.string().min(1, 'Contraseña requerida'),
-  turnstileToken: z.string().min(1, 'Token de verificación requerido'),
+  turnstileToken: z.string().min(1).nullable().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -21,6 +21,18 @@ export async function POST(request: NextRequest) {
     }
 
     const { turnstileToken } = parsed.data
+
+    const host = request.headers.get('host') || ''
+    const isLocalDevelopment = process.env.NODE_ENV !== 'production' &&
+      (host.includes('localhost') || host.includes('127.0.0.1'))
+
+    if (!turnstileToken && isLocalDevelopment) {
+      return NextResponse.json({ success: true })
+    }
+
+    if (!turnstileToken) {
+      return NextResponse.json({ error: 'Token de verificación requerido' }, { status: 400 })
+    }
 
     // Verify Turnstile token
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined

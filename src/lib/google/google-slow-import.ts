@@ -20,6 +20,39 @@ function buildSlug(name: string): string {
     .slice(0, 80)
 }
 
+async function resolveGastronomySubcategoryId(label: string): Promise<string | null> {
+  const normalized = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const mappings: Array<[string, string]> = [
+    ['restaurante especializado en pollo', 'Pollería'],
+    ['comida rápida', 'Comida Rápida'],
+    ['hamburgues', 'Hamburgueserías'],
+    ['pizzer', 'Pizzerías'],
+    ['marisquer', 'Mariscos'],
+    ['helader', 'Heladerías'],
+    ['panader', 'Panaderías'],
+    ['pasteler', 'Pastelerías'],
+    ['cafeter', 'Cafeterías'],
+    ['comida a domicilio', 'Delivery'],
+    ['comida para llevar', 'Take Away'],
+    ['restaurante italiano', 'Comida Italiana'],
+    ['restaurante', 'Restaurantes'],
+  ]
+  const match = mappings.find(([needle]) => normalized.includes(needle.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))
+  if (!match) return null
+
+  const category = await prisma.category.findUnique({ where: { slug: 'gastronomia' }, select: { id: true } })
+  if (!category) return null
+  const [name] = match.slice(1)
+  const slug = buildSlug(name)
+  const subcategory = await prisma.subcategory.upsert({
+    where: { slug },
+    update: {},
+    create: { name, slug, categoryId: category.id },
+    select: { id: true },
+  })
+  return subcategory.id
+}
+
 async function generateUniqueSlug(name: string): Promise<string> {
   const baseSlug = buildSlug(name)
   let candidate = baseSlug
@@ -263,7 +296,7 @@ class GoogleSlowImportService {
               googleReviewCount,
               googleLastSyncAt: now,
               sourceLastSync: now,
-              hoursLastSync: hours.length > 0 ? now : undefined,
+              hoursLastSync: now,
             } as any,
           })
 
@@ -303,6 +336,7 @@ class GoogleSlowImportService {
         resolvedCategoryIds = cats.map((c) => c.id)
       }
       const finalCategoryIds = categoryIds.length > 0 ? categoryIds : resolvedCategoryIds
+      const gastronomySubcategoryId = await resolveGastronomySubcategoryId(place.category)
 
       const venue = await prisma.venue.create({
         data: {
@@ -322,7 +356,7 @@ class GoogleSlowImportService {
           googleReviewCount,
           googleLastSyncAt: now,
           sourceLastSync: now,
-          hoursLastSync: hours.length > 0 ? now : null,
+          hoursLastSync: now,
         } as any,
       })
 
@@ -335,6 +369,12 @@ class GoogleSlowImportService {
       if (finalCategoryIds.length > 0) {
         await prisma.venueCategory.createMany({
           data: finalCategoryIds.map((categoryId) => ({ venueId: venue.id, categoryId })),
+        })
+      }
+
+      if (gastronomySubcategoryId) {
+        await prisma.venueSubcategory.create({
+          data: { venueId: venue.id, subcategoryId: gastronomySubcategoryId },
         })
       }
 

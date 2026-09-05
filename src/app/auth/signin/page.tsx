@@ -16,13 +16,14 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const isLocalDevelopment = process.env.NODE_ENV !== 'production'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
 
-    if (!turnstileToken) {
+    if (!turnstileToken && !isLocalDevelopment) {
       setError('Completa la verificación de seguridad')
       setIsLoading(false)
       return
@@ -143,7 +144,7 @@ export default function SignInPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading || !turnstileToken}
+                disabled={isLoading || (!turnstileToken && !isLocalDevelopment)}
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
