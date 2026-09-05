@@ -1501,3 +1501,28 @@ model AIProcessingLog {
   @@index([createdAt])
   @@index([watchEventId])
 }
+
+/// One row per carousel on the mobile/web home screen. `type` picks the
+/// resolver, `params` carries its typed options (validated by
+/// `src/schemas/home-section.schema.ts`), so the same type can be instantiated
+/// many times — "Comer", "Bares" and "Café" are three `venueList` rows with a
+/// different `categorySlug`.
+model HomeSection {
+  id          String    @id @default(cuid())
+  type        String
+  title       String
+  subtitle    String?
+  actionLabel String?
+  layout      String    @default("carousel")
+  params      Json      @default("{}")
+  order       Int       @default(0)
+  isActive    Boolean   @default(true)
+  /// all | ios | web — lets a section ship to the app before the website.
+  platform    String    @default("all")
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isActive, order])
+}

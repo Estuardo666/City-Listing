@@ -70,6 +70,7 @@ const MANAGE_NAV: NavItem[] = [
 ]
 
 const ADMIN_NAV: NavItem[] = [
+  { href: '/admin/home', label: 'Pantalla de inicio', icon: LayoutDashboard, adminOnly: true },
   { href: '/admin/rutas', label: 'Rutas turísticas', icon: Route, adminOnly: true },
   { href: '/dashboard/colecciones', label: 'Colecciones de locales', icon: Folder, adminOnly: true },
   { href: '/admin/eventos', label: 'Moderar Eventos', icon: ShieldCheck, adminOnly: true },

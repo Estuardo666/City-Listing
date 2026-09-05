@@ -239,7 +239,7 @@ paths:
   /home:
     get:
       tags: [Home]
-      summary: Load featured, latest, related and editorial home sections
+      summary: Load the server-driven home composition (plus the deprecated named sections)
       operationId: getMobileHome
       responses:
         "200":
@@ -1429,13 +1429,71 @@ components:
       properties:
         data: {}
         meta: { type: object, additionalProperties: true }
+    HomeItem:
+      type: object
+      description: One card of a home section, whatever kind of content produced it.
+      required: [kind, id, slug, title, deeplink]
+      properties:
+        kind:
+          type: string
+          enum: [venue, event, post, route, collection, promotion, category]
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        subtitle: { type: string, nullable: true }
+        imageUrl: { type: string, nullable: true }
+        badge:
+          type: string
+          nullable: true
+          description: Wording derived server-side (Nuevo, Con promocion, Ultimos dias...).
+        priceLabel: { type: string, nullable: true }
+        rating: { type: number, nullable: true }
+        reviewCount: { type: integer, nullable: true }
+        venueName: { type: string, nullable: true }
+        dateLabel: { type: string, nullable: true }
+        lat: { type: number, nullable: true }
+        lng: { type: number, nullable: true }
+        color: { type: string, nullable: true }
+        icon: { type: string, nullable: true }
+        deeplink: { type: string }
+    HomeSection:
+      type: object
+      description: >-
+        One configured carousel of the home screen. Order, titles, filters and
+        visibility come from the HomeSection table, so clients render whatever
+        they receive and skip types or layouts they do not know.
+      required: [id, type, title, layout, items]
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          enum: [hero, todayInLoja, categoryChips, venueList, eventList, ranked, collection, promotions, posts, routes, manual]
+        title: { type: string }
+        subtitle: { type: string, nullable: true }
+        actionLabel: { type: string, nullable: true }
+        layout:
+          type: string
+          enum: [hero, chips, carousel, ranked, grid, list]
+        deeplink: { type: string, nullable: true }
+        body: { type: string, nullable: true }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/HomeItem" }
     HomePayload:
       type: object
       description: Featured and editorial sections returned by the mobile home endpoint.
       required: [venues, events, featuredVenues, featuredEvents, latestVenues, relatedEvents, posts, promotions, categories]
       properties:
+        sections:
+          type: array
+          description: >-
+            Server-driven composition, in render order. Clients that support it
+            must prefer this over the named keys below, which are deprecated and
+            kept only for installed builds.
+          items: { $ref: "#/components/schemas/HomeSection" }
         venues:
           type: array
+          deprecated: true
           description: Backwards-compatible alias for featuredVenues.
           items: { $ref: "#/components/schemas/MobileVenue" }
         events:

@@ -3,6 +3,7 @@
 | Dominio | React existente | API móvil | Swift | Estado |
 |---|---|---|---|---|
 | Inicio | Consultas server-side y secciones Home | `/api/mobile/v1/home` | `Home` | CP3 |
+| Inicio configurable | Tabla `HomeSection` + `/admin/home` | `GET /home` (`sections`), `GET/POST /admin/home-sections`, `PATCH/DELETE /admin/home-sections/{id}`, `PATCH /admin/home-sections/reorder` | `HomeSectionView`, `HomeSectionsAdminView` | Fase 5 |
 | Explore | `/api/explore/search` + Mapbox | `/api/mobile/v1/explore` | `Explore` + MapKit | CP4 |
 | Auth | NextAuth y signup | `/api/mobile/v1/auth/*` | `Auth` + Keychain | CP1 |
 | Locales/eventos | páginas de detalle y consultas Prisma | `/api/mobile/v1/venues`, `/events` | `Venues`, `Events` | CP3–CP5 |

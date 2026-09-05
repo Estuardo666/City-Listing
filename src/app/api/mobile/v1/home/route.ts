@@ -4,6 +4,7 @@ import { getVenueCategories, getVenues } from '@/lib/queries/venues'
 import { mobileSuccess } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
 import { getPopularNow } from '@/lib/views'
+import { getResolvedHomeSections } from '@/lib/queries/home-sections'
 
 function mapVenues(venues: Awaited<ReturnType<typeof getVenues>>) {
   return venues.map(({ venueCategories, ...venue }) => ({
@@ -21,6 +22,10 @@ function mapEvents(events: Awaited<ReturnType<typeof getEvents>>) {
 
 export async function GET() {
   const now = new Date()
+  // The screen is server-driven now: `sections` is the ordered composition the
+  // admin configures. The legacy named keys below stay for builds already
+  // installed and are deprecated in docs/openapi-mobile-v1.yaml.
+  const sectionsPromise = getResolvedHomeSections('ios')
   const [allVenues, allEvents, categories, featuredPosts, promotions] = await Promise.all([
     // One bounded query feeds the featured and latest sections without
     // changing the ordering used by the React source of truth.
@@ -72,7 +77,10 @@ export async function GET() {
       .filter((venue): venue is (typeof allVenues)[number] => Boolean(venue)),
   )
 
+  const sections = await sectionsPromise
+
   return mobileSuccess({
+    sections,
     // `venues` and `events` remain the original featured aliases consumed by
     // older clients. The named sections make parity explicit for new clients.
     venues: mapVenues(featuredVenues),

@@ -25,6 +25,7 @@ import { HomePromoGridSkeleton } from '@/components/features/home/home-promo-gri
 import { HomeRelatedEventsSkeleton } from '@/components/features/home/home-related-events-skeleton'
 import { HomeBlogSkeleton } from '@/components/features/home/home-blog-skeleton'
 import { HomePersonalizedSection } from '@/components/features/home/home-personalized-section'
+import { HomeConfiguredSections } from '@/components/features/home/home-configured-sections'
 
 // Revalidate every 1 hour for ISR (Incremental Static Regeneration)
 export const revalidate = 3600
@@ -84,41 +85,49 @@ export default async function HomePage() {
         </Suspense>
 
         <div className="section-shell space-y-20 sm:space-y-24">
-          <TodayInLoja />
-          {/* Categories Grid with Suspense */}
-          <Suspense fallback={<HomeCategoriesGridSkeleton />}>
-            <HomeCategoriesGridSection />
-          </Suspense>
+          {/* Composition configured in /admin/home and shared with the app; the
+              fixed stack below is the fallback when nothing is configured. */}
+          <HomeConfiguredSections
+            fallback={
+              <>
+              <TodayInLoja />
+              {/* Categories Grid with Suspense */}
+              <Suspense fallback={<HomeCategoriesGridSkeleton />}>
+                <HomeCategoriesGridSection />
+              </Suspense>
 
-          {/* Featured Events with Suspense */}
-          <Suspense fallback={<HomeFeaturedEventsSkeleton />}>
-            <HomeFeaturedEventsSection />
-          </Suspense>
+              {/* Featured Events with Suspense */}
+              <Suspense fallback={<HomeFeaturedEventsSkeleton />}>
+                <HomeFeaturedEventsSection />
+              </Suspense>
 
-          {/* Latest Venues with Suspense */}
-          <Suspense fallback={<HomeLatestVenuesSkeleton />}>
-            <HomeLatestVenuesSection />
-          </Suspense>
+              {/* Latest Venues with Suspense */}
+              <Suspense fallback={<HomeLatestVenuesSkeleton />}>
+                <HomeLatestVenuesSection />
+              </Suspense>
 
-          {/* Featured Venues with Suspense */}
-          <Suspense fallback={<HomeFeaturedVenuesSkeleton />}>
-            <HomeFeaturedVenuesSection />
-          </Suspense>
+              {/* Featured Venues with Suspense */}
+              <Suspense fallback={<HomeFeaturedVenuesSkeleton />}>
+                <HomeFeaturedVenuesSection />
+              </Suspense>
 
-          {/* Promo Grid with Suspense */}
-          <Suspense fallback={<HomePromoGridSkeleton />}>
-            <HomePromoGridSection />
-          </Suspense>
+              {/* Promo Grid with Suspense */}
+              <Suspense fallback={<HomePromoGridSkeleton />}>
+                <HomePromoGridSection />
+              </Suspense>
 
-          {/* Related Events with Suspense */}
-          <Suspense fallback={<HomeRelatedEventsSkeleton />}>
-            <HomeRelatedEventsSection />
-          </Suspense>
+              {/* Related Events with Suspense */}
+              <Suspense fallback={<HomeRelatedEventsSkeleton />}>
+                <HomeRelatedEventsSection />
+              </Suspense>
 
-          {/* Blog Section with Suspense */}
-          <Suspense fallback={<HomeBlogSkeleton />}>
-            <HomeBlogSection />
-          </Suspense>
+              {/* Blog Section with Suspense */}
+              <Suspense fallback={<HomeBlogSkeleton />}>
+                <HomeBlogSection />
+              </Suspense>
+              </>
+            }
+          />
 
           {/* CTA final */}
           <section className="rounded-3xl border border-primary/20 bg-gradient-to-r from-primary/10 via-accent to-primary/5 px-6 py-10 sm:px-10 sm:py-14">
