@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
 import type { getTodayInLoja } from '@/lib/today'
 
 type Today = Awaited<ReturnType<typeof getTodayInLoja>>
@@ -60,7 +61,9 @@ export function TodayInLoja() {
             className={`group overflow-hidden rounded-2xl border border-border bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${item.kind === 'event' ? 'w-full shrink-0 snap-start' : ''}`}>
             <div className={`relative bg-muted ${item.kind === 'event' ? 'h-64 sm:h-96' : 'h-40'}`}>
               {item.image ? <Image src={item.image} alt="" fill sizes={item.kind === 'event' ? '90vw' : '(max-width: 640px) 45vw, 30vw'} className="object-cover" />
-                : <span className="flex h-full items-center justify-center text-sm text-muted-foreground">{item.kind === 'route' ? 'Recorre Loja' : 'Vive Loja'}</span>}
+                : <><span className="flex h-full items-center justify-center text-sm text-muted-foreground">{item.kind === 'route' ? 'Recorre Loja' : 'Vive Loja'}</span>
+                  {/* Imported venues carry no image of their own; Google has one. */}
+                  {item.kind === 'venue' && <GoogleVenuePhoto slug={item.slug} name={item.title} />}</>}
             </div>
             <div className="space-y-1 p-4"><p className={`font-semibold group-hover:underline ${item.kind === 'event' ? 'text-2xl sm:text-3xl' : ''}`}>{item.title}</p>
               {item.subtitle && <p className="line-clamp-2 text-sm text-muted-foreground">{item.subtitle}</p>}

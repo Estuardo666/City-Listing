@@ -25,6 +25,7 @@ export const homeSectionTypeSchema = z.enum([
   'todayInLoja',
   'categoryChips',
   'venueList',
+  'openNow',
   'eventList',
   'ranked',
   'collection',
@@ -68,6 +69,14 @@ export const homeSectionParamsByType = {
     verified: z.boolean().optional(),
     hasPromotion: z.boolean().optional(),
     sort: venueSortSchema.default('recent'),
+    limit,
+  }),
+  /**
+   * Venues whose door is open right now. `categorySlugs` is capped at ten: it
+   * is a curated shortlist for one carousel, not a filter over the catalogue.
+   */
+  openNow: z.object({
+    categorySlugs: z.array(slug).max(10).optional(),
     limit,
   }),
   eventList: z.object({
@@ -114,6 +123,7 @@ export const defaultLayoutForType: Record<HomeSectionType, HomeSectionLayout> = 
   todayInLoja: 'list',
   categoryChips: 'chips',
   venueList: 'carousel',
+  openNow: 'carousel',
   eventList: 'carousel',
   ranked: 'ranked',
   collection: 'carousel',
@@ -156,6 +166,7 @@ export const homeSectionInputSchema = z
     sectionVariant('todayInLoja'),
     sectionVariant('categoryChips'),
     sectionVariant('venueList'),
+    sectionVariant('openNow'),
     sectionVariant('eventList'),
     sectionVariant('ranked'),
     sectionVariant('collection'),

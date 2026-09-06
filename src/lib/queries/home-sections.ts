@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { invalidateCache, withCache } from '@/lib/cache'
 import { getPopularNow } from '@/lib/views'
-import { lojaDay } from '@/lib/loja-day'
+import { isOpenInLoja, lojaDay, lojaNowParts } from '@/lib/loja-day'
 import {
   parseSectionParams,
   type HomeSectionLayout,
@@ -211,6 +211,38 @@ async function resolveVenueList(params: HomeSectionParams['venueList'], now: Dat
     select: venueCardSelect,
   })
   return venues.map((venue) => mapVenueCard(venue, now))
+}
+
+/**
+ * Venues whose door is open right now, optionally narrowed to a curated set of
+ * categories. Opening hours cannot be filtered in SQL — a window can cross
+ * midnight — so the query narrows to the venues with hours for today or
+ * yesterday and `isOpenInLoja` decides, the same rule the "Hoy en Loja" block
+ * and the "abierto ahora" filter already use.
+ */
+async function resolveOpenNow(params: HomeSectionParams['openNow'], now: Date) {
+  const { weekday, prevWeekday } = lojaNowParts(now)
+  const where: Prisma.VenueWhereInput = {
+    status: 'APPROVED',
+    isActive: true,
+    businessHours: { some: { isClosed: false, dayOfWeek: { in: [weekday, prevWeekday] } } },
+  }
+  if (params.categorySlugs?.length) {
+    where.venueCategories = { some: { category: { slug: { in: params.categorySlugs } } } }
+  }
+
+  const candidates = await prisma.venue.findMany({
+    where,
+    orderBy: [{ featured: 'desc' }, { avgRating: 'desc' }, { id: 'asc' }],
+    // Bounded: the filter below discards the ones that are closed right now.
+    take: 200,
+    select: { ...venueCardSelect, businessHours: true },
+  })
+
+  return candidates
+    .filter((venue) => isOpenInLoja(venue.businessHours, now))
+    .slice(0, params.limit)
+    .map((venue) => mapVenueCard(venue, now))
 }
 
 function eventDateWindow(range: HomeSectionParams['eventList']['dateRange'], now: Date) {
@@ -564,6 +596,8 @@ function sectionDeeplink(type: HomeSectionType, params: unknown): string | null 
       const slug = (params as HomeSectionParams['venueList']).categorySlug
       return slug ? `/${slug}` : '/locales'
     }
+    case 'openNow':
+      return '/explorar'
     case 'eventList':
       return '/eventos'
     case 'ranked':
@@ -606,6 +640,9 @@ export async function resolveHomeSection(
       break
     case 'venueList':
       items = await resolveVenueList(params as HomeSectionParams['venueList'], now)
+      break
+    case 'openNow':
+      items = await resolveOpenNow(params as HomeSectionParams['openNow'], now)
       break
     case 'eventList':
       items = await resolveEventList(params as HomeSectionParams['eventList'], now)

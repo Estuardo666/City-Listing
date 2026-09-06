@@ -49,6 +49,7 @@ const TYPE_LABELS: Record<HomeSectionType, string> = {
   todayInLoja: 'Hoy en Loja',
   categoryChips: 'Chips de categoria',
   venueList: 'Locales',
+  openNow: 'Abiertos ahora',
   eventList: 'Eventos',
   ranked: 'Top / Ranking',
   collection: 'Coleccion',
@@ -192,6 +193,22 @@ export function HomeSectionsManager({ sections, categories, collections }: Props
       isNew ? 'Seccion creada' : 'Seccion guardada',
     )
     setDraft(null)
+  }
+
+  /** Curated shortlist of categories, capped by the schema at ten. */
+  function toggleCategorySlug(slugValue: string, max: number) {
+    setDraft((current) => {
+      if (!current) return current
+      const selected = Array.isArray(current.params.categorySlugs)
+        ? (current.params.categorySlugs as string[])
+        : []
+      const next = selected.includes(slugValue)
+        ? selected.filter((value) => value !== slugValue)
+        : selected.length >= max
+          ? selected
+          : [...selected, slugValue]
+      return { ...current, params: { ...current.params, categorySlugs: next.length ? next : undefined } }
+    })
   }
 
   function patchParams(patch: Record<string, unknown>) {
@@ -492,6 +509,35 @@ export function HomeSectionsManager({ sections, categories, collections }: Props
                     Con promocion activa
                   </label>
                 </>
+              )}
+
+              {draft.type === 'openNow' && (
+                <div className="space-y-2 sm:col-span-2">
+                  <span className="text-sm text-muted-foreground">
+                    Categorias (maximo 10; vacio = todas)
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {venueCategories.map((category) => {
+                      const selected = (
+                        (draft.params.categorySlugs as string[] | undefined) ?? []
+                      ).includes(category.slug)
+                      return (
+                        <button
+                          key={category.slug}
+                          type="button"
+                          onClick={() => toggleCategorySlug(category.slug, 10)}
+                          className={`rounded-full border px-3 py-1.5 text-sm ${
+                            selected
+                              ? 'border-foreground bg-foreground text-background'
+                              : 'border-border/60 text-muted-foreground'
+                          }`}
+                        >
+                          {category.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
 
               {draft.type === 'eventList' && (

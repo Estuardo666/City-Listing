@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
+import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
 import type { HomeItemDTO, ResolvedHomeSection } from '@/lib/queries/home-sections'
 
 /**
@@ -29,13 +30,18 @@ function ItemImage({ item, sizes }: { item: HomeItemDTO; sizes: string }) {
       />
     )
   }
+  // Most imported venues have no image of their own; their photo comes from
+  // Google, exactly like on the venue pages and in the app.
   return (
-    <CategoryGradientBg
-      name={item.title}
-      showInitials
-      className="h-full w-full"
-      initialsClassName="text-3xl"
-    />
+    <>
+      <CategoryGradientBg
+        name={item.title}
+        showInitials
+        className="h-full w-full"
+        initialsClassName="text-3xl"
+      />
+      {item.kind === 'venue' && <GoogleVenuePhoto slug={item.slug} name={item.title} />}
+    </>
   )
 }
 

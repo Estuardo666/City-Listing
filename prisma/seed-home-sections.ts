@@ -25,7 +25,20 @@ const SECTIONS: Array<{
     layout: 'hero',
     params: { ctaLabel: 'Explorar el mapa', ctaDeeplink: '/explorar' },
   },
-  { type: 'todayInLoja', title: 'Hoy en Loja', layout: 'list', params: {} },
+  {
+    type: 'openNow',
+    title: 'Abiertos ahora',
+    actionLabel: 'Ver todo',
+    layout: 'carousel',
+    params: { limit: 12 },
+  },
+  {
+    type: 'eventList',
+    title: 'Hoy en Loja',
+    actionLabel: 'Ver todo',
+    layout: 'carousel',
+    params: { dateRange: 'today', sort: 'soon', limit: 12 },
+  },
   { type: 'categoryChips', title: 'Categorías', actionLabel: 'Ver todo', layout: 'chips', params: { limit: 12 } },
   {
     type: 'venueList',
