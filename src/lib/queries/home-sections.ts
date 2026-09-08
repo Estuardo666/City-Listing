@@ -1,5 +1,5 @@
 import 'server-only'
-import { mobileOpenNowEligibility } from '@/lib/mobile-open-now'
+import { mobileOpenNowDefaultExclusions, mobileOpenNowEligibility } from '@/lib/mobile-open-now'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { invalidateCache, withCache } from '@/lib/cache'
@@ -260,14 +260,18 @@ async function resolveMobileOpenNow(now: Date): Promise<HomeItemDTO[]> {
       venueCategories: { select: { category: { select: { slug: true, name: true } } } },
     },
   })
-  return venues.flatMap(venue => {
+  const eligible = venues.flatMap(venue => {
     const categories = venue.venueCategories.map(value => value.category)
     const eligibility = mobileOpenNowEligibility(venue.businessHours, categories, now,
       venue.specialHours.find(value => value.date.toISOString().slice(0, 10) === date),
       venue.specialHours.find(value => value.date.toISOString().slice(0, 10) === prevDate))
-    return eligibility.include ? [{ ...mapVenueCard(venue, now), categories,
-      excludedFromOpenNowDefault: eligibility.excludedFromDefault }] : []
+    return eligibility.include ? [{ item: { ...mapVenueCard(venue, now), categories }, eligibility }] : []
   })
+  const exclusions = mobileOpenNowDefaultExclusions(eligible.map(value => value.eligibility))
+  return eligible.map((value, index) => ({
+    ...value.item,
+    excludedFromOpenNowDefault: exclusions[index],
+  }))
 }
 
 function eventDateWindow(range: HomeSectionParams['eventList']['dateRange'], now: Date) {
