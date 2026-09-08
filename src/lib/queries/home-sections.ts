@@ -1,4 +1,5 @@
 import 'server-only'
+import { mobileOpenNowEligibility } from '@/lib/mobile-open-now'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { invalidateCache, withCache } from '@/lib/cache'
@@ -40,6 +41,8 @@ export type HomeItemDTO = {
   lng?: number | null
   color?: string | null
   icon?: string | null
+  categories?: { slug: string; name: string }[]
+  excludedFromOpenNowDefault?: boolean
   deeplink: string
 }
 
@@ -243,6 +246,28 @@ async function resolveOpenNow(params: HomeSectionParams['openNow'], now: Date) {
     .filter((venue) => isOpenInLoja(venue.businessHours, now))
     .slice(0, params.limit)
     .map((venue) => mapVenueCard(venue, now))
+}
+
+async function resolveMobileOpenNow(now: Date): Promise<HomeItemDTO[]> {
+  const { date, prevDate } = lojaNowParts(now)
+  const venues = await prisma.venue.findMany({
+    where: { status: 'APPROVED', isActive: true },
+    orderBy: [{ featured: 'desc' }, { avgRating: 'desc' }, { id: 'asc' }],
+    select: {
+      ...venueCardSelect,
+      businessHours: true,
+      specialHours: { where: { date: { in: [new Date(`${date}T00:00:00Z`), new Date(`${prevDate}T00:00:00Z`)] } } },
+      venueCategories: { select: { category: { select: { slug: true, name: true } } } },
+    },
+  })
+  return venues.flatMap(venue => {
+    const categories = venue.venueCategories.map(value => value.category)
+    const eligibility = mobileOpenNowEligibility(venue.businessHours, categories, now,
+      venue.specialHours.find(value => value.date.toISOString().slice(0, 10) === date),
+      venue.specialHours.find(value => value.date.toISOString().slice(0, 10) === prevDate))
+    return eligibility.include ? [{ ...mapVenueCard(venue, now), categories,
+      excludedFromOpenNowDefault: eligibility.excludedFromDefault }] : []
+  })
 }
 
 function eventDateWindow(range: HomeSectionParams['eventList']['dateRange'], now: Date) {
@@ -620,6 +645,7 @@ function sectionDeeplink(type: HomeSectionType, params: unknown): string | null 
 export async function resolveHomeSection(
   row: HomeSectionRow,
   now = new Date(),
+  platform: Exclude<HomeSectionPlatform, 'all'> = 'web',
 ): Promise<ResolvedHomeSection | null> {
   const type = row.type as HomeSectionType
   const params = parseSectionParams(type, row.params)
@@ -642,7 +668,7 @@ export async function resolveHomeSection(
       items = await resolveVenueList(params as HomeSectionParams['venueList'], now)
       break
     case 'openNow':
-      items = await resolveOpenNow(params as HomeSectionParams['openNow'], now)
+      items = platform === 'ios' ? await resolveMobileOpenNow(now) : await resolveOpenNow(params as HomeSectionParams['openNow'], now)
       break
     case 'eventList':
       items = await resolveEventList(params as HomeSectionParams['eventList'], now)
@@ -708,7 +734,7 @@ export async function getResolvedHomeSections(
         console.error('[home-sections] no se pudieron leer las secciones', error)
         return []
       }
-      const resolved = await Promise.all(rows.map((row) => resolveHomeSection(row, now)))
+      const resolved = await Promise.all(rows.map((row) => resolveHomeSection(row, now, platform)))
       return resolved.filter(
         (section): section is ResolvedHomeSection =>
           section !== null &&
