@@ -113,7 +113,31 @@ function CategoryChip({ item }: { item: HomeItemDTO }) {
   )
 }
 
+const OPEN_NOW_CARD_LIMIT = 12
+
+function openNowCategories(items: HomeItemDTO[]) {
+  const seen = new Set<string>()
+  return items
+    .flatMap((item) => item.categories ?? [])
+    .filter((category) => {
+      if (seen.has(category.slug)) return false
+      seen.add(category.slug)
+      return true
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+}
+
 export function HomeConfiguredSection({ section }: { section: ResolvedHomeSection }) {
+  const [selectedOpenCategory, setSelectedOpenCategory] = useState<string | null>(null)
+  const isOpenNow = section.type === 'openNow'
+  const categories = isOpenNow ? openNowCategories(section.items) : []
+  const filteredItems = isOpenNow
+    ? section.items.filter((item) => selectedOpenCategory
+      ? item.categories?.some((category) => category.slug === selectedOpenCategory) === true
+      : item.excludedFromOpenNowDefault !== true)
+    : section.items
+  const visibleItems = isOpenNow ? filteredItems.slice(0, OPEN_NOW_CARD_LIMIT) : filteredItems
+
   if (section.layout === 'hero') {
     return (
       <section className="rounded-3xl border border-primary/20 bg-gradient-to-r from-primary/10 via-accent to-primary/5 px-6 py-10 sm:px-10 sm:py-14">
@@ -159,6 +183,43 @@ export function HomeConfiguredSection({ section }: { section: ResolvedHomeSectio
   return (
     <section className="space-y-6">
       {header}
+      {isOpenNow && categories.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar abiertos ahora">
+          <button
+            type="button"
+            aria-pressed={selectedOpenCategory === null}
+            onClick={() => setSelectedOpenCategory(null)}
+            className={`inline-flex shrink-0 items-center rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+              selectedOpenCategory === null
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-card text-foreground hover:bg-accent'
+            }`}
+          >
+            Todos
+          </button>
+          {categories.map((category) => {
+            const selected = selectedOpenCategory === category.slug
+            return (
+              <button
+                key={category.slug}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setSelectedOpenCategory(selected ? null : category.slug)}
+                className={`inline-flex shrink-0 items-center rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                  selected
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border bg-card text-foreground hover:bg-accent'
+                }`}
+              >
+                {category.name}
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {isOpenNow && visibleItems.length === 0 && (
+        <p className="text-sm text-muted-foreground">No hay locales disponibles en esta categoría ahora.</p>
+      )}
       {section.layout === 'chips' && (
         <div className="flex gap-3 overflow-x-auto pb-2">
           {section.items.map((item) => (
@@ -168,14 +229,14 @@ export function HomeConfiguredSection({ section }: { section: ResolvedHomeSectio
       )}
       {section.layout === 'list' && (
         <div className="grid gap-3 sm:grid-cols-2">
-          {section.items.map((item) => (
+          {visibleItems.map((item) => (
             <ItemRow key={`${item.kind}:${item.id}`} item={item} />
           ))}
         </div>
       )}
       {section.layout === 'grid' && (
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
-          {section.items.map((item) => (
+          {visibleItems.map((item) => (
             <div key={`${item.kind}:${item.id}`} className="w-full [&>a]:w-full">
               <ItemCard item={item} />
             </div>
@@ -184,7 +245,7 @@ export function HomeConfiguredSection({ section }: { section: ResolvedHomeSectio
       )}
       {(section.layout === 'carousel' || section.layout === 'ranked') && (
         <div className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2">
-          {section.items.map((item, index) => (
+          {visibleItems.map((item, index) => (
             <div key={`${item.kind}:${item.id}`} className="snap-start">
               <ItemCard item={item} rank={section.layout === 'ranked' ? index + 1 : undefined} />
             </div>

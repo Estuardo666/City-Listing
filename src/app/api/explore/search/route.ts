@@ -144,7 +144,11 @@ function buildOpenNowFilter(specialsByVenue: Map<string, SpecialEntry>, now = ne
   return {
     OR: [
       { AND: [regular, { id: { notIn: overriddenIds } }] },
-      ...(openBySpecialIds.length > 0 ? [{ id: { in: openBySpecialIds } }] : []),
+      // A special opening can override a regular schedule, but it must not
+      // create a schedule for a venue that has no business-hours rows at all.
+      ...(openBySpecialIds.length > 0
+        ? [{ id: { in: openBySpecialIds }, businessHours: { some: {} } }]
+        : []),
     ],
   }
 }
@@ -242,6 +246,7 @@ export async function GET(request: NextRequest) {
         const venueQuery = type === 'events' ? Promise.resolve({ items: [] as any[], consumed: 0, hasMore: false }) : (async () => {
           const where: Prisma.VenueWhereInput = {
             status: 'APPROVED',
+            isActive: true,
             ...(openNowFilter && { AND: [openNowFilter] }),
             ...(textFilter && {
               OR: [

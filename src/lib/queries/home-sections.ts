@@ -8,7 +8,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { invalidateCache, withCache } from '@/lib/cache'
 import { getPopularNow } from '@/lib/views'
-import { isOpenInLoja, lojaDay, lojaNowParts } from '@/lib/loja-day'
+import { lojaDay, lojaNowParts } from '@/lib/loja-day'
 import {
   parseSectionParams,
   type HomeSectionLayout,
@@ -221,38 +221,11 @@ async function resolveVenueList(params: HomeSectionParams['venueList'], now: Dat
 }
 
 /**
- * Venues whose door is open right now, optionally narrowed to a curated set of
- * categories. Opening hours cannot be filtered in SQL — a window can cross
- * midnight — so the query narrows to the venues with hours for today or
- * yesterday and `isOpenInLoja` decides, the same rule the "Hoy en Loja" block
- * and the "abierto ahora" filter already use.
+ * Both clients use the same open-now eligibility rules. The web renderer
+ * applies its display limit after category filtering so a fallback category
+ * remains selectable even when standard venues are present.
  */
-async function resolveOpenNow(params: HomeSectionParams['openNow'], now: Date) {
-  const { weekday, prevWeekday } = lojaNowParts(now)
-  const where: Prisma.VenueWhereInput = {
-    status: 'APPROVED',
-    isActive: true,
-    businessHours: { some: { isClosed: false, dayOfWeek: { in: [weekday, prevWeekday] } } },
-  }
-  if (params.categorySlugs?.length) {
-    where.venueCategories = { some: { category: { slug: { in: params.categorySlugs } } } }
-  }
-
-  const candidates = await prisma.venue.findMany({
-    where,
-    orderBy: [{ featured: 'desc' }, { avgRating: 'desc' }, { id: 'asc' }],
-    // Bounded: the filter below discards the ones that are closed right now.
-    take: 200,
-    select: { ...venueCardSelect, businessHours: true },
-  })
-
-  return candidates
-    .filter((venue) => isOpenInLoja(venue.businessHours, now))
-    .slice(0, params.limit)
-    .map((venue) => mapVenueCard(venue, now))
-}
-
-async function resolveMobileOpenNow(now: Date): Promise<HomeItemDTO[]> {
+export async function resolveMobileOpenNow(now: Date): Promise<HomeItemDTO[]> {
   const { date, prevDate } = lojaNowParts(now)
   const venues = await prisma.venue.findMany({
     where: { status: 'APPROVED', isActive: true },
@@ -279,6 +252,13 @@ async function resolveMobileOpenNow(now: Date): Promise<HomeItemDTO[]> {
     ...value.item,
     excludedFromOpenNowDefault: exclusions[index],
   }))
+}
+
+async function resolveOpenNow(params: HomeSectionParams['openNow'], now: Date) {
+  const items = await resolveMobileOpenNow(now)
+  if (!params.categorySlugs?.length) return items
+  const selected = new Set(params.categorySlugs)
+  return items.filter((item) => item.categories?.some((category) => selected.has(category.slug)) === true)
 }
 
 function eventDateWindow(range: HomeSectionParams['eventList']['dateRange'], now: Date) {
