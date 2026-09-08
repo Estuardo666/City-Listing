@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  mobileOpenNowCategories as categoriesForOpenNow,
   mobileOpenNowDefaultExclusions as defaultExclusions,
   mobileOpenNowEligibility as eligible,
 } from '../src/lib/mobile-open-now'
@@ -10,6 +11,7 @@ const allDay = [{ ...regular[0], openTime: '00:00', closeTime: '00:00' }]
 test('regular businesses require known, non-24-hour opening hours', () => {
   assert.equal(eligible(regular, [], now).include, true)
   assert.equal(eligible([], [], now).include, false)
+  assert.equal(eligible([], [], now, { isClosed: false, openTime: '12:00', closeTime: '22:00' }).include, false)
   assert.equal(eligible(allDay, [], now).include, false)
   assert.equal(eligible([{ ...regular[0], isClosed: true }], [], now).include, false)
 })
@@ -35,6 +37,20 @@ test('a mixed-category venue counts as standard', () => {
   const mixed = eligible(regular, [{ slug: 'hoteles' }, { slug: 'restaurantes' }], now)
   assert.equal(mixed.excludedFromDefault, false)
   assert.deepEqual(defaultExclusions([mixed]), [false])
+})
+test('repairs imported lodging and health rows mislabeled as gastronomy', () => {
+  assert.deepEqual(
+    categoriesForOpenNow([{ slug: 'gastronomia', name: 'Gastronomía' }], { name: 'Hotel Podocarpus Loja', slug: 'hotel-podocarpus-loja' }),
+    [{ slug: 'alojamiento', name: 'Alojamiento' }],
+  )
+  assert.deepEqual(
+    categoriesForOpenNow([{ slug: 'gastronomia', name: 'Gastronomía' }], { name: 'Total Flex Gym', slug: 'total-flex-gym' }),
+    [{ slug: 'salud-bienestar', name: 'Salud y Bienestar' }],
+  )
+  assert.deepEqual(
+    categoriesForOpenNow([{ slug: 'gastronomia', name: 'Gastronomía' }], { name: 'Origen Restaurant', slug: 'origen-restaurant' }),
+    [{ slug: 'gastronomia', name: 'Gastronomía' }],
+  )
 })
 test('overnight windows and special closures use Loja time', () => {
   const overnight = [{ dayOfWeek: 0, openTime: '22:00', closeTime: '02:00', isClosed: false }]
