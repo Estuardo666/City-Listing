@@ -16,7 +16,7 @@ import type { HomeItemDTO, ResolvedHomeSection } from '@/lib/queries/home-sectio
  * both surfaces read the same resolved payload.
  */
 
-function ItemImage({ item, sizes }: { item: HomeItemDTO; sizes: string }) {
+function ItemImage({ item, sizes, onUnavailable }: { item: HomeItemDTO; sizes: string; onUnavailable?: () => void }) {
   const [failed, setFailed] = useState(false)
   if (item.imageUrl && !failed) {
     return (
@@ -26,10 +26,14 @@ function ItemImage({ item, sizes }: { item: HomeItemDTO; sizes: string }) {
         fill
         sizes={sizes}
         className="object-cover transition-transform duration-500 group-hover:scale-105"
-        onError={() => setFailed(true)}
+        onError={() => {
+          setFailed(true)
+          if (item.kind === 'event') onUnavailable?.()
+        }}
       />
     )
   }
+  if (item.kind === 'event') return null
   // Most imported venues have no image of their own; their photo comes from
   // Google, exactly like on the venue pages and in the app.
   return (
@@ -56,10 +60,12 @@ function metaLine(item: HomeItemDTO) {
 
 function ItemCard({ item, rank }: { item: HomeItemDTO; rank?: number }) {
   const meta = metaLine(item)
+  const [eventImageUnavailable, setEventImageUnavailable] = useState(item.kind === 'event' && !item.imageUrl)
+  const showArtwork = item.kind !== 'event' || !eventImageUnavailable
   return (
     <Link href={item.deeplink} className="group block w-64 shrink-0 space-y-3">
-      <div className="relative aspect-square overflow-hidden rounded-2xl bg-accent">
-        <ItemImage item={item} sizes="256px" />
+      {showArtwork && <div className="relative aspect-square overflow-hidden rounded-2xl bg-accent">
+        <ItemImage item={item} sizes="256px" onUnavailable={() => setEventImageUnavailable(true)} />
         {item.badge && (
           <span className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground">
             {item.badge}
@@ -73,7 +79,7 @@ function ItemCard({ item, rank }: { item: HomeItemDTO; rank?: number }) {
             {rank}
           </span>
         )}
-      </div>
+      </div>}
       <div className="space-y-1">
         <p className="line-clamp-2 text-sm font-medium text-foreground">{item.title}</p>
         {meta && <p className="line-clamp-1 text-xs text-muted-foreground">{meta}</p>}
@@ -84,14 +90,16 @@ function ItemCard({ item, rank }: { item: HomeItemDTO; rank?: number }) {
 }
 
 function ItemRow({ item }: { item: HomeItemDTO }) {
+  const [eventImageUnavailable, setEventImageUnavailable] = useState(item.kind === 'event' && !item.imageUrl)
+  const showArtwork = item.kind !== 'event' || !eventImageUnavailable
   return (
     <Link
       href={item.deeplink}
       className="group flex gap-4 rounded-2xl border border-border/50 bg-card p-4 transition-colors hover:bg-accent/40"
     >
-      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-accent">
-        <ItemImage item={item} sizes="80px" />
-      </div>
+      {showArtwork && <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-accent">
+        <ItemImage item={item} sizes="80px" onUnavailable={() => setEventImageUnavailable(true)} />
+      </div>}
       <div className="min-w-0 space-y-1">
         <p className="line-clamp-2 text-sm font-medium text-foreground">{item.title}</p>
         {item.subtitle && <p className="line-clamp-2 text-xs text-muted-foreground">{item.subtitle}</p>}
@@ -244,9 +252,9 @@ export function HomeConfiguredSection({ section }: { section: ResolvedHomeSectio
         </div>
       )}
       {(section.layout === 'carousel' || section.layout === 'ranked') && (
-        <div className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2">
+        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:gap-5">
           {visibleItems.map((item, index) => (
-            <div key={`${item.kind}:${item.id}`} className="snap-start">
+            <div key={`${item.kind}:${item.id}`} className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start [&>a]:w-full sm:w-auto sm:[&>a]:w-64">
               <ItemCard item={item} rank={section.layout === 'ranked' ? index + 1 : undefined} />
             </div>
           ))}

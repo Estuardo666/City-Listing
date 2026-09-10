@@ -58,14 +58,15 @@ export function TodayInLoja() {
             aria-label={section.title} tabIndex={section.items === data.events ? 0 : undefined}
             className={section.items === data.events ? 'flex snap-x snap-mandatory overflow-x-auto rounded-2xl' : 'grid grid-cols-2 gap-4 lg:grid-cols-3'}>{section.items.map(item => <Link key={item.id}
             href={`/${paths[item.kind]}/${encodeURIComponent(item.slug)}`}
-            className={`group overflow-hidden rounded-2xl border border-border bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${item.kind === 'event' ? 'w-full shrink-0 snap-start' : ''}`}>
-            <div className={`relative bg-muted ${item.kind === 'event' ? 'h-64 sm:h-96' : 'h-40'}`}>
-              {item.image ? <Image src={item.image} alt="" fill sizes={item.kind === 'event' ? '90vw' : '(max-width: 640px) 45vw, 30vw'} className="object-cover" />
+            className={`group overflow-hidden rounded-2xl border border-border bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${item.kind === 'event' ? 'w-[calc(50%-0.375rem)] shrink-0 snap-start' : ''}`}>
+            {(item.kind !== 'event' || item.image) && <div className={`relative bg-muted ${item.kind === 'event' ? 'h-40 sm:h-96' : 'h-40'}`}>
+              {item.image ? <Image src={item.image} alt="" fill sizes={item.kind === 'event' ? '45vw' : '(max-width: 640px) 45vw, 30vw'} className="object-cover"
+                onError={(event) => { if (item.kind === 'event') event.currentTarget.parentElement?.classList.add('hidden') }} />
                 : <><span className="flex h-full items-center justify-center text-sm text-muted-foreground">{item.kind === 'route' ? 'Recorre Loja' : 'Vive Loja'}</span>
                   {/* Imported venues carry no image of their own; Google has one. */}
                   {item.kind === 'venue' && <GoogleVenuePhoto slug={item.slug} name={item.title} />}</>}
-            </div>
-            <div className="space-y-1 p-4"><p className={`font-semibold group-hover:underline ${item.kind === 'event' ? 'text-2xl sm:text-3xl' : ''}`}>{item.title}</p>
+            </div>}
+            <div className="space-y-1 p-3 sm:p-4"><p className={`font-semibold group-hover:underline ${item.kind === 'event' ? 'text-base sm:text-3xl' : ''}`}>{item.title}</p>
               {item.subtitle && <p className="line-clamp-2 text-sm text-muted-foreground">{item.subtitle}</p>}
               {'startDate' in item && <p className="text-sm">{new Intl.DateTimeFormat('es-EC', { timeZone: 'America/Guayaquil', hour: '2-digit', minute: '2-digit' }).format(new Date(item.startDate))}
                 {' · '}{item.price === 0 ? 'Gratis' : item.price != null ? `$${item.price}` : 'Consultar precio'}</p>}

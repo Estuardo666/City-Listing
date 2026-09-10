@@ -86,7 +86,7 @@ export function HomeLatestVenues({ venues }: HomeLatestVenuesProps) {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.06 }}
-              className="w-56 shrink-0 sm:w-auto"
+              className="w-[calc((100%-1rem)/2)] shrink-0 sm:w-auto"
             >
               <LatestVenueCard venue={venue} />
             </motion.div>

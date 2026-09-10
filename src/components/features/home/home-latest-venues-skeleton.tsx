@@ -7,7 +7,7 @@ export function HomeLatestVenuesSkeleton() {
       </div>
       <div className="flex gap-4 overflow-x-auto pb-2">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="flex-shrink-0 space-y-3 w-64">
+          <div key={i} className="w-[calc((100%-1rem)/2)] flex-shrink-0 space-y-3 sm:w-64">
             <div className="aspect-square bg-muted rounded-2xl animate-pulse" />
             <div className="space-y-2">
               <div className="h-5 w-3/4 bg-muted rounded animate-pulse" />
