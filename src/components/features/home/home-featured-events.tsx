@@ -6,7 +6,6 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { ArrowRight, CalendarDays, MapPin } from 'lucide-react'
 import type { ExploreEvent } from '@/types/explore'
-import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 
 type HomeFeaturedEventsProps = {
   events: ExploreEvent[]
@@ -22,36 +21,29 @@ function formatDate(iso: string) {
 
 function EventHeroCard({ event }: { event: ExploreEvent }) {
   const [imageError, setImageError] = useState(false)
+  const hasImage = Boolean(event.image && !imageError)
   return (
     <Link
       href={`/eventos/${event.slug}`}
-      className="group relative flex h-full min-h-[280px] flex-col justify-end overflow-hidden rounded-2xl bg-card transition-all duration-300 hover:scale-[1.01]"
+      className={`group relative flex h-full flex-col justify-end overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:scale-[1.01] ${hasImage ? 'min-h-[280px] border-transparent' : 'min-h-0 border-border/60'}`}
     >
-      {event.image && !imageError ? (
+      {hasImage && (
         <Image
-          src={event.image}
+          src={event.image!}
           alt={event.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, 40vw"
           onError={() => setImageError(true)}
         />
-      ) : (
-        <CategoryGradientBg
-          categorySlug={event.categories[0]?.slug ?? ''}
-          name={event.title}
-          showInitials
-          className="h-full w-full"
-          initialsClassName="text-4xl sm:text-6xl"
-        />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+      {hasImage && <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />}
       <div className="relative z-10 space-y-2 p-5">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
+        {hasImage && <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
           {event.categories[0]?.icon ?? '🎟️'} {event.categories[0]?.name ?? ''}
-        </span>
-        <h3 className="text-2xl font-medium leading-tight text-white sm:text-3xl line-clamp-2">{event.title}</h3>
-        <div className="flex flex-wrap items-center gap-3 text-sm text-white/75">
+        </span>}
+        <h3 className={`text-2xl font-medium leading-tight sm:text-3xl line-clamp-2 ${hasImage ? 'text-white' : 'text-foreground'}`}>{event.title}</h3>
+        {hasImage && <div className="flex flex-wrap items-center gap-3 text-sm text-white/75">
           <span className="flex items-center gap-1.5">
             <CalendarDays className="h-4 w-4" />
             {formatDate(event.startDate)}
@@ -60,7 +52,7 @@ function EventHeroCard({ event }: { event: ExploreEvent }) {
             <MapPin className="h-4 w-4" />
             {event.location}
           </span>
-        </div>
+        </div>}
       </div>
     </Link>
   )
@@ -68,39 +60,32 @@ function EventHeroCard({ event }: { event: ExploreEvent }) {
 
 function EventMediumCard({ event }: { event: ExploreEvent }) {
   const [imageError, setImageError] = useState(false)
+  const hasImage = Boolean(event.image && !imageError)
   return (
     <Link
       href={`/eventos/${event.slug}`}
-      className="group relative flex h-full min-h-[160px] flex-col justify-end overflow-hidden rounded-2xl bg-card transition-all duration-300 hover:scale-[1.01]"
+      className={`group relative flex h-full flex-col justify-end overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:scale-[1.01] ${hasImage ? 'min-h-[160px] border-transparent' : 'min-h-0 border-border/60'}`}
     >
-      {event.image && !imageError ? (
+      {hasImage && (
         <Image
-          src={event.image}
+          src={event.image!}
           alt={event.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, 30vw"
           onError={() => setImageError(true)}
         />
-      ) : (
-        <CategoryGradientBg
-          categorySlug={event.categories[0]?.slug ?? ''}
-          name={event.title}
-          showInitials
-          className="h-full w-full"
-          initialsClassName="text-4xl sm:text-6xl"
-        />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+      {hasImage && <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />}
       <div className="relative z-10 space-y-1 p-4">
-        <span className="text-xs font-medium uppercase tracking-widest text-white/60">
+        {hasImage && <span className="text-xs font-medium uppercase tracking-widest text-white/60">
           {event.categories[0]?.name ?? ''}
-        </span>
-        <p className="text-base font-medium leading-snug text-white line-clamp-2">{event.title}</p>
-        <div className="flex items-center gap-1 text-sm text-white/65">
+        </span>}
+        <p className={`text-base font-medium leading-snug line-clamp-2 ${hasImage ? 'text-white' : 'text-foreground'}`}>{event.title}</p>
+        {hasImage && <div className="flex items-center gap-1 text-sm text-white/65">
           <CalendarDays className="h-3.5 w-3.5" />
           {formatDate(event.startDate)}
-        </div>
+        </div>}
       </div>
     </Link>
   )

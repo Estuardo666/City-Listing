@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CalendarDays, MapPin, Repeat, Sparkles, Star } from 'lucide-react'
-import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import { formatDateTime } from '@/lib/utils'
 import type { EventListItem } from '@/types/event'
@@ -31,9 +30,8 @@ export function EventCard({ event }: EventCardProps) {
       href={`/eventos/${event.slug}`}
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/25 active:scale-[0.99]"
     >
-      {/* Image */}
-      <div className="relative h-44 w-full shrink-0 overflow-hidden bg-accent">
-        {hasValidImage && !imageError ? (
+      {hasValidImage && !imageError && (
+        <div className="relative h-44 w-full shrink-0 overflow-hidden bg-accent">
           <Image
             src={event.image as string}
             alt={event.title}
@@ -42,16 +40,7 @@ export function EventCard({ event }: EventCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             onError={() => setImageError(true)}
           />
-        ) : (
-          <CategoryGradientBg
-            categorySlug={event.eventCategories?.[0]?.category.slug}
-            name={event.title}
-            showInitials
-            className="h-full w-full"
-            initialsClassName="text-3xl"
-          />
-        )}
-        <div className="absolute right-3 top-3 flex flex-wrap gap-1.5">
+          <div className="absolute right-3 top-3 flex flex-wrap gap-1.5">
           {event.featured && (
             <span className="inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
               <Sparkles className="h-3 w-3" /> Destacado
@@ -62,13 +51,14 @@ export function EventCard({ event }: EventCardProps) {
               <Repeat className="h-3 w-3" /> Recurrente
             </span>
           )}
+          </div>
+          {event.price !== null && event.price !== undefined && (
+            <span className="absolute left-3 bottom-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+              {event.price === 0 ? 'Gratis' : `$${event.price.toFixed(2)}`}
+            </span>
+          )}
         </div>
-        {event.price !== null && event.price !== undefined && (
-          <span className="absolute left-3 bottom-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
-            {event.price === 0 ? 'Gratis' : `$${event.price.toFixed(2)}`}
-          </span>
-        )}
-      </div>
+      )}
 
       {/* Content */}
       <div className="flex flex-1 flex-col p-5">

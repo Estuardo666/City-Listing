@@ -57,8 +57,8 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
             : 'border-border/60 hover:border-border hover:shadow-sm'
         )}
       >
-        {/* Image */}
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-accent sm:h-28 sm:w-28">
+        {(isVenue || (hasValidImage && !imageError)) && (
+          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-accent sm:h-28 sm:w-28">
           {hasValidImage && !imageError ? (
             <Image
               src={image!}
@@ -77,7 +77,7 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
               initialsClassName="text-xl sm:text-2xl"
             />
           )}
-        {isVenue && (!hasValidImage || imageError) && <GoogleVenuePhoto slug={item.slug} name={name} />}
+            {isVenue && (!hasValidImage || imageError) && <GoogleVenuePhoto slug={item.slug} name={name} />}
           {/* Type badge on image */}
           <span
             className={cn(
@@ -87,7 +87,8 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
           >
             {isVenue ? 'Local' : 'Evento'}
           </span>
-        </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">

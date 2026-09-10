@@ -5,7 +5,7 @@ import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-phot
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Heart, MapPin, Calendar, Sparkles, ArrowRight, Star } from 'lucide-react'
+import { Heart, MapPin, Sparkles, ArrowRight, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fadeInUp, staggerContainer } from '@/components/ui/motion'
 import type { getPersonalizedHomeData } from '@/lib/queries/onboarding'
@@ -188,19 +188,15 @@ export function HomePersonalizedSection({ data, userName }: HomePersonalizedSect
                 href={`/eventos/${event.slug}`}
                 className="group flex items-center gap-3 rounded-2xl border border-border/50 bg-card p-3 transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl">
-                  {event.image ? (
+                {event.image && (
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl">
                     <img
                       src={event.image}
                       alt={event.title}
                       className="h-full w-full object-cover"
                     />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
-                      <Calendar className="h-6 w-6 text-primary/40" />
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">{event.title}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">

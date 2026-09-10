@@ -37,7 +37,7 @@ export function Agenda() {
       : !events ? <p role="status">Cargando agenda…</p> : !events.length ? <p>No hay eventos publicados para estas fechas.</p> : null}
     {Array.from(groups, ([date, items]) => <section key={date} className="space-y-3"><h3 className="text-lg font-semibold capitalize">{date}</h3>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{items.map(event => <Link key={event.id} href={`/eventos/${event.slug}`} className="overflow-hidden rounded-2xl border bg-card">
-        <div className="relative h-48 bg-muted">{event.image && <Image src={event.image} fill alt="" sizes="(max-width: 640px) 90vw, 33vw" className="object-cover" />}</div>
+        {event.image && <div className="relative h-48"><Image src={event.image} fill alt="" sizes="(max-width: 640px) 90vw, 33vw" className="object-cover" /></div>}
         <div className="space-y-2 p-5"><p className="font-semibold text-primary">{timeFormat.format(new Date(event.startDate))} · {event.price === 0 ? 'Gratis' : event.price == null ? 'Consultar precio' : `$${event.price.toFixed(2)}`}</p>
           <h4 className="text-xl font-semibold">{event.title}</h4><p className="text-sm text-muted-foreground">{event.location || 'Lugar por confirmar'}</p></div>
       </Link>)}</div></section>)}

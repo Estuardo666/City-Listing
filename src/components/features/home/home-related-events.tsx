@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { ArrowRight, CalendarDays } from 'lucide-react'
-import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import type { ExploreEvent } from '@/types/explore'
 
 type HomeRelatedEventsProps = {
@@ -27,8 +26,8 @@ function RelatedEventCard({ event }: { event: ExploreEvent }) {
       href={`/eventos/${event.slug}`}
       className="group flex flex-col overflow-hidden rounded-3xl border border-border/50 bg-card transition-all duration-300 hover:border-primary/30 hover:bg-accent/40 hover:shadow-lg"
     >
-      <div className="relative h-36 w-full overflow-hidden bg-accent">
-        {event.image && !imageError ? (
+      {event.image && !imageError && (
+        <div className="relative h-36 w-full overflow-hidden">
           <Image
             src={event.image}
             alt={event.title}
@@ -37,19 +36,11 @@ function RelatedEventCard({ event }: { event: ExploreEvent }) {
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
             onError={() => setImageError(true)}
           />
-        ) : (
-          <CategoryGradientBg
-            categorySlug={event.categories[0]?.slug ?? ''}
-            name={event.title}
-            showInitials
-            className="h-full w-full"
-            initialsClassName="text-3xl sm:text-4xl"
-          />
-        )}
-        <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
-          {event.categories[0]?.icon ?? ''} {event.categories[0]?.name ?? ''}
-        </span>
-      </div>
+          <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+            {event.categories[0]?.icon ?? ''} {event.categories[0]?.name ?? ''}
+          </span>
+        </div>
+      )}
       <div className="flex flex-col gap-2 p-4">
         <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">{event.title}</p>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
