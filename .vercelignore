@@ -1,0 +1,11 @@
+# Local code-indexing data and Windows helper binaries (about 45 MB).
+.chunkhound/
+
+# Local QA output is never needed by the production build.
+.qa-artifacts/
+coverage/
+
+# Local planning and development-only material.
+docs/
+tests/
+*.md

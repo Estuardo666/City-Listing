@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:webpack": "next dev",
-    "build": "prisma generate && node scripts/migrate-deploy.mjs && next build --webpack",
+    "build": "node scripts/migrate-deploy.mjs && next build --turbopack",
     "build:turbopack": "prisma generate && next build --turbopack",
     "build:webpack": "prisma generate && next build --webpack",
     "start": "next start",
