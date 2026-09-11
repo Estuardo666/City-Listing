@@ -12,7 +12,7 @@ export default async function PlansPage() {
       <section className="section-shell space-y-10">
         <div className="mx-auto max-w-2xl space-y-4 text-center">
           <p className="eyebrow text-primary">Presencia que se nota en Loja</p>
-          <h1 className="text-4xl sm:text-5xl">Haz que tu negocio encuentre su próximo cliente.</h1>
+          <h1 className="text-4xl sm:text-5xl">Planes y precios para hacer crecer tu negocio.</h1>
           <p className="text-base text-muted-foreground">Empieza con lo esencial y suma herramientas cuando tu operación las necesite. Tus datos siempre se conservan.</p>
         </div>
         <PricingCards catalog={catalog} />

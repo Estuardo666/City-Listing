@@ -140,15 +140,15 @@ export default async function HomePage() {
                 ¿Tienes un local o evento? Loja te está buscando. 📣
               </h3>
               <p className="max-w-xl text-base text-muted-foreground">
-                Publica gratis, aparece en el mapa y llega a personas que ya quieren salir. Sin complicaciones.
+                Publica gratis o elige un plan para sumar contenido, promociones, mensajes, reservas y más ubicaciones.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button size="lg" asChild className="h-12 rounded-xl px-7 text-base">
                   <Link href="/auth/signup">Publicar gratis 🚀</Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild className="h-12 rounded-xl px-7 text-base">
-                  <Link href="/explorar">
-                    Explorar el mapa <Search className="ml-2 h-4 w-4" />
+                  <Link href="/planes">
+                    Ver planes y precios <Search className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </div>

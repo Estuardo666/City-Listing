@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: '/explorar', label: 'Explorar' },
   { href: '/eventos', label: 'Eventos' },
   { href: '/locales', label: 'Locales' },
+  { href: '/planes', label: 'Planes' },
   { href: '/blog', label: 'Blog' },
 ]
 
