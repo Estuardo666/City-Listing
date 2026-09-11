@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { invalidateVenueCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
+import { canManageVenue } from '@/lib/billing/plans'
 
 export async function deleteVenueAction(venueId: string): Promise<ActionResponse<void>> {
   try {
@@ -30,7 +31,7 @@ export async function deleteVenueAction(venueId: string): Promise<ActionResponse
       }
     }
 
-    const isOwner = existingVenue.userId === session.user.id
+    const isOwner = await canManageVenue(session.user.id, venueId, ['OWNER', 'ADMIN'])
     const isAdmin = session.user.role === 'ADMIN'
 
     if (!isOwner && !isAdmin) {

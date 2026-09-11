@@ -9,6 +9,7 @@ import { eventSchema } from '@/schemas/event.schema'
 import { invalidateEventCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { EventWithRelations } from '@/types/event'
+import { assertEventCapacity, BillingEntitlementError, canManageVenue } from '@/lib/billing/plans'
 
 async function generateUniqueEventSlug(baseTitle: string): Promise<string> {
   const baseSlug = slugify(baseTitle)
@@ -78,6 +79,7 @@ export async function createEventAction(input: unknown): Promise<ActionResponse<
         },
         select: {
           id: true,
+          userId: true,
         },
       })
 
@@ -86,6 +88,14 @@ export async function createEventAction(input: unknown): Promise<ActionResponse<
           success: false,
           error: 'El local seleccionado no está disponible.',
         }
+      }
+
+      if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, parsed.data.venueId)) {
+        return { success: false, error: 'No tienes permiso para publicar eventos en este local.' }
+      }
+      if (session.user.role !== 'ADMIN') {
+        try { await assertEventCapacity(parsed.data.venueId) }
+        catch (error) { if (error instanceof BillingEntitlementError) return { success: false, error: error.message }; throw error }
       }
     }
 

@@ -4,8 +4,8 @@ export function mobileSuccess<T>(data: T, meta?: Record<string, unknown>) {
   return NextResponse.json({ data, ...(meta ? { meta } : {}) })
 }
 
-export function mobileError(code: string, message: string, status = 400, fields?: Record<string, string[]>) {
-  return NextResponse.json({ error: { code, message, ...(fields ? { fields } : {}) } }, { status })
+export function mobileError(code: string, message: string, status = 400, fields?: Record<string, string[]>, context?: Record<string, unknown>) {
+  return NextResponse.json({ error: { code, message, ...(fields ? { fields } : {}), ...(context ? { context } : {}) } }, { status })
 }
 
 type MobileRouteHandler<Args extends unknown[]> = (request: Request, ...args: Args) => Promise<Response>

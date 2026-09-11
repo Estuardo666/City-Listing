@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { sendNewMessageEmail } from '@/lib/email/templates/new-message'
 import { notifyUser } from '@/lib/notifications'
 import type { ActionResponse } from '@/types/action-response'
+import { assertVenueCapability, BillingEntitlementError, canManageVenue } from '@/lib/billing/plans'
 
 export async function sendMessageAction(
   venueId: string,
@@ -36,6 +37,7 @@ export async function sendMessageAction(
     const venue = await prisma.venue.findUnique({
       where: { id: venueId },
       select: {
+        id: true,
         userId: true,
         name: true,
         user: { select: { id: true, email: true, name: true } },
@@ -44,6 +46,11 @@ export async function sendMessageAction(
 
     if (!venue) {
       return { success: false, error: 'Local no encontrado.' }
+    }
+
+    if (session.user.role !== 'ADMIN') {
+      try { await assertVenueCapability(venue.id, 'messagingEnabled') }
+      catch (error) { if (error instanceof BillingEntitlementError) return { success: false, error: error.message }; throw error }
     }
 
     const isBlocked = await prisma.blockedUser.findFirst({
@@ -57,7 +64,7 @@ export async function sendMessageAction(
       return { success: false, error: 'Has sido bloqueado de este local.' }
     }
 
-    const isVenueOwner = venue.userId === session.user.id
+    const isVenueOwner = await canManageVenue(session.user.id, venueId)
     const isReceiverOwner = receiverId === venue.userId
 
     if (!isVenueOwner && !isReceiverOwner) {
@@ -211,7 +218,7 @@ export async function closeConversationAction(
       select: { userId: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId))) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -313,7 +320,7 @@ export async function reportBusinessAction(
       return { success: false, error: 'Has sido bloqueado de este local.' }
     }
 
-    const isVenueOwner = venue.userId === session.user.id
+    const isVenueOwner = await canManageVenue(session.user.id, venueId)
 
     if (isVenueOwner) {
       return { success: false, error: 'No puedes reportar tu propio negocio.' }

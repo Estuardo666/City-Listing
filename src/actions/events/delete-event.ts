@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { invalidateEventCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
+import { canManageVenue } from '@/lib/billing/plans'
 
 export async function deleteEventAction(eventId: string): Promise<ActionResponse<void>> {
   try {
@@ -20,7 +21,7 @@ export async function deleteEventAction(eventId: string): Promise<ActionResponse
 
     const existingEvent = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, venueId: true },
     })
 
     if (!existingEvent) {
@@ -30,7 +31,7 @@ export async function deleteEventAction(eventId: string): Promise<ActionResponse
       }
     }
 
-    const isOwner = existingEvent.userId === session.user.id
+    const isOwner = existingEvent.userId === session.user.id || (existingEvent.venueId ? await canManageVenue(session.user.id, existingEvent.venueId, ['OWNER', 'ADMIN']) : false)
     const isAdmin = session.user.role === 'ADMIN'
 
     if (!isOwner && !isAdmin) {

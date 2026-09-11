@@ -4,6 +4,7 @@ import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
 import { slugify } from '@/lib/utils'
+import { assertLocationCapacity, BillingEntitlementError, ensureBusinessAccount, getBusinessAccountForUser } from '@/lib/billing/plans'
 
 const venueSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -30,7 +31,8 @@ const venueSelect = {
 export async function GET(request: Request) {
   const principal = await getMobilePrincipal(request)
   if (!principal) return mobileError('UNAUTHORIZED', 'Inicia sesión para ver tus locales.', 401)
-  const venues = await prisma.venue.findMany({ where: { userId: principal.userId }, orderBy: { createdAt: 'desc' }, take: 100, select: venueSelect })
+  const account = await getBusinessAccountForUser(principal.userId)
+  const venues = await prisma.venue.findMany({ where: account ? { businessAccountId: account.id } : { userId: principal.userId }, orderBy: { createdAt: 'desc' }, take: 100, select: venueSelect })
   return mobileSuccess(venues)
 }
 
@@ -39,6 +41,13 @@ export async function POST(request: Request) {
   if (!principal) return mobileError('UNAUTHORIZED', 'Inicia sesión para publicar un local.', 401)
   const parsed = venueSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return mobileError('VALIDATION_ERROR', 'El local no es válido.', 422, parsed.error.flatten().fieldErrors)
+  const account = await ensureBusinessAccount(principal.userId)
+  try {
+    await assertLocationCapacity(principal.userId)
+  } catch (error) {
+    if (error instanceof BillingEntitlementError) return mobileError(error.code, error.message, 409, undefined, error.context)
+    throw error
+  }
   const categoryIds = parsed.data.categoryIds ?? []
   if (categoryIds.length) {
     const count = await prisma.category.count({ where: { id: { in: categoryIds } } })
@@ -51,6 +60,7 @@ export async function POST(request: Request) {
       description: parsed.data.description, location: parsed.data.location, address: parsed.data.address,
       phone: parsed.data.phone, email: parsed.data.email, website: parsed.data.website, lat: parsed.data.lat, lng: parsed.data.lng,
       priceRange: parsed.data.priceRange, image: parsed.data.image, status: 'PENDING',
+      businessAccountId: account.id,
       venueCategories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
     },
     select: venueSelect,

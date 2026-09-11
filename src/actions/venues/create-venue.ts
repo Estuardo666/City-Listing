@@ -9,6 +9,7 @@ import { venueSchema } from '@/schemas/venue.schema'
 import { invalidateVenueCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueWithRelations } from '@/types/venue'
+import { ensureBusinessAccount, assertLocationCapacity, BillingEntitlementError } from '@/lib/billing/plans'
 
 async function generateUniqueVenueSlug(baseName: string): Promise<string> {
   const baseSlug = slugify(baseName)
@@ -43,6 +44,16 @@ export async function createVenueAction(input: unknown): Promise<ActionResponse<
         success: false,
         error: 'No autorizado. Inicia sesión para registrar locales.',
       }
+    }
+
+    const businessAccount = await ensureBusinessAccount(session.user.id)
+    try {
+      await assertLocationCapacity(session.user.id)
+    } catch (error) {
+      if (error instanceof BillingEntitlementError) {
+        return { success: false, error: error.message }
+      }
+      throw error
     }
 
     const parsed = venueSchema.safeParse(input)
@@ -91,6 +102,7 @@ export async function createVenueAction(input: unknown): Promise<ActionResponse<
           featured: parsed.data.featured,
           status: 'PENDING',
           userId: session.user.id,
+          businessAccountId: businessAccount.id,
         },
       })
 

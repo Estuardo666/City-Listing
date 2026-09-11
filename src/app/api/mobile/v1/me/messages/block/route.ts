@@ -24,8 +24,9 @@ async function authorizeConversation(userId: string, input: z.infer<typeof block
       select: { id: true },
     }),
   ])
-  if (!venue || !target || input.userId === userId) return null
-  if (!conversation && venue.userId !== userId) return null
+  if (!venue || !target || input.userId === userId || !conversation) return null
+  // Either participant may protect themselves; the conversation check above
+  // prevents using this endpoint to block arbitrary users for a venue.
   return venue
 }
 

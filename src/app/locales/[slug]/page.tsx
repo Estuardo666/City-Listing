@@ -83,7 +83,7 @@ export default async function VenueDetailPage({ params }: VenueDetailPageProps) 
           select: { id: true },
         }).then(Boolean)
       : Promise.resolve(false),
-    getVenueMenu(venue.id),
+    venue.capabilities.menuEnabled ? getVenueMenu(venue.id) : Promise.resolve([]),
     session?.user?.id
       ? getUserCollections(session.user.id)
       : Promise.resolve([]),

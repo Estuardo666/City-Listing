@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { queueEventUpdate, drainEventUpdates } from '@/lib/notifications/event-updates'
 import { invalidateEventCache } from '@/lib/cache-invalidation'
+import { canManageVenue } from '@/lib/billing/plans'
 
 export async function cancelEventAction(eventId: string) {
   const session = await getServerSession(authOptions)
@@ -14,7 +15,7 @@ export async function cancelEventAction(eventId: string) {
     const result = await prisma.$transaction(async tx => {
       await tx.$queryRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`
       const before = await tx.event.findUniqueOrThrow({ where: { id: eventId } })
-      if (before.userId !== session.user.id && session.user.role !== 'ADMIN') throw new Error('No tienes permiso.')
+      if (before.userId !== session.user.id && session.user.role !== 'ADMIN' && !(before.venueId && await canManageVenue(session.user.id, before.venueId))) throw new Error('No tienes permiso.')
       if (before.status === 'CANCELLED') return before
       if (before.status !== 'APPROVED') throw new Error('Solo se pueden cancelar eventos publicados.')
       const event = await tx.event.update({ where: { id: eventId }, data: { status: 'CANCELLED' } })

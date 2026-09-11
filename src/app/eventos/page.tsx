@@ -37,16 +37,17 @@ const TOP_RATED_TAKE = 6
 const ALL_TAKE = 12
 
 export default async function EventosPage() {
+  const now = new Date()
   const [allApproved, featuredEvents, freeEvents, topRatedEvents, categories] = await Promise.all([
     getEvents({ status: 'APPROVED' }, 60),
     prisma.event.findMany({
-      where: { status: 'APPROVED', featured: true },
-      orderBy: [{ featured: 'desc' }, { startDate: 'asc' }],
+      where: { status: 'APPROVED', OR: [{ featured: true }, { sponsoredUntil: { gt: now } }] },
+      orderBy: [{ sponsoredUntil: 'desc' }, { featured: 'desc' }, { startDate: 'asc' }],
       take: FEATURED_TAKE,
       select: {
         id: true, title: true, slug: true, description: true, image: true,
         startDate: true, endDate: true, location: true, address: true,
-        lat: true, lng: true, featured: true, price: true, isRecurring: true,
+        lat: true, lng: true, featured: true, sponsoredUntil: true, price: true, isRecurring: true,
         avgRating: true, reviewCount: true,
         eventCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
@@ -58,7 +59,7 @@ export default async function EventosPage() {
       select: {
         id: true, title: true, slug: true, description: true, image: true,
         startDate: true, endDate: true, location: true, address: true,
-        lat: true, lng: true, featured: true, price: true, isRecurring: true,
+        lat: true, lng: true, featured: true, sponsoredUntil: true, price: true, isRecurring: true,
         avgRating: true, reviewCount: true,
         eventCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },
@@ -70,7 +71,7 @@ export default async function EventosPage() {
       select: {
         id: true, title: true, slug: true, description: true, image: true,
         startDate: true, endDate: true, location: true, address: true,
-        lat: true, lng: true, featured: true, price: true, isRecurring: true,
+        lat: true, lng: true, featured: true, sponsoredUntil: true, price: true, isRecurring: true,
         avgRating: true, reviewCount: true,
         eventCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
       },

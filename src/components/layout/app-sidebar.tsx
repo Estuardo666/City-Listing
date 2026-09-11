@@ -35,6 +35,7 @@ import {
   Sparkles,
   Tv,
   Star,
+  CreditCard,
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -67,6 +68,7 @@ const MANAGE_NAV: NavItem[] = [
   { href: '/dashboard/colecciones', label: 'Colecciones', icon: Folder },
   { href: '/dashboard/notificaciones', label: 'Notificaciones', icon: Bell },
   { href: '/dashboard/mensajes', label: 'Mensajes', icon: Mail },
+  { href: '/dashboard/plan', label: 'Mi plan', icon: CreditCard },
 ]
 
 const ADMIN_NAV: NavItem[] = [
@@ -89,6 +91,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/imports/google', label: 'Importador Google', icon: MapPin, adminOnly: true },
   { href: '/admin/reputation', label: 'Reputación', icon: Star, adminOnly: true },
   { href: '/admin/search-console', label: 'Search Console', icon: Search, adminOnly: true },
+  { href: '/admin/monetizacion', label: 'Monetización', icon: CreditCard, adminOnly: true },
 ]
 
 interface AppSidebarProps {

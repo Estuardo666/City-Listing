@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import type { ActionResponse } from '@/types/action-response'
+import { canManageVenue } from '@/lib/billing/plans'
 
 export async function setCoverImageAction(
   venueId: string,
@@ -22,7 +23,7 @@ export async function setCoverImageAction(
       select: { userId: true, slug: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -60,7 +61,7 @@ export async function setLogoAction(
       select: { userId: true, slug: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -95,7 +96,7 @@ export async function removeCoverImageAction(venueId: string): Promise<ActionRes
       select: { userId: true, slug: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -126,7 +127,7 @@ export async function removeLogoAction(venueId: string): Promise<ActionResponse<
       select: { userId: true, slug: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -160,7 +161,7 @@ export async function reorderMediaAction(
       select: { userId: true, slug: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -195,7 +196,7 @@ export async function getVenueMediaAction(venueId: string) {
       select: { userId: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return []
     }
 

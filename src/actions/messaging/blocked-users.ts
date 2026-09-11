@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import type { ActionResponse } from '@/types/action-response'
+import { canManageVenue } from '@/lib/billing/plans'
 
 export async function blockUserAction(
   venueId: string,
@@ -23,7 +24,7 @@ export async function blockUserAction(
       select: { userId: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId))) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -75,7 +76,7 @@ export async function unblockUserAction(
       select: { userId: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId))) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -107,7 +108,7 @@ export async function getBlockedUsersAction(venueId: string) {
       select: { userId: true },
     })
 
-    if (!venue || venue.userId !== session.user.id) {
+    if (!venue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId))) {
       return []
     }
 

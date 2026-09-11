@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { recurrenceSchema } from '@/schemas/recurrence.schema'
 import type { ActionResponse } from '@/types/action-response'
 import type { RecurrenceRule } from '@prisma/client'
+import { canManageVenue } from '@/lib/billing/plans'
 
 export async function upsertRecurrenceAction(
   eventId: string,
@@ -21,14 +22,14 @@ export async function upsertRecurrenceAction(
 
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { id: true, userId: true, slug: true },
+      select: { id: true, userId: true, slug: true, venueId: true },
     })
 
     if (!event) {
       return { success: false, error: 'Evento no encontrado.' }
     }
 
-    if (session.user.role !== 'ADMIN' && event.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && event.userId !== session.user.id && !(event.venueId && await canManageVenue(session.user.id, event.venueId))) {
       return { success: false, error: 'No tienes permiso.' }
     }
 
@@ -86,14 +87,14 @@ export async function deleteRecurrenceAction(eventId: string): Promise<ActionRes
 
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { id: true, userId: true, slug: true },
+      select: { id: true, userId: true, slug: true, venueId: true },
     })
 
     if (!event) {
       return { success: false, error: 'Evento no encontrado.' }
     }
 
-    if (session.user.role !== 'ADMIN' && event.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && event.userId !== session.user.id && !(event.venueId && await canManageVenue(session.user.id, event.venueId))) {
       return { success: false, error: 'No tienes permiso.' }
     }
 

@@ -16,7 +16,9 @@ import type {
   VenueSelectOption,
   UserVenueListItem,
   VenueWithRelations,
+  VenuePlanFields,
 } from '@/types/venue'
+import { projectPublicVenue, resolveEffectivePlan } from '@/lib/billing/plans'
 
 const venueListSelect = Prisma.validator<Prisma.VenueSelect>()({
   id: true,
@@ -29,6 +31,7 @@ const venueListSelect = Prisma.validator<Prisma.VenueSelect>()({
   lat: true,
   lng: true,
   featured: true,
+  sponsoredUntil: true,
   status: true,
   phone: true,
   website: true,
@@ -256,6 +259,9 @@ export async function getVenues(
     where,
     orderBy: [
       {
+        sponsoredUntil: 'desc',
+      },
+      {
         featured: 'desc',
       },
       {
@@ -360,8 +366,8 @@ export async function getApprovedVenuesForEventForm(): Promise<VenueSelectOption
   })
 }
 
-export const getVenueBySlug = serverCache(async (slug: string): Promise<VenueWithRelations | null> => {
-  return prisma.venue.findFirst({
+export const getVenueBySlug = serverCache(async (slug: string): Promise<(VenueWithRelations & VenuePlanFields) | null> => {
+  const venue = await prisma.venue.findFirst({
     where: {
       slug,
       status: 'APPROVED',
@@ -446,4 +452,6 @@ export const getVenueBySlug = serverCache(async (slug: string): Promise<VenueWit
       reservationSettings: true,
     },
   })
+  if (!venue) return null
+  return projectPublicVenue(venue, await resolveEffectivePlan(venue.id)) as VenueWithRelations & VenuePlanFields
 })

@@ -8,6 +8,7 @@ import { z } from 'zod'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueService } from '@prisma/client'
 import { PREDEFINED_SERVICES } from '@/lib/constants/services'
+import { canManageVenue } from '@/lib/billing/plans'
 
 const customServiceSchema = z.object({
   name: z.string().trim().min(1, 'Nombre requerido').max(50),
@@ -32,7 +33,7 @@ export async function togglePredefinedServiceAction(
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { userId: true, slug: true } })
     if (!venue) return { success: false, error: 'Local no encontrado.' }
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) return { success: false, error: 'No tienes permiso.' }
 
     const predefined = PREDEFINED_SERVICES.find((s) => s.name === serviceName)
     if (!predefined) return { success: false, error: 'Servicio no válido.' }
@@ -80,7 +81,7 @@ export async function addCustomServiceAction(
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { userId: true, slug: true } })
     if (!venue) return { success: false, error: 'Local no encontrado.' }
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) return { success: false, error: 'No tienes permiso.' }
 
     const parsed = customServiceSchema.safeParse(input)
     if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
@@ -114,7 +115,7 @@ export async function updateCustomServiceAction(
       include: { venue: { select: { userId: true, slug: true } } },
     })
     if (!service || !service.isCustom) return { success: false, error: 'Servicio no encontrado o no es personalizado.' }
-    if (session.user.role !== 'ADMIN' && service.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, service.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     const parsed = customServiceSchema.safeParse(input)
     if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
@@ -138,7 +139,7 @@ export async function deleteServiceAction(id: string): Promise<ActionResponse<vo
       include: { venue: { select: { userId: true, slug: true } } },
     })
     if (!service) return { success: false, error: 'No encontrado.' }
-    if (session.user.role !== 'ADMIN' && service.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, service.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     await prisma.venueService.delete({ where: { id } })
     revalidatePath(`/locales/${service.venue.slug}`)
@@ -159,7 +160,7 @@ export async function reorderServicesAction(
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { userId: true, slug: true } })
     if (!venue) return { success: false, error: 'Local no encontrado.' }
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) return { success: false, error: 'No tienes permiso.' }
 
     await Promise.all(
       serviceIds.map((id, index) =>

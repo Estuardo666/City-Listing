@@ -10,6 +10,7 @@ import { queueEventUpdate, drainEventUpdates } from '@/lib/notifications/event-u
 import { after } from 'next/server'
 import type { ActionResponse } from '@/types/action-response'
 import type { EventWithRelations } from '@/types/event'
+import { canManageVenue } from '@/lib/billing/plans'
 
 export async function updateEventAction(
   eventId: string,
@@ -36,7 +37,7 @@ export async function updateEventAction(
     // Check if event exists and user has permission
     const existingEvent = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { id: true, userId: true, slug: true },
+      select: { id: true, userId: true, slug: true, venueId: true },
     })
 
     if (!existingEvent) {
@@ -47,7 +48,7 @@ export async function updateEventAction(
     }
 
     // Only admin or event owner can edit
-    if (session.user.role !== 'ADMIN' && existingEvent.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && existingEvent.userId !== session.user.id && !(existingEvent.venueId && await canManageVenue(session.user.id, existingEvent.venueId))) {
       return {
         success: false,
         error: 'No tienes permiso para editar este evento.',
@@ -85,6 +86,9 @@ export async function updateEventAction(
           success: false,
           error: 'El local seleccionado no es válido o no está aprobado.',
         }
+      }
+      if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, parsed.data.venueId)) {
+        return { success: false, error: 'No tienes permiso para usar este local.' }
       }
     }
 

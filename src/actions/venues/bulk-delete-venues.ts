@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { invalidateVenueCache } from '@/lib/cache-invalidation'
 import { z } from 'zod'
 import type { ActionResponse } from '@/types/action-response'
+import { canManageVenue } from '@/lib/billing/plans'
 
 const bulkDeleteSchema = z.array(z.string().min(1)).min(1, 'Selecciona al menos un local.')
 
@@ -45,7 +46,7 @@ export async function bulkDeleteVenuesAction(venueIds: string[]): Promise<Action
 
     const allowedIds = isAdmin
       ? venues.map((v) => v.id)
-      : venues.filter((v) => v.userId === session.user.id).map((v) => v.id)
+      : (await Promise.all(venues.map(async (venue) => await canManageVenue(session.user.id, venue.id, ['OWNER', 'ADMIN']) ? venue.id : null))).filter((id): id is string => id !== null)
 
     if (allowedIds.length === 0) {
       return {

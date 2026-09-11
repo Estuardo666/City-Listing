@@ -161,6 +161,15 @@ model User {
   followingVenues        UserFollowingVenue[]
   onboardingEvents       OnboardingEvent[]
 
+  businessAccountsOwned  BusinessAccount[] @relation("BusinessAccountOwner")
+  businessMemberships    BusinessMembership[]
+  billingOrders          Order[] @relation("BillingOrderBuyer")
+  addonPurchases         AddonPurchase[]
+  billingAuditLogs       BillingAuditLog[] @relation("BillingAuditActor")
+  createdPlanVersions    PlanVersion[] @relation("PlanVersionCreator")
+  createdVenueOverrides  VenuePlanOverride[] @relation("VenueOverrideCreator")
+  updatedBillingSettings BillingSetting[] @relation("BillingSettingUpdater")
+
   sentMessages     Message[]     @relation("SentMessages")
   receivedMessages Message[]     @relation("ReceivedMessages")
   quickReplies     QuickReply[]
@@ -311,6 +320,7 @@ model Event {
   address       String?
   status        String    @default("PENDING")
   featured      Boolean   @default(false)
+  sponsoredUntil DateTime?
   isRecurring   Boolean   @default(false)
   parentEventId String?
   avgRating     Float?
@@ -335,11 +345,14 @@ model Event {
   questions          Question[]
   eventCategories    EventCategory[]
   eventSubcategories EventSubcategory[]
+  billingOrders      Order[]
+  addonPurchases     AddonPurchase[]
 
   @@index([status])
   @@index([startDate])
   @@index([venueId])
   @@index([viewCount])
+  @@index([sponsoredUntil])
 }
 
 model Venue {
@@ -362,6 +375,7 @@ model Venue {
   status            String    @default("PENDING")
   isActive          Boolean   @default(true)
   featured          Boolean   @default(false)
+  sponsoredUntil    DateTime?
   claimed           Boolean   @default(false)
   /// Set when a VenueClaim is approved. A real FK so an approved claim cannot
   /// point at a user that no longer exists.
@@ -411,6 +425,14 @@ model Venue {
   watchEventVenues    WatchEventVenue[]
   followingUsers      UserFollowingVenue[]
 
+  businessAccountId String?
+  businessAccount   BusinessAccount? @relation(fields: [businessAccountId], references: [id], onDelete: SetNull)
+  planOverrides     VenuePlanOverride[]
+  orders            Order[]
+  billingAuditLogs  BillingAuditLog[]
+  addonPurchases    AddonPurchase[]
+  googlePlaceUsage  GooglePlaceUsage[]
+
   parentId String?
   parent   Venue?  @relation("VenueBranches", fields: [parentId], references: [id], onDelete: SetNull)
   branches Venue[] @relation("VenueBranches")
@@ -422,6 +444,7 @@ model Venue {
 
   @@index([status])
   @@index([isActive])
+  @@index([sponsoredUntil])
   @@index([googlePlaceId])
   @@index([osmId])
   @@index([avgRating])
@@ -642,6 +665,11 @@ model VenueClaim {
   @@index([status])
   @@index([claimerEmail])
   @@index([verified])
+
+  selectedPlanVersionId String?
+  planSelectionStatus  String? // NONE | PENDING_CLAIM_APPROVAL | VOIDED | ACTIVATED | INHERITED_EXISTING
+  selectedPlanVersion  PlanVersion? @relation(fields: [selectedPlanVersionId], references: [id], onDelete: SetNull)
+  billingOrder         Order?
 }
 
 model Promotion {
@@ -1525,4 +1553,297 @@ model HomeSection {
   updatedAt   DateTime  @updatedAt
 
   @@index([isActive, order])
+}
+
+// ──────────────────────────────────────────────
+// Billing beta / planes empresariales
+// ──────────────────────────────────────────────
+
+/// Cuenta que agrupa ubicaciones, colaboradores y una suscripción compartida.
+/// La relación es opcional durante la migración para mantener compatibilidad
+/// con registros históricos que todavía solo conocen `Venue.userId`.
+model BusinessAccount {
+  id        String   @id @default(cuid())
+  name      String?
+  ownerId   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner          User               @relation("BusinessAccountOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  memberships    BusinessMembership[]
+  venues         Venue[]
+  subscriptions  Subscription[]
+  orders         Order[]
+  usageCounters  UsageCounter[]
+  auditLogs      BillingAuditLog[]
+
+  @@index([ownerId])
+}
+
+model BusinessMembership {
+  id        String   @id @default(cuid())
+  accountId String
+  userId    String
+  role      String   @default("OWNER") // OWNER | ADMIN | EDITOR
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  account BusinessAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, userId])
+  @@index([userId])
+}
+
+model Plan {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  name         String
+  description  String?
+  isPublished  Boolean       @default(false)
+  isArchived   Boolean       @default(false)
+  displayOrder Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  versions PlanVersion[]
+
+  @@index([isPublished, isArchived, displayOrder])
+}
+
+/// Snapshot inmutable de precios y capacidades. Una versión nunca se edita;
+/// se publica otra para que las renovaciones puedan aplicar la política fijada.
+model PlanVersion {
+  id                  String   @id @default(cuid())
+  planId              String
+  version             Int
+  monthlyPrice        Float    @default(0)
+  annualPrice         Float    @default(0)
+  currency            String   @default("USD")
+  maxLocations        Int?
+  maxMembers          Int?
+  maxMediaPerVenue    Int?
+  googlePhotoEnabled  Boolean  @default(true)
+  menuEnabled         Boolean  @default(false)
+  servicesEnabled     Boolean  @default(true)
+  monthlyEventsPerVenue Int?
+  maxActivePromotionsPerVenue Int?
+  analyticsRetentionDays Int?
+  whatsappEnabled     Boolean  @default(false)
+  messagingEnabled    Boolean  @default(false)
+  reservationsEnabled Boolean  @default(false)
+  priorityModeration  Boolean  @default(false)
+  includedBoostCredits Int      @default(0)
+  isPublished         Boolean  @default(false)
+  publishedAt         DateTime?
+  createdById         String?
+  createdAt           DateTime @default(now())
+
+  plan              Plan                 @relation(fields: [planId], references: [id], onDelete: Restrict)
+  createdBy         User?                @relation("PlanVersionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  subscriptions     Subscription[]
+  venueOverrides    VenuePlanOverride[]
+  orders            Order[]
+  selectedByClaims  VenueClaim[]
+
+  @@unique([planId, version])
+  @@index([planId, isPublished])
+}
+
+model Subscription {
+  id                  String   @id @default(cuid())
+  accountId           String
+  planVersionId       String
+  status              String   @default("ACTIVE") // ACTIVE | EXPIRED | CANCELLED
+  cycle               String   @default("MONTHLY") // MONTHLY | ANNUAL | CUSTOM
+  startsAt            DateTime
+  endsAt              DateTime
+  renewsAutomatically Boolean  @default(false)
+  referencePrice      Float    @default(0)
+  mode                String   @default("SIMULATED")
+  source              String   @default("CHECKOUT")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  account    BusinessAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  planVersion PlanVersion     @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+
+  @@index([accountId, status, endsAt])
+  @@index([planVersionId])
+}
+
+model VenuePlanOverride {
+  id            String   @id @default(cuid())
+  venueId       String
+  planVersionId String
+  createdById   String
+  reason        String
+  startsAt      DateTime @default(now())
+  endsAt        DateTime?
+  status        String   @default("ACTIVE") // ACTIVE | REVOKED | EXPIRED
+  revokedAt     DateTime?
+  revokedById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  venue       Venue       @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  planVersion PlanVersion @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+  createdBy   User        @relation("VenueOverrideCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([venueId, status, startsAt, endsAt])
+  @@index([planVersionId])
+}
+
+model AddonProduct {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  description    String?
+  type           String   @default("DIGITAL") // DIGITAL | DELIVERY
+  price          Float
+  currency       String   @default("USD")
+  durationDays   Int?
+  requiresDelivery Boolean @default(false)
+  isPublished    Boolean  @default(false)
+  isArchived     Boolean  @default(false)
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orders Order[]
+  addonPurchases AddonPurchase[]
+
+  @@index([isPublished, isArchived, displayOrder])
+}
+
+model Order {
+  id               String   @id @default(cuid())
+  accountId        String
+  buyerId          String
+  venueId          String?
+  eventId          String?
+  claimId          String?  @unique
+  planVersionId    String?
+  addonProductId   String?
+  idempotencyKey   String?
+  kind             String   @default("SUBSCRIPTION") // SUBSCRIPTION | ADDON
+  status           String   @default("COMPLETED") // PENDING | COMPLETED | VOIDED | FAILED
+  mode             String   @default("SIMULATED")
+  cycle            String?  // MONTHLY | ANNUAL
+  referenceAmount  Float    @default(0)
+  chargedAmount    Float    @default(0)
+  currency         String   @default("USD")
+  device           String?
+  startsAt         DateTime?
+  endsAt           DateTime?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  account      BusinessAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  buyer        User            @relation("BillingOrderBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  venue        Venue?          @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  event        Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  claim        VenueClaim?     @relation(fields: [claimId], references: [id], onDelete: SetNull)
+  planVersion  PlanVersion?    @relation(fields: [planVersionId], references: [id], onDelete: SetNull)
+  addonProduct AddonProduct?   @relation(fields: [addonProductId], references: [id], onDelete: SetNull)
+  addonPurchase AddonPurchase?
+
+  @@unique([accountId, idempotencyKey])
+  @@index([accountId, createdAt])
+  @@index([buyerId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([status])
+}
+
+model AddonPurchase {
+  id             String   @id @default(cuid())
+  orderId        String   @unique
+  addonProductId String
+  buyerId        String
+  venueId        String?
+  eventId        String?
+  deliveryStatus String   @default("NOT_REQUIRED") // NOT_REQUIRED | PENDING | IN_PROGRESS | DELIVERED
+  startsAt       DateTime?
+  endsAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  addonProduct AddonProduct @relation(fields: [addonProductId], references: [id], onDelete: Restrict)
+  buyer        User         @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  venue        Venue?       @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  event        Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([buyerId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([deliveryStatus])
+}
+
+model UsageCounter {
+  id          String   @id @default(cuid())
+  accountId   String
+  venueId     String?
+  metric      String   // EVENTS | BOOST_CREDITS | GOOGLE_REQUESTS
+  value       Int      @default(0)
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  account BusinessAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, venueId, metric, periodStart])
+  @@index([accountId, metric, periodStart])
+  @@index([venueId, metric, periodStart])
+}
+
+model BillingAuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  accountId String?
+  venueId   String?
+  action    String
+  reason    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  actor   User            @relation("BillingAuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+  account BusinessAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  venue   Venue?          @relation(fields: [venueId], references: [id], onDelete: SetNull)
+
+  @@index([accountId, createdAt])
+  @@index([venueId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model GooglePlaceUsage {
+  id          String   @id @default(cuid())
+  bucket      String   // DAILY | MONTHLY
+  periodStart DateTime
+  endpoint    String
+  venueKey    String   @default("global")
+  venueId     String?
+  requests    Int      @default(0)
+  successes   Int      @default(0)
+  errors      Int      @default(0)
+  quotaErrors Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venue Venue? @relation(fields: [venueId], references: [id], onDelete: SetNull)
+
+  @@unique([bucket, periodStart, endpoint, venueKey])
+  @@index([bucket, periodStart])
+  @@index([venueId, bucket, periodStart])
+}
+
+model BillingSetting {
+  id                 String   @id @default("global")
+  simulationEnabled  Boolean  @default(true)
+  googlePhotoEnabled Boolean  @default(true)
+  updatedById        String?
+  updatedAt          DateTime @updatedAt
+
+  updatedBy User? @relation("BillingSettingUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
 }

@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import type { ActionResponse } from '@/types/action-response'
 import type { SpecialHours } from '@prisma/client'
+import { canManageVenue } from '@/lib/billing/plans'
 
 const specialHoursSchema = z.object({
   date: z.coerce.date(),
@@ -26,7 +27,7 @@ export async function createSpecialHoursAction(
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { userId: true, slug: true } })
     if (!venue) return { success: false, error: 'Local no encontrado.' }
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) return { success: false, error: 'No tienes permiso.' }
 
     const parsed = specialHoursSchema.safeParse(input)
     if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
@@ -54,7 +55,7 @@ export async function deleteSpecialHoursAction(id: string): Promise<ActionRespon
       include: { venue: { select: { userId: true, slug: true } } },
     })
     if (!special) return { success: false, error: 'No encontrado.' }
-    if (session.user.role !== 'ADMIN' && special.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, special.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     await prisma.specialHours.delete({ where: { id } })
     revalidatePath(`/locales/${special.venue.slug}`)

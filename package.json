@@ -11,6 +11,7 @@
     "start": "next start",
     "test:mobile": "node --require ./tests/register-server-only.cjs --import tsx --test tests/mobile-api.test.ts tests/discovery-integration.test.ts",
     "test:config": "node --require ./tests/register-server-only.cjs --import tsx --test tests/resend-config.test.ts tests/env-contract.test.ts tests/signup-role.test.ts tests/deep-links.test.ts tests/route-itinerary.test.ts tests/today.test.ts tests/open-now.test.ts tests/mobile-open-now.test.ts tests/user-geolocation.test.ts tests/explore-date.test.ts",
+    "test:billing": "node --require ./tests/register-server-only.cjs --import tsx --test tests/billing-projection.test.ts",
     "lint": "eslint .",
     "db:push": "prisma db push",
     "db:migrate:deploy": "prisma migrate deploy",

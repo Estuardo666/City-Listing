@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { sendReviewReplyEmail } from '@/lib/email/templates/review-reply'
 import { notifyUser } from '@/lib/notifications'
 import type { ActionResponse } from '@/types/action-response'
+import { canManageVenue } from '@/lib/billing/plans'
 
 const replySchema = z.object({
   reply: z.string().trim().min(1, 'Escribe una respuesta').max(500, 'Máximo 500 caracteres'),
@@ -42,8 +43,10 @@ export async function replyToReviewAction(
 
     if (!review) return { success: false, error: 'Reseña no encontrada.' }
 
-    const ownerId = review.venue?.userId ?? review.event?.userId
-    if (session.user.role !== 'ADMIN' && ownerId !== session.user.id) {
+    const canReply = review.venueId
+      ? await canManageVenue(session.user.id, review.venueId)
+      : review.event?.userId === session.user.id
+    if (session.user.role !== 'ADMIN' && !canReply) {
       return { success: false, error: 'No tienes permiso para responder esta reseña.' }
     }
 

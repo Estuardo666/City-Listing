@@ -20,6 +20,7 @@ type VenueCardProps = {
 export function VenueCard({ venue, badges }: VenueCardProps) {
   const [imageError, setImageError] = useState(false)
   const hasValidImage = Boolean(venue.image && venue.image.startsWith('http'))
+  const sponsored = !!venue.sponsoredUntil && new Date(venue.sponsoredUntil) > new Date()
 
   return (
     <Link
@@ -48,9 +49,9 @@ export function VenueCard({ venue, badges }: VenueCardProps) {
         )}
         {(!hasValidImage || imageError) && <GoogleVenuePhoto slug={venue.slug} name={venue.name} />}
         <div className="absolute right-3 top-3 flex flex-wrap gap-1.5">
-          {venue.featured && (
+          {(sponsored || venue.featured) && (
             <span className="inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
-              <Sparkles className="h-3 w-3" /> Destacado
+              <Sparkles className="h-3 w-3" /> {sponsored ? 'Patrocinado' : 'Destacado'}
             </span>
           )}
           {venue.badge === 'VERIFIED' && (

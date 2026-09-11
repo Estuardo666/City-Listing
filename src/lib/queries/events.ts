@@ -34,6 +34,7 @@ const eventListSelect = Prisma.validator<Prisma.EventSelect>()({
   lng: true,
   venueId: true,
   featured: true,
+  sponsoredUntil: true,
   status: true,
   price: true,
   isRecurring: true,
@@ -282,6 +283,9 @@ export async function getEvents(
   return prisma.event.findMany({
     where,
     orderBy: [
+      {
+        sponsoredUntil: 'desc',
+      },
       {
         featured: 'desc',
       },

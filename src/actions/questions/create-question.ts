@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import type { ActionResponse } from '@/types/action-response'
 import type { Question } from '@prisma/client'
+import { canManageVenue } from '@/lib/billing/plans'
 
 const questionSchema = z.object({
   content: z.string().trim().min(5, 'Mínimo 5 caracteres').max(500, 'Máximo 500 caracteres'),
@@ -70,8 +71,10 @@ export async function answerQuestionAction(
     })
     if (!question) return { success: false, error: 'Pregunta no encontrada.' }
 
-    const ownerId = question.venue?.userId ?? question.event?.userId
-    if (session.user.role !== 'ADMIN' && ownerId !== session.user.id) {
+    const canAnswer = question.venueId
+      ? await canManageVenue(session.user.id, question.venueId)
+      : question.event?.userId === session.user.id
+    if (session.user.role !== 'ADMIN' && !canAnswer) {
       return { success: false, error: 'No tienes permiso para responder.' }
     }
 

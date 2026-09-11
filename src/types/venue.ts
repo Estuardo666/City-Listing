@@ -1,5 +1,26 @@
 import type { Prisma } from '@prisma/client'
 
+export type VenuePlanFields = {
+  effectivePlan: { slug: string; name: string; source: 'INHERITED' | 'ADMIN_OVERRIDE' }
+  capabilities: {
+    maxLocations: number | null
+    maxMembers: number | null
+    maxMediaPerVenue: number | null
+    googlePhotoEnabled: boolean
+    menuEnabled: boolean
+    servicesEnabled: boolean
+    monthlyEventsPerVenue: number | null
+    maxActivePromotionsPerVenue: number | null
+    analyticsRetentionDays: number | null
+    whatsappEnabled: boolean
+    messagingEnabled: boolean
+    reservationsEnabled: boolean
+    priorityModeration: boolean
+    includedBoostCredits: number
+  }
+  entitlementsVersion: string
+}
+
 export type VenueWithRelations = Prisma.VenueGetPayload<{
   include: {
     venueCategories: {
@@ -99,6 +120,7 @@ export type VenueListItem = Prisma.VenueGetPayload<{
     lat: true
     lng: true
     featured: true
+    sponsoredUntil: true
     status: true
     phone: true
     website: true

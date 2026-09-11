@@ -55,6 +55,7 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
   const hasMedia = event.media.length > 0
   const hasReviews = event.reviews.length > 0
   const hasRecurrence = event.isRecurring && event.recurrenceRule
+  const sponsored = !!event.sponsoredUntil && new Date(event.sponsoredUntil) > new Date()
 
   return (
       <article className="space-y-0">
@@ -79,9 +80,9 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
               {resolveIconEmoji(event.eventCategories[0]?.category.icon, 'event')} {event.eventCategories[0]?.category.name}
             </span>
-            {event.featured && (
+            {(sponsored || event.featured) && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
-                <Sparkles className="h-3.5 w-3.5" /> Destacado
+                <Sparkles className="h-3.5 w-3.5" /> {sponsored ? 'Patrocinado' : 'Destacado'}
               </span>
             )}
             {hasRecurrence && (
@@ -130,9 +131,9 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-accent px-3 py-1 text-sm font-semibold text-foreground">
               {resolveIconEmoji(event.eventCategories[0]?.category.icon, 'event')} {event.eventCategories[0]?.category.name}
             </span>
-            {event.featured && (
+            {(sponsored || event.featured) && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
-                <Sparkles className="h-3.5 w-3.5" /> Destacado
+                <Sparkles className="h-3.5 w-3.5" /> {sponsored ? 'Patrocinado' : 'Destacado'}
               </span>
             )}
             {hasRecurrence && (

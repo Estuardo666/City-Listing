@@ -20,6 +20,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     lat: event.lat,
     lng: event.lng,
     featured: event.featured,
+    sponsoredUntil: event.sponsoredUntil,
     price: event.price,
     avgRating: event.avgRating,
     reviewCount: event.reviewCount,

@@ -7,8 +7,10 @@ import { prisma } from '@/lib/prisma'
 import { mediaUploadSchema } from '@/schemas/media.schema'
 import type { ActionResponse } from '@/types/action-response'
 import type { Media } from '@prisma/client'
+import { assertMediaCapacity, BillingEntitlementError, canManageVenue } from '@/lib/billing/plans'
 
-const MAX_MEDIA_ITEMS = 20
+// Technical guardrail only; commercial limits are resolved per venue plan.
+const MAX_MEDIA_ITEMS = 100
 
 export async function uploadMediaAction(
   entityType: 'venue' | 'event' | 'post',
@@ -27,6 +29,21 @@ export async function uploadMediaAction(
       return {
         success: false,
         error: parsed.error.issues[0]?.message ?? 'Datos inválidos.',
+      }
+    }
+
+    if (entityType === 'venue') {
+      const venue = await prisma.venue.findUnique({ where: { id: entityId }, select: { userId: true } })
+      if (!venue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, entityId))) {
+        return { success: false, error: 'No tienes permiso para modificar este local.' }
+      }
+      if (session.user.role !== 'ADMIN') {
+        try {
+          await assertMediaCapacity(entityId)
+        } catch (error) {
+          if (error instanceof BillingEntitlementError) return { success: false, error: error.message }
+          throw error
+        }
       }
     }
 
@@ -87,6 +104,13 @@ export async function deleteMediaAction(mediaId: string): Promise<ActionResponse
       return { success: false, error: 'Archivo no encontrado.' }
     }
 
+    if (media.venueId) {
+      const venue = await prisma.venue.findUnique({ where: { id: media.venueId }, select: { userId: true } })
+      if (!venue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, media.venueId))) {
+        return { success: false, error: 'No tienes permiso para modificar este local.' }
+      }
+    }
+
     await prisma.media.delete({ where: { id: mediaId } })
 
     if (media.venueId) {
@@ -116,6 +140,13 @@ export async function reorderMediaAction(
 
     if (!session?.user?.id) {
       return { success: false, error: 'No autorizado.' }
+    }
+
+    if (entityType === 'venue') {
+      const venue = await prisma.venue.findUnique({ where: { id: entityId }, select: { userId: true } })
+      if (!venue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, entityId))) {
+        return { success: false, error: 'No tienes permiso para modificar este local.' }
+      }
     }
 
     await Promise.all(

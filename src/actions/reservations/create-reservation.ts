@@ -10,6 +10,7 @@ import type { Reservation, ReservationSettings } from '@prisma/client'
 import { sendReservationConfirmationEmail } from '@/lib/email/templates/reservation-confirmed'
 import { sendNewReservationOwnerEmail } from '@/lib/email/templates/reservation-notify-owner'
 import { sendReservationStatusEmail } from '@/lib/email/templates/reservation-status'
+import { assertVenueCapability, BillingEntitlementError, canManageVenue } from '@/lib/billing/plans'
 
 export async function createReservationAction(input: unknown): Promise<ActionResponse<Reservation>> {
   try {
@@ -32,6 +33,8 @@ export async function createReservationAction(input: unknown): Promise<ActionRes
     }
 
     if (parsed.data.venueId) {
+      try { await assertVenueCapability(parsed.data.venueId, 'reservationsEnabled') }
+      catch (error) { if (error instanceof BillingEntitlementError) return { success: false, error: error.message }; throw error }
       const settings = await prisma.reservationSettings.findUnique({
         where: { venueId: parsed.data.venueId },
       })
@@ -45,6 +48,14 @@ export async function createReservationAction(input: unknown): Promise<ActionRes
           success: false,
           error: `El tamaño máximo del grupo es ${settings.maxPartySize} personas.`,
         }
+      }
+    }
+
+    if (parsed.data.eventId && !parsed.data.venueId) {
+      const event = await prisma.event.findUnique({ where: { id: parsed.data.eventId }, select: { venueId: true } })
+      if (event?.venueId) {
+        try { await assertVenueCapability(event.venueId, 'reservationsEnabled') }
+        catch (error) { if (error instanceof BillingEntitlementError) return { success: false, error: error.message }; throw error }
       }
     }
 
@@ -115,7 +126,7 @@ export async function updateReservationStatusAction(
     }
 
     const isOwner = reservation.userId === session.user.id
-    const isVenueOwner = reservation.venue?.userId === session.user.id
+    const isVenueOwner = reservation.venueId ? await canManageVenue(session.user.id, reservation.venueId) : false
     const isAdmin = session.user.role === 'ADMIN'
 
     if (!isOwner && !isVenueOwner && !isAdmin) {
@@ -169,7 +180,7 @@ export async function upsertReservationSettingsAction(
       return { success: false, error: 'Local no encontrado.' }
     }
 
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return { success: false, error: 'No tienes permiso.' }
     }
 

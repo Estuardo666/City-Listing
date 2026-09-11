@@ -8,6 +8,7 @@ import { invalidateCache } from '@/lib/cache'
 import { z } from 'zod'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueBusinessHours } from '@prisma/client'
+import { canManageVenue } from '@/lib/billing/plans'
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/
@@ -70,7 +71,7 @@ export async function upsertBusinessHoursAction(
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { userId: true, slug: true } })
     if (!venue) return { success: false, error: 'Local no encontrado.' }
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) return { success: false, error: 'No tienes permiso.' }
 
     const parsed = hourSchema.safeParse(input)
     if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
@@ -116,7 +117,7 @@ export async function deleteBusinessHoursAction(id: string): Promise<ActionRespo
       include: { venue: { select: { userId: true, slug: true } } },
     })
     if (!hour) return { success: false, error: 'No encontrado.' }
-    if (session.user.role !== 'ADMIN' && hour.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, hour.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     await prisma.venueBusinessHours.delete({ where: { id } })
     await invalidateHoursCache()
@@ -139,7 +140,7 @@ export async function setDayClosedAction(
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { userId: true, slug: true } })
     if (!venue) return { success: false, error: 'Local no encontrado.' }
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) return { success: false, error: 'No tienes permiso.' }
 
     if (isClosed) {
       await prisma.venueBusinessHours.deleteMany({ where: { venueId, dayOfWeek } })
@@ -170,7 +171,7 @@ export async function duplicateDayScheduleAction(
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { userId: true, slug: true } })
     if (!venue) return { success: false, error: 'Local no encontrado.' }
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) return { success: false, error: 'No tienes permiso.' }
 
     const sourceSlots = await prisma.venueBusinessHours.findMany({
       where: { venueId, dayOfWeek: fromDay },

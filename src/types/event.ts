@@ -86,6 +86,7 @@ export type EventListItem = Prisma.EventGetPayload<{
     lng: true
     venueId: true
     featured: true
+    sponsoredUntil: true
     status: true
     price: true
     isRecurring: true

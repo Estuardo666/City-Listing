@@ -8,6 +8,7 @@ import { venueSchema } from '@/schemas/venue.schema'
 import { invalidateVenueCache } from '@/lib/cache-invalidation'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueWithRelations } from '@/types/venue'
+import { canManageVenue } from '@/lib/billing/plans'
 
 export async function updateVenueAction(
   venueId: string,
@@ -45,7 +46,7 @@ export async function updateVenueAction(
     }
 
     // Only admin or venue owner can edit
-    if (session.user.role !== 'ADMIN' && existingVenue.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return {
         success: false,
         error: 'No tienes permiso para editar este local.',

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
+import { assertVenueCapability, BillingEntitlementError } from '@/lib/billing/plans'
 
 const reservationSchema = z.object({
   venueId: z.string().trim().min(1).optional(),
@@ -65,10 +66,15 @@ export async function POST(request: Request) {
     ? await prisma.venue.findFirst({ where: { id: parsed.data.venueId, status: 'APPROVED', isActive: true }, select: { id: true, name: true, slug: true, reservationSettings: { select: { acceptsReservations: true, maxPartySize: true } } } })
     : null
   const event = parsed.data.eventId
-    ? await prisma.event.findFirst({ where: { id: parsed.data.eventId, status: 'APPROVED' }, select: { id: true, title: true, slug: true, startDate: true } })
+    ? await prisma.event.findFirst({ where: { id: parsed.data.eventId, status: 'APPROVED' }, select: { id: true, title: true, slug: true, startDate: true, venueId: true } })
     : null
   if (parsed.data.venueId && !venue) return mobileError('NOT_FOUND', 'El local no está disponible.', 404)
   if (parsed.data.eventId && !event) return mobileError('NOT_FOUND', 'El evento no está disponible.', 404)
+  const reservationVenueId = venue?.id ?? event?.venueId
+  if (reservationVenueId) {
+    try { await assertVenueCapability(reservationVenueId, 'reservationsEnabled') }
+    catch (error) { if (error instanceof BillingEntitlementError) return mobileError(error.code, error.message, 409, undefined, error.context); throw error }
+  }
   if (venue?.reservationSettings?.acceptsReservations === false) return mobileError('RESERVATIONS_DISABLED', 'Este local no acepta reservas.', 409)
   if (venue?.reservationSettings?.maxPartySize && parsed.data.partySize > venue.reservationSettings.maxPartySize) {
     return mobileError('PARTY_SIZE_TOO_LARGE', 'La cantidad de personas supera el máximo permitido.', 422)

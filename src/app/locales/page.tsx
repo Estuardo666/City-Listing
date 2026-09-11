@@ -36,15 +36,16 @@ const TOP_RATED_TAKE = 6
 const ALL_TAKE = 12
 
 export default async function LocalesPage() {
+  const now = new Date()
   const [allApproved, featuredVenues, promoVenues, topRatedVenues, categories] = await Promise.all([
     getVenues({ status: 'APPROVED' }, 60),
     prisma.venue.findMany({
-      where: { status: 'APPROVED', featured: true },
-      orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
+      where: { status: 'APPROVED', OR: [{ featured: true }, { sponsoredUntil: { gt: now } }] },
+      orderBy: [{ sponsoredUntil: 'desc' }, { featured: 'desc' }, { createdAt: 'desc' }],
       take: FEATURED_TAKE,
       select: {
         id: true, name: true, slug: true, description: true, image: true,
-        location: true, address: true, lat: true, lng: true, featured: true,
+        location: true, address: true, lat: true, lng: true, featured: true, sponsoredUntil: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
         venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
@@ -59,7 +60,7 @@ export default async function LocalesPage() {
       take: PROMO_TAKE,
       select: {
         id: true, name: true, slug: true, description: true, image: true,
-        location: true, address: true, lat: true, lng: true, featured: true,
+        location: true, address: true, lat: true, lng: true, featured: true, sponsoredUntil: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
         venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },
@@ -71,7 +72,7 @@ export default async function LocalesPage() {
       take: TOP_RATED_TAKE,
       select: {
         id: true, name: true, slug: true, description: true, image: true,
-        location: true, address: true, lat: true, lng: true, featured: true,
+        location: true, address: true, lat: true, lng: true, featured: true, sponsoredUntil: true,
         status: true, phone: true, website: true, priceRange: true,
         avgRating: true, reviewCount: true, verified: true, badge: true,
         venueCategories: { select: { category: { select: { id: true, name: true, slug: true, color: true, icon: true } } } },

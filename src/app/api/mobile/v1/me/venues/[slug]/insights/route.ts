@@ -3,6 +3,7 @@ import { mobileError, mobileSuccess, withMobileErrors } from '@/lib/mobile-respo
 import { prisma } from '@/lib/prisma'
 import { getInteractionMetrics } from '@/lib/interactions'
 import { getViewSeries, VIEW_RETENTION_DAYS } from '@/lib/views'
+import { canManageVenue, resolveEffectivePlan } from '@/lib/billing/plans'
 
 /**
  * Business dashboard for the owner of a venue: what needs answering and how the
@@ -33,14 +34,16 @@ export const GET = withMobileErrors(
 
     if (!venue) return mobileError('NOT_FOUND', 'Local no encontrado.', 404)
 
-    const isOwner = venue.userId === principal.userId || venue.claimedBy === principal.userId
+    const isOwner = await canManageVenue(principal.userId, venue.id)
     if (!isOwner && principal.role !== 'ADMIN') {
       return mobileError('FORBIDDEN', 'Solo el dueño puede ver estas métricas.', 403)
     }
 
+    const plan = await resolveEffectivePlan(venue.id)
+    const retentionDays = plan.capabilities.analyticsRetentionDays ?? VIEW_RETENTION_DAYS
     const [series, pendingReviews, pendingQuestions, upcomingReservations, favorites] =
       await Promise.all([
-        getViewSeries({ kind: 'venue', itemId: venue.id, days: VIEW_RETENTION_DAYS }),
+        getViewSeries({ kind: 'venue', itemId: venue.id, days: retentionDays }),
         prisma.review.count({ where: { venueId: venue.id, ownerReply: null } }),
         prisma.question.count({ where: { venueId: venue.id, answer: null } }),
         prisma.reservation.count({
@@ -60,7 +63,7 @@ export const GET = withMobileErrors(
       pendingReviewReplies: pendingReviews,
       unansweredQuestions: pendingQuestions,
       upcomingReservations,
-      retentionDays: VIEW_RETENTION_DAYS,
+      retentionDays,
       interactions: await getInteractionMetrics('venue', venue.id),
     })
   },

@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import type { ActionResponse } from '@/types/action-response'
 import type { MenuCategory, MenuItem } from '@prisma/client'
+import { assertVenueCapability, BillingEntitlementError, canManageVenue } from '@/lib/billing/plans'
 
 const menuCategorySchema = z.object({
   name: z.string().trim().min(1, 'Nombre requerido').max(60),
@@ -30,7 +31,12 @@ export async function createMenuCategoryAction(
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { userId: true, slug: true } })
     if (!venue) return { success: false, error: 'Local no encontrado.' }
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) return { success: false, error: 'No tienes permiso.' }
+
+    if (session.user.role !== 'ADMIN') {
+      try { await assertVenueCapability(venueId, 'menuEnabled') }
+      catch (error) { if (error instanceof BillingEntitlementError) return { success: false, error: error.message }; throw error }
+    }
 
     const parsed = menuCategorySchema.safeParse(input)
     if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
@@ -57,7 +63,7 @@ export async function deleteMenuCategoryAction(id: string): Promise<ActionRespon
       include: { venue: { select: { userId: true, slug: true } } },
     })
     if (!cat) return { success: false, error: 'No encontrado.' }
-    if (session.user.role !== 'ADMIN' && cat.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, cat.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     await prisma.menuCategory.delete({ where: { id } })
     revalidatePath(`/locales/${cat.venue.slug}`)
@@ -80,7 +86,12 @@ export async function createMenuItemAction(
       include: { venue: { select: { userId: true, slug: true } } },
     })
     if (!cat) return { success: false, error: 'Categoría no encontrada.' }
-    if (session.user.role !== 'ADMIN' && cat.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, cat.venueId)) return { success: false, error: 'No tienes permiso.' }
+
+    if (session.user.role !== 'ADMIN') {
+      try { await assertVenueCapability(cat.venueId, 'menuEnabled') }
+      catch (error) { if (error instanceof BillingEntitlementError) return { success: false, error: error.message }; throw error }
+    }
 
     const parsed = menuItemSchema.safeParse(input)
     if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
@@ -107,7 +118,7 @@ export async function updateMenuItemAction(id: string, input: unknown): Promise<
       include: { menuCategory: { include: { venue: { select: { userId: true, slug: true } } } } },
     })
     if (!item) return { success: false, error: 'Item no encontrado.' }
-    if (session.user.role !== 'ADMIN' && item.menuCategory.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, item.menuCategory.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     const parsed = menuItemSchema.safeParse(input)
     if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }
@@ -130,7 +141,7 @@ export async function deleteMenuItemAction(id: string): Promise<ActionResponse<v
       include: { menuCategory: { include: { venue: { select: { userId: true, slug: true } } } } },
     })
     if (!item) return { success: false, error: 'No encontrado.' }
-    if (session.user.role !== 'ADMIN' && item.menuCategory.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, item.menuCategory.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     await prisma.menuItem.delete({ where: { id } })
     revalidatePath(`/locales/${item.menuCategory.venue.slug}`)
@@ -153,7 +164,7 @@ export async function updateMenuCategoryAction(
       include: { venue: { select: { userId: true, slug: true } } },
     })
     if (!cat) return { success: false, error: 'No encontrado.' }
-    if (session.user.role !== 'ADMIN' && cat.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, cat.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     if (!name?.trim()) return { success: false, error: 'Nombre requerido.' }
 
@@ -175,7 +186,7 @@ export async function reorderCategoriesAction(
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { userId: true, slug: true } })
     if (!venue) return { success: false, error: 'Local no encontrado.' }
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) return { success: false, error: 'No tienes permiso.' }
 
     await Promise.all(
       categoryIds.map((id, index) =>
@@ -203,7 +214,7 @@ export async function reorderItemsAction(
       include: { venue: { select: { userId: true, slug: true } } },
     })
     if (!cat) return { success: false, error: 'Categoría no encontrada.' }
-    if (session.user.role !== 'ADMIN' && cat.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, cat.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     await Promise.all(
       itemIds.map((id, index) =>
@@ -228,7 +239,7 @@ export async function toggleItemAvailabilityAction(id: string): Promise<ActionRe
       include: { menuCategory: { include: { venue: { select: { userId: true, slug: true } } } } },
     })
     if (!item) return { success: false, error: 'Item no encontrado.' }
-    if (session.user.role !== 'ADMIN' && item.menuCategory.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, item.menuCategory.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     const updated = await prisma.menuItem.update({
       where: { id },
@@ -252,7 +263,7 @@ export async function toggleItemFeaturedAction(id: string): Promise<ActionRespon
       include: { menuCategory: { include: { venue: { select: { userId: true, slug: true } } } } },
     })
     if (!item) return { success: false, error: 'Item no encontrado.' }
-    if (session.user.role !== 'ADMIN' && item.menuCategory.venue.userId !== session.user.id) return { success: false, error: 'No tienes permiso.' }
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, item.menuCategory.venueId)) return { success: false, error: 'No tienes permiso.' }
 
     const updated = await prisma.menuItem.update({
       where: { id },

@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { slugify } from '@/lib/utils'
 import type { ActionResponse } from '@/types/action-response'
+import { ensureBusinessAccount, assertLocationCapacity, BillingEntitlementError, canManageVenue } from '@/lib/billing/plans'
 
 export async function createBranchAction(
   parentVenueId: string,
@@ -29,12 +30,20 @@ export async function createBranchAction(
       return { success: false, error: 'No autorizado.' }
     }
 
+    const businessAccount = await ensureBusinessAccount(session.user.id)
+    try {
+      await assertLocationCapacity(session.user.id)
+    } catch (error) {
+      if (error instanceof BillingEntitlementError) return { success: false, error: error.message }
+      throw error
+    }
+
     const parentVenue = await prisma.venue.findUnique({
       where: { id: parentVenueId },
       select: { userId: true, name: true },
     })
 
-    if (!parentVenue || parentVenue.userId !== session.user.id) {
+    if (!parentVenue || session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, parentVenueId, ['OWNER', 'ADMIN'])) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -97,6 +106,7 @@ export async function createBranchAction(
           website: branchData.website?.trim() || null,
           userId: session.user.id,
           parentId: parentVenueId,
+          businessAccountId: businessAccount.id,
           status: 'PENDING',
         },
       })
@@ -136,7 +146,7 @@ export async function linkBranchAction(
       select: { userId: true },
     })
 
-    if (!parentVenue || parentVenue.userId !== session.user.id) {
+    if (!parentVenue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, parentVenueId, ['OWNER', 'ADMIN']))) {
       return { success: false, error: 'No eres el dueño del local principal.' }
     }
 
@@ -149,7 +159,7 @@ export async function linkBranchAction(
       return { success: false, error: 'Local no encontrado.' }
     }
 
-    if (existingVenue.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, existingVenueId, ['OWNER', 'ADMIN'])) {
       return { success: false, error: 'No eres el dueño de este local.' }
     }
 
@@ -192,7 +202,7 @@ export async function unlinkBranchAction(branchId: string): Promise<ActionRespon
       return { success: false, error: 'Esta sucursal no está vinculada.' }
     }
 
-    if (branch.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, branchId, ['OWNER', 'ADMIN'])) {
       return { success: false, error: 'No eres el dueño de esta sucursal.' }
     }
 
@@ -201,7 +211,7 @@ export async function unlinkBranchAction(branchId: string): Promise<ActionRespon
       select: { userId: true },
     })
 
-    if (!parentVenue || parentVenue.userId !== session.user.id) {
+    if (!parentVenue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, branch.parentId, ['OWNER', 'ADMIN']))) {
       return { success: false, error: 'No eres el dueño del local principal.' }
     }
 
@@ -236,7 +246,7 @@ export async function deleteBranchAction(branchId: string): Promise<ActionRespon
       return { success: false, error: 'Esta sucursal no está vinculada.' }
     }
 
-    if (branch.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, branchId, ['OWNER', 'ADMIN'])) {
       return { success: false, error: 'No eres el dueño de esta sucursal.' }
     }
 
@@ -245,7 +255,7 @@ export async function deleteBranchAction(branchId: string): Promise<ActionRespon
       select: { userId: true },
     })
 
-    if (!parentVenue || parentVenue.userId !== session.user.id) {
+    if (!parentVenue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, branch.parentId, ['OWNER', 'ADMIN']))) {
       return { success: false, error: 'No eres el dueño del local principal.' }
     }
 
@@ -275,7 +285,7 @@ export async function getBranchesAction(parentVenueId: string) {
       select: { userId: true },
     })
 
-    if (!parentVenue || parentVenue.userId !== session.user.id) {
+    if (!parentVenue || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, parentVenueId, ['OWNER', 'ADMIN']))) {
       return []
     }
 
@@ -328,7 +338,7 @@ export async function getBranchAnalyticsAction(branchId: string) {
       },
     })
 
-    if (!branch || branch.userId !== session.user.id) {
+    if (!branch || (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, branchId))) {
       return null
     }
 

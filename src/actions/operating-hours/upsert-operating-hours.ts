@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { operatingHoursSchema } from '@/schemas/operating-hours.schema'
 import type { ActionResponse } from '@/types/action-response'
 import type { OperatingHours } from '@prisma/client'
+import { canManageVenue } from '@/lib/billing/plans'
 
 export async function upsertOperatingHoursAction(
   venueId: string,
@@ -31,7 +32,7 @@ export async function upsertOperatingHoursAction(
       return { success: false, error: 'Local no encontrado.' }
     }
 
-    if (session.user.role !== 'ADMIN' && existingVenue.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return { success: false, error: 'No tienes permiso para editar este local.' }
     }
 

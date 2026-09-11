@@ -4,6 +4,7 @@ import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
 import { slugify } from '@/lib/utils'
+import { assertEventCapacity, BillingEntitlementError, getBusinessAccountForUser } from '@/lib/billing/plans'
 
 const eventSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -44,8 +45,15 @@ export async function POST(request: Request) {
   const startDate = new Date(parsed.data.startDate)
   if (startDate <= new Date()) return mobileError('VALIDATION_ERROR', 'El evento debe ser futuro.', 422)
   if (parsed.data.venueId) {
-    const venue = await prisma.venue.findFirst({ where: { id: parsed.data.venueId, status: 'APPROVED', isActive: true }, select: { id: true } })
+    const venue = await prisma.venue.findFirst({ where: { id: parsed.data.venueId, status: 'APPROVED', isActive: true }, select: { id: true, userId: true, claimedBy: true, businessAccountId: true } })
     if (!venue) return mobileError('NOT_FOUND', 'El local no está disponible.', 404)
+    const account = await getBusinessAccountForUser(principal.userId)
+    const canManage = venue.userId === principal.userId || venue.claimedBy === principal.userId || (!!account && venue.businessAccountId === account.id)
+    if (!canManage && principal.role !== 'ADMIN') return mobileError('FORBIDDEN', 'No tienes permiso para publicar en este local.', 403)
+    if (principal.role !== 'ADMIN') {
+      try { await assertEventCapacity(venue.id) }
+      catch (error) { if (error instanceof BillingEntitlementError) return mobileError(error.code, error.message, 409, undefined, error.context); throw error }
+    }
   }
   const baseSlug = slugify(parsed.data.title) || `evento-${Date.now()}`
   const slug = `${baseSlug}-${randomBytes(3).toString('hex')}`

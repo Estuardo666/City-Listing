@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkMobileRateLimit } from '@/lib/mobile-rate-limit'
 import { getGooglePlacePhoto } from '@/lib/google/place-photo'
+import { resolveEffectivePlan } from '@/lib/billing/plans'
 
 export const dynamic = 'force-dynamic'
 const headers = { 'Cache-Control': 'private, no-store, max-age=0' }
@@ -15,11 +16,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   try {
     const venue = await prisma.venue.findFirst({
       where: { slug, status: 'APPROVED', isActive: true },
-      select: { googlePlaceId: true },
+      select: { id: true, googlePlaceId: true },
     })
     if (!venue?.googlePlaceId) return NextResponse.json({ photo: null }, { headers })
+    const plan = await resolveEffectivePlan(venue.id)
+    if (!plan.capabilities.googlePhotoEnabled) return NextResponse.json({ photo: null }, { headers })
     const width = new URL(request.url).searchParams.get('size') === 'large' ? 1200 : 400
-    const photo = await getGooglePlacePhoto(venue.googlePlaceId, width)
+    const photo = await getGooglePlacePhoto(venue.googlePlaceId, width, venue.id)
     return NextResponse.json({ photo }, { headers })
   } catch {
     // Never expose upstream URLs, API credentials or private venue data.

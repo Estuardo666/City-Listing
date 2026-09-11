@@ -24,6 +24,7 @@ function isValidHttpUrl(value: string): boolean {
 export function EventCard({ event }: EventCardProps) {
   const hasValidImage = Boolean(event.image && isValidHttpUrl(event.image))
   const [imageError, setImageError] = useState(false)
+  const sponsored = !!event.sponsoredUntil && new Date(event.sponsoredUntil) > new Date()
 
   return (
     <Link
@@ -41,9 +42,9 @@ export function EventCard({ event }: EventCardProps) {
             onError={() => setImageError(true)}
           />
           <div className="absolute right-3 top-3 flex flex-wrap gap-1.5">
-          {event.featured && (
+          {(sponsored || event.featured) && (
             <span className="inline-flex items-center gap-1 rounded-full bg-coral px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
-              <Sparkles className="h-3 w-3" /> Destacado
+              <Sparkles className="h-3 w-3" /> {sponsored ? 'Patrocinado' : 'Destacado'}
             </span>
           )}
           {event.isRecurring && (

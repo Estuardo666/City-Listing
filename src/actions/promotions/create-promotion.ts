@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { promotionSchema, promotionStatusUpdateSchema } from '@/schemas/promotion.schema'
 import type { ActionResponse } from '@/types/action-response'
 import type { Promotion } from '@prisma/client'
+import { assertPromotionCapacity, BillingEntitlementError, canManageVenue } from '@/lib/billing/plans'
 
 export async function createPromotionAction(
   venueId: string,
@@ -28,8 +29,13 @@ export async function createPromotionAction(
       return { success: false, error: 'Local no encontrado.' }
     }
 
-    if (session.user.role !== 'ADMIN' && venue.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, venueId)) {
       return { success: false, error: 'No tienes permiso para crear ofertas en este local.' }
+    }
+
+    if (session.user.role !== 'ADMIN') {
+      try { await assertPromotionCapacity(venueId) }
+      catch (error) { if (error instanceof BillingEntitlementError) return { success: false, error: error.message }; throw error }
     }
 
     const parsed = promotionSchema.safeParse(input)
@@ -111,7 +117,7 @@ export async function deletePromotionAction(promotionId: string): Promise<Action
       return { success: false, error: 'Oferta no encontrada.' }
     }
 
-    if (session.user.role !== 'ADMIN' && promotion.venue.userId !== session.user.id) {
+    if (session.user.role !== 'ADMIN' && !await canManageVenue(session.user.id, promotion.venueId)) {
       return { success: false, error: 'No tienes permiso.' }
     }
 

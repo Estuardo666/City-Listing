@@ -5,6 +5,7 @@ import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { mobileError, mobileSuccess, withMobileErrors } from '@/lib/mobile-response'
 import { notifyUser } from '@/lib/notifications'
 import { prisma } from '@/lib/prisma'
+import { canManageVenue } from '@/lib/billing/plans'
 
 const schema = z.object({ reply: z.string().trim().min(1).max(500) })
 
@@ -30,16 +31,18 @@ export const PATCH = withMobileErrors(
         id: true,
         userId: true,
         content: true,
-        venue: { select: { userId: true, name: true, slug: true } },
-        event: { select: { userId: true, title: true, slug: true } },
+        venue: { select: { id: true, userId: true, name: true, slug: true } },
+        event: { select: { userId: true, venueId: true, title: true, slug: true } },
         user: { select: { name: true, email: true } },
       },
     })
 
     if (!review) return mobileError('NOT_FOUND', 'La reseña no existe.', 404)
 
-    const ownerId = review.venue?.userId ?? review.event?.userId
-    if (principal.role !== 'ADMIN' && ownerId !== principal.userId) {
+    const canReplyToVenue = review.venue ? await canManageVenue(principal.userId, review.venue.id) : false
+    const canReplyToEventVenue = review.event?.venueId ? await canManageVenue(principal.userId, review.event.venueId) : false
+    const ownsStandaloneEvent = review.event?.userId === principal.userId
+    if (principal.role !== 'ADMIN' && !canReplyToVenue && !canReplyToEventVenue && !ownsStandaloneEvent) {
       return mobileError('FORBIDDEN', 'No puedes responder esta reseña.', 403)
     }
 

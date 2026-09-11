@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { venueClaimUpdateSchema } from '@/schemas/venue-claim.schema'
 import type { ActionResponse } from '@/types/action-response'
 import type { VenueClaim } from '@prisma/client'
+import { approveClaimWithBilling, rejectClaimWithBilling } from '@/lib/billing/service'
 
 export async function updateVenueClaimStatusAction(
   input: unknown,
@@ -35,24 +36,21 @@ export async function updateVenueClaimStatusAction(
       return { success: false, error: 'Reclamo no encontrado.' }
     }
 
-    const updated = await prisma.venueClaim.update({
-      where: { id: parsed.data.claimId },
-      data: {
-        status: parsed.data.status,
-        adminNotes: parsed.data.adminNotes,
-      },
-    })
-
-    // Si se aprueba → transferir ownership
+    let updated: VenueClaim
     if (parsed.data.status === 'APPROVED') {
-      await prisma.venue.update({
-        where: { id: claim.venueId },
-        data: {
-          claimed: true,
-          claimedBy: claim.userId,
-          verified: true,
-          badge: 'VERIFIED',
-        },
+      updated = await approveClaimWithBilling(parsed.data.claimId, session.user.id)
+      if (parsed.data.adminNotes) {
+        updated = await prisma.venueClaim.update({ where: { id: updated.id }, data: { adminNotes: parsed.data.adminNotes } })
+      }
+    } else if (parsed.data.status === 'REJECTED') {
+      updated = await rejectClaimWithBilling(parsed.data.claimId, session.user.id)
+      if (parsed.data.adminNotes) {
+        updated = await prisma.venueClaim.update({ where: { id: updated.id }, data: { adminNotes: parsed.data.adminNotes } })
+      }
+    } else {
+      updated = await prisma.venueClaim.update({
+        where: { id: parsed.data.claimId },
+        data: { status: parsed.data.status, adminNotes: parsed.data.adminNotes },
       })
     }
 

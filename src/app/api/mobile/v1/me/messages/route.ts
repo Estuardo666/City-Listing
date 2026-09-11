@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
+import { assertVenueCapability, BillingEntitlementError, canManageVenue } from '@/lib/billing/plans'
 
 const messageSchema = z.object({
   venueId: z.string().trim().min(1),
@@ -57,6 +58,19 @@ export async function POST(request: Request) {
   ])
   if (!venue || !receiver) return mobileError('NOT_FOUND', 'El local o destinatario no está disponible.', 404)
   if (blocked) return mobileError('MESSAGING_BLOCKED', 'La conversación no está disponible.', 403)
+  try {
+    await assertVenueCapability(venue.id, 'messagingEnabled')
+  } catch (error) {
+    if (error instanceof BillingEntitlementError) return mobileError(error.code, error.message, 409, undefined, error.context)
+    throw error
+  }
+  const [senderManagesVenue, receiverManagesVenue] = await Promise.all([
+    principal.role === 'ADMIN' ? Promise.resolve(true) : canManageVenue(principal.userId, venue.id),
+    canManageVenue(receiver.id, venue.id),
+  ])
+  if (!senderManagesVenue && !receiverManagesVenue) {
+    return mobileError('FORBIDDEN', 'La conversación debe incluir a un responsable del local.', 403)
+  }
 
   const created = await prisma.message.create({
     data: { venueId: venue.id, senderId: principal.userId, receiverId: receiver.id, content: parsed.data.content },

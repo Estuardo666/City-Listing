@@ -72,7 +72,11 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
   const hasReviews = venue.reviews.length > 0
   const hasPromotions = venue.promotions.length > 0
   const hasProducts = venue.products.length > 0
-  const acceptsReservations = venue.reservationSettings?.acceptsReservations ?? false
+  const capabilities = (venue as VenueWithRelations & { capabilities?: { whatsappEnabled?: boolean; messagingEnabled?: boolean; reservationsEnabled?: boolean } }).capabilities
+  const whatsappEnabled = capabilities?.whatsappEnabled !== false
+  const messagingEnabled = capabilities?.messagingEnabled !== false
+  const acceptsReservations = capabilities?.reservationsEnabled !== false && (venue.reservationSettings?.acceptsReservations ?? false)
+  const sponsored = !!venue.sponsoredUntil && new Date(venue.sponsoredUntil) > new Date()
   const isGastronomic = venue.venueCategories.some((vc) => GASTRONOMIC_CATEGORY_SLUGS.includes(vc.category.slug))
 
   // Google caps cached Places content at 30 days. The nightly refresh normally
@@ -110,9 +114,9 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
                 <ShieldCheck className="h-3.5 w-3.5" /> Verificado
               </span>
             )}
-            {venue.featured && (
+            {(sponsored || venue.featured) && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
-                <Sparkles className="h-3.5 w-3.5" /> Destacado
+                <Sparkles className="h-3.5 w-3.5" /> {sponsored ? 'Patrocinado' : 'Destacado'}
               </span>
             )}
             {venue.priceRange && (
@@ -180,9 +184,9 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
                 <ShieldCheck className="h-3.5 w-3.5" /> Verificado
               </span>
             )}
-            {venue.featured && (
+            {(sponsored || venue.featured) && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1 text-sm font-semibold text-white">
-                <Sparkles className="h-3.5 w-3.5" /> Destacado
+                <Sparkles className="h-3.5 w-3.5" /> {sponsored ? 'Patrocinado' : 'Destacado'}
               </span>
             )}
             {venue.priceRange && (
@@ -437,7 +441,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
           )}
 
           {/* WhatsApp CTA */}
-          {venue.phone && (
+          {venue.phone && whatsappEnabled && (
             <WhatsAppButton
               phone={venue.phone}
               venueName={venue.name}
@@ -469,12 +473,12 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
           )}
 
           {/* Message Venue Button */}
-          <MessageVenueButton
-            venueId={venue.id}
-            venueOwnerId={venue.userId}
-            venueName={venue.name}
-            currentUserId={currentUserId}
-          />
+          {messagingEnabled && <MessageVenueButton
+              venueId={venue.id}
+              venueOwnerId={venue.userId}
+              venueName={venue.name}
+              currentUserId={currentUserId}
+            />}
 
           {/* Reservation */}
           {acceptsReservations && (
