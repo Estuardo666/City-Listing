@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useTransition } from 'react'
-import { useSession } from 'next-auth/react'
-import { Check, Loader2, Sparkles } from 'lucide-react'
+import { useEffect, useState, useTransition } from 'react'
+import { signIn, useSession } from 'next-auth/react'
+import { Check, Loader2, Lock, Mail, Sparkles, User, X } from 'lucide-react'
 import { activatePlanAction } from '@/actions/billing/checkout'
 
 type Capabilities = {
@@ -59,14 +59,62 @@ export function PricingCards({ catalog, currentSlug }: { catalog: Catalog; curre
   const [cycle, setCycle] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY')
   const [isPending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
+  const [selectedPlan, setSelectedPlan] = useState<CatalogPlan | null>(null)
+
+  useEffect(() => {
+    if (!selectedPlan) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedPlan(null)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [selectedPlan])
+  const [authMode, setAuthMode] = useState<'register' | 'login'>('register')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [accepted, setAccepted] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [authPending, setAuthPending] = useState(false)
 
   function activate(planSlug: string) {
-    if (status !== 'authenticated') return
     setMessage(null)
     startTransition(async () => {
       const result = await activatePlanAction({ planSlug, cycle, idempotencyKey: crypto.randomUUID(), device: 'web' })
       setMessage(result.success ? 'Plan activado. Tu dashboard ya está actualizado.' : result.error ?? 'No se pudo activar el plan.')
     })
+  }
+
+  function choose(plan: CatalogPlan) {
+    if (status === 'authenticated') return activate(plan.slug)
+    setAuthError(null)
+    setSelectedPlan(plan)
+  }
+
+  async function finishAccountAndCheckout() {
+    if (!selectedPlan || !email.trim() || password.length < 6 || !accepted || (authMode === 'register' && !name.trim())) return
+    setAuthPending(true)
+    setAuthError(null)
+    try {
+      if (authMode === 'register') {
+        const response = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), password }) })
+        const payload = await response.json()
+        if (!response.ok) {
+          if (response.status === 409) setAuthMode('login')
+          setAuthError(payload.error ?? 'No se pudo crear tu cuenta.')
+          return
+        }
+      }
+      const login = await signIn('credentials', { email: email.trim().toLowerCase(), password, redirect: false })
+      if (login?.error) { setAuthError('El correo o la contraseña no coinciden.'); return }
+      const planSlug = selectedPlan.slug
+      setSelectedPlan(null)
+      activate(planSlug)
+    } catch {
+      setAuthError('No pudimos conectar. Inténtalo nuevamente.')
+    } finally {
+      setAuthPending(false)
+    }
   }
 
   return (
@@ -99,7 +147,7 @@ export function PricingCards({ catalog, currentSlug }: { catalog: Catalog; curre
                 {benefitLines(plan).map((benefit) => <p key={benefit} className="flex gap-2 text-sm text-foreground"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />{benefit}</p>)}
               </div>
               <div className="mt-7">
-                {isRed ? <Link href="/contact" className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-accent">Solicitar plan Red</Link> : isCurrent ? <span className="flex min-h-11 items-center justify-center rounded-xl bg-secondary px-4 text-sm font-semibold text-muted-foreground">Plan actual</span> : status === 'authenticated' ? <button type="button" disabled={isPending || !catalog.simulation.enabled} onClick={() => activate(plan.slug)} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">{isPending && <Loader2 className="h-4 w-4 animate-spin" />}{catalog.simulation.enabled ? 'Elegir plan · beta $0' : 'Activación pausada'}</button> : <Link href="/auth/signin?callbackUrl=/planes" className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">Inicia sesión para elegir</Link>}
+                {isRed ? <Link href="/contact" className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-accent">Solicitar plan Red</Link> : isCurrent ? <span className="flex min-h-11 items-center justify-center rounded-xl bg-secondary px-4 text-sm font-semibold text-muted-foreground">Plan actual</span> : <button type="button" disabled={isPending || !catalog.simulation.enabled} onClick={() => choose(plan)} className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">{isPending && <Loader2 className="h-4 w-4 animate-spin" />}{catalog.simulation.enabled ? (status === 'authenticated' ? 'Elegir plan · beta $0' : 'Continuar con este plan') : 'Activación pausada'}</button>}
               </div>
             </article>
           )
@@ -110,6 +158,18 @@ export function PricingCards({ catalog, currentSlug }: { catalog: Catalog; curre
         <p className="font-semibold text-foreground">{catalog.simulation.label}</p>
         <p className="mt-1">Precio comercial de referencia · total cobrado {money(catalog.simulation.chargedAmount)} · sin tarjeta · sin renovación automática.</p>
       </div>
+
+      {selectedPlan && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="checkout-title" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedPlan(null) }}>
+        <div className="w-full max-w-lg rounded-t-[2rem] border border-border bg-background p-6 shadow-2xl sm:rounded-[2rem] sm:p-8">
+          <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Último paso</p><h2 id="checkout-title" className="mt-2 text-2xl font-semibold">{selectedPlan.name} · {money(cycle === 'ANNUAL' ? selectedPlan.annualPrice : selectedPlan.monthlyPrice)}</h2><p className="mt-1 text-sm text-muted-foreground">Crea tu acceso o entra con tu cuenta. Conservaremos el plan que elegiste.</p></div><button type="button" onClick={() => setSelectedPlan(null)} className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border hover:bg-secondary" aria-label="Cerrar checkout"><X className="h-5 w-5" /></button></div>
+          <div className="mt-6 grid grid-cols-2 rounded-xl bg-secondary p-1"><button type="button" onClick={() => { setAuthMode('register'); setAuthError(null) }} className={`min-h-11 cursor-pointer rounded-lg text-sm font-semibold ${authMode === 'register' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>Soy nuevo</button><button type="button" onClick={() => { setAuthMode('login'); setAuthError(null) }} className={`min-h-11 cursor-pointer rounded-lg text-sm font-semibold ${authMode === 'login' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>Ya tengo cuenta</button></div>
+          <div className="mt-5 space-y-4">{authMode === 'register' && <label className="block text-sm font-medium">Nombre completo<div className="relative mt-1.5"><User className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground"/><input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" className="min-h-11 w-full rounded-xl border bg-background pl-10 pr-3 text-base" /></div></label>}<label className="block text-sm font-medium">Correo electrónico<div className="relative mt-1.5"><Mail className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground"/><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className="min-h-11 w-full rounded-xl border bg-background pl-10 pr-3 text-base" /></div></label><label className="block text-sm font-medium">Contraseña<div className="relative mt-1.5"><Lock className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground"/><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={authMode === 'register' ? 'new-password' : 'current-password'} className="min-h-11 w-full rounded-xl border bg-background pl-10 pr-3 text-base" /></div><span className="mt-1 block text-xs text-muted-foreground">Mínimo 6 caracteres.</span></label>
+            <label className="flex cursor-pointer items-start gap-3 text-sm text-muted-foreground"><input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-1 h-4 w-4"/><span>Acepto los <Link href="/terminos" target="_blank" className="font-medium text-foreground underline">términos</Link>, la <Link href="/privacy" target="_blank" className="font-medium text-foreground underline">privacidad</Link> y la <Link href="/reembolsos" target="_blank" className="font-medium text-foreground underline">política de reembolsos</Link>.</span></label>
+            {authError && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{authError}</p>}
+            <button type="button" onClick={finishAccountAndCheckout} disabled={authPending || !accepted || !email.trim() || password.length < 6 || (authMode === 'register' && !name.trim())} className="flex min-h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-primary px-4 font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50">{authPending ? <Loader2 className="h-5 w-5 animate-spin"/> : authMode === 'register' ? 'Crear cuenta y activar plan' : 'Entrar y activar plan'}</button>
+          </div>
+        </div>
+      </div>}
     </div>
   )
 }

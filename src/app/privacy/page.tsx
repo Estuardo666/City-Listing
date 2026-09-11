@@ -1,67 +1,14 @@
-import { Metadata } from 'next'
-
-export const metadata: Metadata = {
-  title: 'Política de Privacidad | Vive Loja',
-  description:
-    'Conoce cómo Vive Loja recopila, usa y protege tus datos personales. Tu privacidad es importante para nosotros.',
-  openGraph: {
-    title: 'Política de Privacidad | Vive Loja',
-    description: 'Cómo Vive Loja protege y maneja tus datos personales.',
-    url: 'https://viveloja.com/privacy',
-    siteName: 'Vive Loja',
-    images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Privacidad - Vive Loja' }],
-    locale: 'es_EC',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Política de Privacidad | Vive Loja',
-    description: 'Cómo Vive Loja protege y maneja tus datos personales.',
-    images: ['https://viveloja.com/viveloja.png'],
-  },
-  alternates: { canonical: 'https://viveloja.com/privacy' },
-}
-
-export default function PrivacyPage() {
-  return (
-    <div className="pb-16 pt-8">
-      <section className="section-shell space-y-8">
-        <div className="surface-glass rounded-3xl p-6 sm:p-8">
-          <div className="space-y-3">
-            <p className="eyebrow">Legal</p>
-            <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-              Política de Privacidad
-            </h1>
-          </div>
-        </div>
-
-        <div className="max-w-3xl space-y-6 text-muted-foreground">
-          <p className="text-lg leading-relaxed">
-            En Vive Loja, tu privacidad es importante. Esta política describe cómo recopilamos,
-            usamos y protegemos tu información.
-          </p>
-
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground">Información que recopilamos</h2>
-            <p>
-              Recopilamos información que proporcionas directamente, como tu nombre, email y
-              contenido que publicas (reseñas, fotos, comentarios).
-            </p>
-
-            <h2 className="text-xl font-semibold text-foreground">Uso de la información</h2>
-            <p>
-              Utilizamos tu información para operar y mejorar la plataforma, personalizar tu
-              experiencia y comunicarnos contigo sobre tu actividad.
-            </p>
-
-            <h2 className="text-xl font-semibold text-foreground">Protección de datos</h2>
-            <p>
-              Implementamos medidas de seguridad apropiadas para proteger tu información personal
-              contra acceso no autorizado, alteración o destrucción.
-            </p>
-          </div>
-        </div>
-      </section>
-    </div>
-  )
-}
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { LegalPage } from '@/components/legal/legal-page'
+export const metadata: Metadata = { title: 'Política de privacidad — Vive Loja', description: 'Cómo Vive Loja recopila, utiliza, comparte y protege datos personales.', alternates: { canonical: 'https://viveloja.com/privacy' } }
+export default function PrivacyPage() { return <LegalPage eyebrow="Tus datos" title="Política de privacidad" summary="Te explicamos con claridad qué datos tratamos, para qué los usamos y cómo puedes ejercer tus derechos en Ecuador.">
+  <section><h2>1. Responsable y contacto</h2><p>Vive Loja es responsable del tratamiento realizado para operar esta plataforma. Puedes plantear consultas, solicitudes de derechos o reclamos mediante nuestra <Link href="/contact">página de contacto</Link>.</p></section>
+  <section><h2>2. Datos que tratamos</h2><ul><li>Cuenta: nombre, correo, contraseña cifrada y preferencias.</li><li>Actividad: publicaciones, reseñas, mensajes, favoritos, reservas, reclamos y decisiones de moderación.</li><li>Negocios: información de contacto profesional, locales, equipo, planes, órdenes y evidencia de representación.</li><li>Técnicos: dirección IP o identificadores derivados, dispositivo, sesiones, registros de seguridad y uso.</li><li>Ubicación: solo cuando autorizas funciones cercanas o proporcionas coordenadas.</li></ul></section>
+  <section><h2>3. Finalidades y bases</h2><p>Tratamos datos para ejecutar el servicio solicitado, autenticarte, publicar contenido, procesar reclamos y órdenes, prestar soporte, prevenir fraude, mantener seguridad, cumplir obligaciones y mejorar el producto. Cuando corresponda utilizamos consentimiento, ejecución contractual, obligación legal o interés legítimo sujeto a tus derechos.</p></section>
+  <section><h2>4. Fuentes públicas y terceros</h2><p>Parte del directorio puede provenir de fuentes accesibles al público o proveedores de mapas y lugares. Indicamos atribución cuando aplica y permitimos solicitar correcciones. También usamos proveedores de alojamiento, correo, almacenamiento, mapas, analítica técnica y seguridad que procesan datos para prestarnos sus servicios.</p></section>
+  <section><h2>5. Conservación</h2><p>Conservamos los datos mientras tu cuenta esté activa y después durante el tiempo razonablemente necesario para obligaciones legales, resolución de disputas, seguridad y respaldo. Evidencia de reclamos y registros de facturación pueden conservarse por períodos superiores cuando sean necesarios para acreditar decisiones o transacciones.</p></section>
+  <section><h2>6. Seguridad y transferencias</h2><p>Aplicamos controles técnicos y organizativos razonables, como cifrado de contraseñas, permisos y registros. Ningún sistema es infalible. Algunos proveedores pueden procesar datos fuera de Ecuador; utilizamos mecanismos y garantías compatibles con la normativa aplicable.</p></section>
+  <section><h2>7. Tus derechos</h2><p>Puedes solicitar información, acceso, rectificación, actualización, eliminación, oposición, limitación, portabilidad cuando corresponda y revisión de decisiones automatizadas. También puedes retirar un consentimiento sin afectar tratamientos anteriores. Verificaremos tu identidad antes de responder.</p></section>
+  <section><h2>8. Menores y cambios</h2><p>La contratación de planes y administración de negocios está dirigida a personas con capacidad legal para contratar. Podemos actualizar esta política y comunicaremos cambios materiales mediante la plataforma u otros canales disponibles.</p></section>
+</LegalPage> }

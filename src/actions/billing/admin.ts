@@ -160,6 +160,7 @@ export async function adminUpdatePlanShellAction(input: unknown): Promise<Action
   if (!plan) return { success: false, error: 'Plan no encontrado.' }
   await prisma.billingAuditLog.create({ data: { actorId, action: 'PLAN_CATALOG_UPDATED', reason, metadata: { planSlug, ...data } } })
   revalidatePath('/planes')
+  revalidatePath('/')
   revalidatePath('/admin/monetizacion')
   return { success: true, data: { planSlug } }
 }
@@ -174,6 +175,7 @@ export async function adminUpdateAddonAction(input: unknown): Promise<ActionResp
   const product = await prisma.addonProduct.upsert({ where: { slug }, update: data, create: { slug, ...data }, select: { slug: true } })
   await prisma.billingAuditLog.create({ data: { actorId, action: 'ADDON_CATALOG_UPDATED', reason, metadata: { slug, ...data } } })
   revalidatePath('/planes')
+  revalidatePath('/')
   revalidatePath('/admin/monetizacion')
   return { success: true, data: product }
 }
@@ -230,6 +232,7 @@ export async function adminPublishPlanVersionAction(input: unknown): Promise<Act
     return version
   })
   revalidatePath('/planes')
+  revalidatePath('/')
   revalidatePath('/admin/monetizacion')
   await invalidateVenueCache()
   return { success: true, data: { planSlug: plan.slug, version: created.version } }

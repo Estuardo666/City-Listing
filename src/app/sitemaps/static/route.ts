@@ -15,7 +15,12 @@ export async function GET() {
     { loc: `${SITE_URL}/colecciones`, priority: '0.6', changefreq: 'weekly' },
     { loc: `${SITE_URL}/about`, priority: '0.5', changefreq: 'monthly' },
     { loc: `${SITE_URL}/contact`, priority: '0.5', changefreq: 'monthly' },
+    { loc: `${SITE_URL}/planes`, priority: '0.7', changefreq: 'weekly' },
+    { loc: `${SITE_URL}/terminos`, priority: '0.3', changefreq: 'yearly' },
     { loc: `${SITE_URL}/privacy`, priority: '0.3', changefreq: 'yearly' },
+    { loc: `${SITE_URL}/reembolsos`, priority: '0.3', changefreq: 'yearly' },
+    { loc: `${SITE_URL}/cookies`, priority: '0.3', changefreq: 'yearly' },
+    { loc: `${SITE_URL}/normas-comunidad`, priority: '0.3', changefreq: 'yearly' },
   ]
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

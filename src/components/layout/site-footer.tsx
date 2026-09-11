@@ -36,7 +36,11 @@ export function SiteFooter() {
               <Link href="/planes" className="font-medium text-primary hover:text-primary/80">Planes y precios</Link>
               <Link href="/auth/signup" className="hover:text-foreground">Publicar negocio</Link>
               <Link href="/dashboard" className="hover:text-foreground">Panel de control</Link>
+              <Link href="/terminos" className="hover:text-foreground">Términos</Link>
               <Link href="/privacy" className="hover:text-foreground">Privacidad</Link>
+              <Link href="/reembolsos" className="hover:text-foreground">Reembolsos</Link>
+              <Link href="/cookies" className="hover:text-foreground">Cookies</Link>
+              <Link href="/normas-comunidad" className="hover:text-foreground">Normas de comunidad</Link>
             </div>
           </div>
         </div>

@@ -1,0 +1,11 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { LegalPage } from '@/components/legal/legal-page'
+export const metadata: Metadata = { title: 'Política de reembolsos — Vive Loja', alternates: { canonical: 'https://viveloja.com/reembolsos' } }
+export default function RefundPage() { return <LegalPage eyebrow="Compras y cancelaciones" title="Política de reembolsos" summary="Explica cuándo una compra puede cancelarse o reembolsarse y qué sucede cuando un reclamo de propiedad no supera la verificación.">
+  <section><h2>1. Activaciones beta</h2><p>Las activaciones cuyo checkout muestre un total cobrado de USD 0 no generan un pago que pueda reembolsarse.</p></section>
+  <section><h2>2. Servicios digitales pagados</h2><p>Cuando existan cobros reales, puedes solicitar revisión mediante la <Link href="/contact">página de contacto</Link>, indicando cuenta, orden y motivo. Evaluaremos duplicados, cobros no autorizados, indisponibilidad atribuible a Vive Loja y servicios que no se ajusten a lo ofrecido.</p></section>
+  <section><h2>3. Reclamos de negocios no acreditados</h2><p><strong>No ofrecemos reembolso cuando pagaste por un plan o extra asociado a un local que reclamaste y posteriormente se determina que no eras su propietario ni representante autorizado.</strong> Esto incluye la revocación del acceso por evidencia falsa, insuficiente o por una reclamación posterior respaldada por mejor evidencia.</p><p>Esta regla compensa la reserva de capacidad, revisión, moderación y activación realizada sobre la base de tu declaración de autoridad. No limita derechos irrenunciables ni remedios obligatorios por cobro indebido o servicio defectuoso reconocidos por la legislación aplicable.</p></section>
+  <section><h2>4. Extras y entregables</h2><p>Los impulsos digitales ya iniciados no son reembolsables salvo falla atribuible a Vive Loja. Los trabajos personalizados o kits físicos que ya entraron en producción pueden descontar costos efectivamente incurridos, dentro de lo permitido por ley.</p></section>
+  <section><h2>5. Plazos y medio de devolución</h2><p>Confirma tu solicitud tan pronto detectes el problema. Si procede, la devolución se hará al medio de pago original o mediante un método acordado, en el plazo informado al resolver el caso y respetando los plazos legales aplicables.</p></section>
+</LegalPage> }

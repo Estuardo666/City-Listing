@@ -26,6 +26,8 @@ import { HomeRelatedEventsSkeleton } from '@/components/features/home/home-relat
 import { HomeBlogSkeleton } from '@/components/features/home/home-blog-skeleton'
 import { HomePersonalizedSection } from '@/components/features/home/home-personalized-section'
 import { HomeConfiguredSections } from '@/components/features/home/home-configured-sections'
+import { PricingCards } from '@/components/billing/pricing-cards'
+import { getPublishedCatalog } from '@/lib/billing/plans'
 
 // Revalidate every 1 hour for ISR (Incremental Static Regeneration)
 export const revalidate = 3600
@@ -59,6 +61,7 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
+  const pricingCatalog = await getPublishedCatalog()
   const isPersonalized = !!session?.user?.id && session.user.onboardingCompleted
 
   let personalizedData = null
@@ -128,6 +131,17 @@ export default async function HomePage() {
               </>
             }
           />
+
+          <section className="relative overflow-hidden border-y border-border/60 bg-card/60 py-14 sm:py-20">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
+            <div className="section-shell space-y-10">
+              <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+                <div><p className="eyebrow text-primary">Tu local, a tu ritmo</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Empieza visible.<br/>Crece cuando te haga falta.</h2></div>
+                <p className="max-w-xl text-base leading-relaxed text-muted-foreground lg:justify-self-end">Compara sin registrarte. Elige primero y crea tu acceso únicamente al confirmar. Durante la beta, todos los planes se activan por $0 y muestran su precio comercial de referencia.</p>
+              </div>
+              <PricingCards catalog={pricingCatalog} />
+            </div>
+          </section>
 
           {/* CTA final */}
           <section className="rounded-3xl border border-primary/20 bg-gradient-to-r from-primary/10 via-accent to-primary/5 px-6 py-10 sm:px-10 sm:py-14">

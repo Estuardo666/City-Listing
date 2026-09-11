@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { useSession, signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,8 +52,8 @@ interface FormData {
 
 // ── Step indicators ───────────────────────────────────────────────
 const STEPS_AUTH = [
-  { label: 'Cuenta', icon: UserPlus },
   { label: 'Datos', icon: User },
+  { label: 'Cuenta', icon: UserPlus },
   { label: 'Código', icon: Mail },
   { label: 'Evidencia', icon: Upload },
   { label: 'Listo', icon: CheckCircle2 },
@@ -181,11 +182,16 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
   const { data: session, status } = useSession()
   const isAuthenticated = status === 'authenticated'
 
-  // If auth status is still loading, start at auth step (will redirect)
-  const needsAuth = status === 'unauthenticated'
+  // Keep the journey stable after sign-in; otherwise the step mapping would
+  // shift beneath the user as soon as the session cookie appears.
+  const [guestFlow, setGuestFlow] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (status !== 'loading' && guestFlow === null) setGuestFlow(status === 'unauthenticated')
+  }, [guestFlow, status])
+  const needsAuth = guestFlow === true
 
   // Wizard step: 0 = auth (if needed), then form, code, evidence, done
-  const [step, setStep] = useState<Step>(needsAuth ? 0 : 0)
+  const [step, setStep] = useState<Step>(0)
   const [loading, setLoading] = useState(false)
   const [claimId, setClaimId] = useState<string | null>(null)
 
@@ -196,6 +202,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
   const [authPassword, setAuthPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
+  const [authAccepted, setAuthAccepted] = useState(false)
 
   // Claim form data
   const [form, setForm] = useState<FormData>({
@@ -226,6 +233,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
 
   // ── Auth: Register ──────────────────────────────────────────
   const handleRegister = async () => {
+    if (!authAccepted) { toast.error('Acepta los términos y políticas para continuar.'); return }
     if (!authName.trim() || !authEmail.trim() || !authPassword.trim()) {
       toast.error('Todos los campos son obligatorios.')
       return
@@ -268,13 +276,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
       }
 
       toast.success('Cuenta creada y sesión iniciada.')
-      // Pre-fill claim form with auth data
-      setForm((prev) => ({
-        ...prev,
-        claimerName: authName.trim(),
-        claimerEmail: authEmail.trim(),
-      }))
-      goNext()
+      await handleSubmitForm()
     } catch {
       toast.error('Error de conexión.')
     } finally {
@@ -284,6 +286,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
 
   // ── Auth: Login ─────────────────────────────────────────────
   const handleLogin = async () => {
+    if (!authAccepted) { toast.error('Acepta los términos y políticas para continuar.'); return }
     if (!authEmail.trim() || !authPassword.trim()) {
       toast.error('Correo y contraseña son obligatorios.')
       return
@@ -303,12 +306,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
       }
 
       toast.success('Sesión iniciada.')
-      // Pre-fill claim form with auth data
-      setForm((prev) => ({
-        ...prev,
-        claimerEmail: authEmail.trim(),
-      }))
-      goNext()
+      await handleSubmitForm()
     } catch {
       toast.error('Error de conexión.')
     } finally {
@@ -442,7 +440,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
   }
 
   // Loading session
-  if (status === 'loading') {
+  if (status === 'loading' || guestFlow === null) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -468,7 +466,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
       <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card">
         <div key={step} className="p-5 sm:p-6">
             {/* ── STEP 0 (auth): Crear cuenta / Iniciar sesión ── */}
-            {needsAuth && step === 0 && (
+            {needsAuth && step === 1 && (
               <div className="space-y-5">
                 <div className="text-center">
                   <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
@@ -479,7 +477,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {authMode === 'register'
-                      ? 'Necesitas una cuenta para reclamar un negocio.'
+                      ? 'Crea tu acceso para enviar el reclamo que ya preparaste.'
                       : 'Ingresa con tu cuenta existente.'}
                   </p>
                 </div>
@@ -573,10 +571,14 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
                 </div>
 
                 <div>
+                  <label className="mb-4 flex cursor-pointer items-start gap-3 text-xs leading-relaxed text-muted-foreground">
+                    <input type="checkbox" checked={authAccepted} onChange={(event) => setAuthAccepted(event.target.checked)} className="mt-0.5 h-4 w-4" />
+                    <span>Acepto los <Link href="/terminos" target="_blank" className="font-medium text-foreground underline">términos</Link>, la <Link href="/privacy" target="_blank" className="font-medium text-foreground underline">privacidad</Link> y la <Link href="/reembolsos" target="_blank" className="font-medium text-foreground underline">política de reembolsos</Link>.</span>
+                  </label>
                   <Button
                     className="w-full"
                     onClick={authMode === 'register' ? handleRegister : handleLogin}
-                    disabled={authLoading}
+                    disabled={authLoading || !authAccepted}
                   >
                     {authLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -615,7 +617,7 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
             )}
 
             {/* ── STEP: Datos del solicitante ──────────────── */}
-            {((needsAuth && step === 1) || (!needsAuth && step === 0)) && (
+            {step === 0 && (
               <div className="space-y-4">
                 <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
                   <Shield className="h-4 w-4" />
@@ -864,13 +866,22 @@ export function ClaimVenueWizard({ venueId, venueName, onSuccess, onCancel }: Cl
 
                 {/* Auth step: button handled inside the step content */}
                 {/* Form step */}
-                {((needsAuth && step === 1) || (!needsAuth && step === 0)) && (
-                  <Button size="sm" onClick={handleSubmitForm} disabled={loading}>
+                {step === 0 && (
+                  <Button size="sm" onClick={() => {
+                    if (!form.claimerName.trim() || !form.claimerEmail.trim()) { toast.error('Nombre y correo son obligatorios.'); return }
+                    if (needsAuth) {
+                      setAuthName(form.claimerName.trim())
+                      setAuthEmail(form.claimerEmail.trim())
+                      goNext()
+                    } else {
+                      void handleSubmitForm()
+                    }
+                  }} disabled={loading}>
                     {loading ? (
                       <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                     ) : (
                       <>
-                        Enviar código
+                        {needsAuth ? 'Continuar' : 'Enviar código'}
                         <ArrowRight className="ml-1.5 h-4 w-4" />
                       </>
                     )}
