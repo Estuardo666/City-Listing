@@ -4,7 +4,7 @@ import { calculatePlatformFee, dollarsToCents } from '../src/lib/ticketing/money
 import { normalizePayphonePhone, parsePayphoneNotification, payphoneReturnStatus, preparePayphoneCheckout } from '../src/lib/ticketing/provider/payphone'
 import { TicketingError, TICKETING_ERROR_CODES } from '../src/lib/ticketing/constants'
 import { createPublicToken, decryptSecret, encryptSecret } from '../src/lib/ticketing/secrets'
-import { ticketScanUrl } from '../src/lib/ticketing/links'
+import { ticketScanUrl, ticketingBaseUrl } from '../src/lib/ticketing/links'
 
 test('ticketing money is calculated in integer cents', () => {
   assert.equal(dollarsToCents(12.34), 1234)
@@ -77,4 +77,10 @@ test('ticket QR encodes a scannable Vive Loja URL instead of the raw token', () 
   assert.equal(url.origin, 'https://viveloja.com')
   assert.equal(url.pathname, '/tickets/scan')
   assert.equal(url.searchParams.get('token'), 'private-ticket-token')
+})
+
+test('ticket links fall back when the app URL contains pasted Markdown', () => {
+  const malformed = '[https://viveloja.com](https://viveloja.com)\n\\a /api/ticketing/qr'
+  assert.equal(ticketingBaseUrl(malformed), 'https://viveloja.com')
+  assert.equal(new URL(ticketScanUrl('private-ticket-token', malformed)).href, 'https://viveloja.com/tickets/scan?token=private-ticket-token')
 })

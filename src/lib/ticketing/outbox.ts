@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/prisma'
+import { ticketingBaseUrl } from './links'
 
 const DEFAULT_JOB_PATH = '/api/internal/ticketing/jobs'
 
 function baseUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://viveloja.com'
+  return ticketingBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL)
 }
 
 /**

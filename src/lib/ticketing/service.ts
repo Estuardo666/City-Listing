@@ -23,6 +23,7 @@ import {
   type PayphoneCredentials,
 } from './provider/payphone'
 import { publishTicketOutbox } from './outbox'
+import { ticketingBaseUrl } from './links'
 import { sendTicketOrderAdminEmail, sendTicketOrderEmail } from '@/lib/email/templates/ticket-order'
 
 type Db = Prisma.TransactionClient
@@ -86,7 +87,7 @@ function asJson(value: unknown): Prisma.InputJsonValue {
 }
 
 function appUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://viveloja.com'
+  return ticketingBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL)
 }
 
 function assertHttpsUrl(value: string) {
