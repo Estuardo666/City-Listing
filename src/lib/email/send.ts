@@ -8,6 +8,7 @@ interface SendEmailParams {
   to: string
   subject: string
   html: string
+  idempotencyKey?: string
 }
 
 export async function sendTransactionalEmail(params: SendEmailParams) {
@@ -15,7 +16,7 @@ export async function sendTransactionalEmail(params: SendEmailParams) {
     if (process.env.NODE_ENV !== 'production') {
       console.log(`📧 [DEV] Email → ${params.to}: ${params.subject}`)
     }
-    await sendEmail({ to: params.to, subject: params.subject, html: params.html })
+    await sendEmail({ to: params.to, subject: params.subject, html: params.html, idempotencyKey: params.idempotencyKey })
     return { success: true }
   } catch (error) {
     console.error('📧 Error sending email:', error)

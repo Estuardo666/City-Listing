@@ -158,7 +158,7 @@ export default async function HomePage() {
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button size="lg" asChild className="h-12 rounded-xl px-7 text-base">
-                  <Link href="/auth/signup">Publicar gratis 🚀</Link>
+                  <Link href="/auth/signup?intent=business&plan=free&cycle=MONTHLY">Publicar gratis 🚀</Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild className="h-12 rounded-xl px-7 text-base">
                   <Link href="/planes">

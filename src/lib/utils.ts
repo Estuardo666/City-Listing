@@ -10,6 +10,7 @@ export function formatDate(date: Date | string) {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'America/Guayaquil',
   }).format(new Date(date))
 }
 
@@ -20,6 +21,7 @@ export function formatDateTime(date: Date | string) {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'America/Guayaquil',
   }).format(new Date(date))
 }
 

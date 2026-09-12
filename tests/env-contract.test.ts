@@ -17,6 +17,11 @@ const canonicalKeys = [
   'R2_ACCESS_KEY_ID',
   'R2_SECRET_ACCESS_KEY',
   'R2_PUBLIC_BASE_URL',
+  'PAYPHONE_TOKEN',
+  'PAYPHONE_STORE_ID',
+  'TICKETING_CREDENTIAL_ENCRYPTION_KEY',
+  'QSTASH_TOKEN',
+  'TICKETING_JOB_SECRET',
 ] as const
 
 const sensitiveKeys = new Set([
@@ -33,6 +38,10 @@ const sensitiveKeys = new Set([
   'GOOGLE_SEARCH_CONSOLE_REFRESH_TOKEN',
   'CLOUDFLARE_TURNSTILE_SECRET_KEY',
   'AI_ENCRYPTION_KEY',
+  'PAYPHONE_TOKEN',
+  'TICKETING_CREDENTIAL_ENCRYPTION_KEY',
+  'QSTASH_TOKEN',
+  'TICKETING_JOB_SECRET',
 ])
 
 function parseExample(raw: string): Map<string, string> {

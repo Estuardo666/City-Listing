@@ -1,10 +1,14 @@
 import { getEventBySlug } from '@/lib/queries/events'
 import { mobileError, mobileSuccess } from '@/lib/mobile-response'
+import { getPublicTicketingBySlug } from '@/lib/ticketing'
 
 export async function GET(_: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const event = await getEventBySlug(slug)
   if (!event) return mobileError('NOT_FOUND', 'Evento no encontrado.', 404)
+  const ticketing = event.status === 'APPROVED'
+    ? await getPublicTicketingBySlug(event.slug).catch(() => ({ eventId: event.id, mode: 'NONE' as const }))
+    : { eventId: event.id, mode: 'NONE' as const }
 
   const data = {
     id: event.id,
@@ -48,6 +52,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       createdAt: question.createdAt,
       user: { id: question.user.id, name: question.user.name, image: question.user.image },
     })),
+    ticketing,
   }
   return mobileSuccess(data)
 }

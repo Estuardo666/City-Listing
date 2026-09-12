@@ -8,7 +8,7 @@ export default async function DashboardCreateVenuePage() {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
-    redirect('/auth/signin')
+    redirect('/auth/signin?intent=business&plan=free&cycle=MONTHLY')
   }
 
   const categories = await getVenueCategories()

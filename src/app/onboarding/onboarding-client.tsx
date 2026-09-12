@@ -30,6 +30,7 @@ interface OnboardingClientProps {
   categories: Category[]
   venues: Venue[]
   userName: string | null
+  returnTo?: string | null
 }
 
 const TOTAL_STEPS = 4
@@ -58,7 +59,7 @@ const stepVariants = {
   }),
 }
 
-export function OnboardingClient({ categories, venues, userName }: OnboardingClientProps) {
+export function OnboardingClient({ categories, venues, userName, returnTo }: OnboardingClientProps) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [direction, setDirection] = useState(0)
@@ -147,7 +148,7 @@ export function OnboardingClient({ categories, venues, userName }: OnboardingCli
         const result = await completeOnboardingAction()
         if (result.success) {
           toast.success('¡Bienvenido a ViveLoja!')
-          router.push('/')
+          router.push(returnTo ?? '/')
         } else {
           toast.error('Error al completar el onboarding')
         }
@@ -155,18 +156,18 @@ export function OnboardingClient({ categories, venues, userName }: OnboardingCli
         toast.error('Error al completar el onboarding')
       }
     })
-  }, [router])
+  }, [returnTo, router])
 
   const handleSkip = useCallback(() => {
     startTransition(async () => {
       try {
         await skipOnboardingAction()
-        router.push('/dashboard')
+        router.push(returnTo ?? '/dashboard')
       } catch {
-        router.push('/dashboard')
+        router.push(returnTo ?? '/dashboard')
       }
     })
-  }, [router])
+  }, [returnTo, router])
 
   const selectedInterestCategories = categories.filter((c) => selectedInterests.includes(c.id))
   const followingVenueData = venues.filter((v) => followedVenues.includes(v.id)).map((v) => ({

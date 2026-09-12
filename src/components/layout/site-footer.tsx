@@ -34,7 +34,7 @@ export function SiteFooter() {
             <p className="text-sm font-semibold text-foreground">Para negocios</p>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
               <Link href="/planes" className="font-medium text-primary hover:text-primary/80">Planes y precios</Link>
-              <Link href="/auth/signup" className="hover:text-foreground">Publicar negocio</Link>
+              <Link href="/auth/signup?intent=business&plan=free&cycle=MONTHLY" className="hover:text-foreground">Publicar negocio</Link>
               <Link href="/dashboard" className="hover:text-foreground">Panel de control</Link>
               <Link href="/terminos" className="hover:text-foreground">Términos</Link>
               <Link href="/privacy" className="hover:text-foreground">Privacidad</Link>

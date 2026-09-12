@@ -4,7 +4,7 @@ import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { mobileError, mobileSuccess, withMobileErrors } from '@/lib/mobile-response'
 
 const selectionSchema = z.object({
-  planSlug: z.enum(['free', 'plus', 'pro', 'red']),
+  planSlug: z.enum(['free', 'plus', 'pro', 'enterprise']),
   cycle: z.enum(['MONTHLY', 'ANNUAL']),
   idempotencyKey: z.string().trim().min(8).max(120),
   device: z.string().trim().max(40).optional().nullable(),

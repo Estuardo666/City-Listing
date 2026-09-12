@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Lock, Loader2 } from 'lucide-react'
@@ -10,13 +11,45 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 
+const BUSINESS_PLAN_SLUGS = new Set(['free', 'plus', 'pro', 'enterprise'])
+type BusinessContext = { plan: string; cycle: 'MONTHLY' | 'ANNUAL' }
+
+function safeReturnTo(value: string | null) {
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : null
+}
+
+function readBusinessContext(): BusinessContext | null {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('intent') !== 'business') return null
+  const plan = params.get('plan') ?? ''
+  const cycle = params.get('cycle')
+  if (!BUSINESS_PLAN_SLUGS.has(plan) || (cycle !== 'MONTHLY' && cycle !== 'ANNUAL')) return null
+  return { plan, cycle }
+}
+
+function activationPath(context: BusinessContext) {
+  return `/planes/activar?intent=business&plan=${encodeURIComponent(context.plan)}&cycle=${context.cycle}`
+}
+
 export default function SignInPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [businessContext, setBusinessContext] = useState<BusinessContext | null>(null)
+  const [returnTo, setReturnTo] = useState<string | null>(null)
   const isLocalDevelopment = process.env.NODE_ENV !== 'production'
+
+  useEffect(() => {
+    setBusinessContext(readBusinessContext())
+    setReturnTo(safeReturnTo(new URLSearchParams(window.location.search).get('returnTo')))
+  }, [])
+
+  function onboardingPath() {
+    return returnTo ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}` : '/onboarding'
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,13 +92,18 @@ export default function SignInPage() {
         return
       }
 
-      // Get session to check onboarding status
+      if (businessContext) {
+        router.push(activationPath(businessContext))
+        return
+      }
+
+      // Visitors keep the existing interest onboarding.
       const session = await getSession()
 
       if (session?.user && !session.user.onboardingCompleted && !session.user.onboardingSkipped) {
-        window.location.href = '/onboarding'
+        router.push(onboardingPath())
       } else {
-        window.location.href = '/dashboard'
+        router.push(returnTo ?? '/dashboard')
       }
     } catch {
       setError('Error al iniciar sesión')
@@ -75,7 +113,7 @@ export default function SignInPage() {
   }
 
   const handleGoogleSignIn = () => {
-    signIn('google', { callbackUrl: '/onboarding' })
+    signIn('google', { callbackUrl: businessContext ? activationPath(businessContext) : onboardingPath() })
   }
 
   return (
@@ -90,7 +128,7 @@ export default function SignInPage() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
             <CardDescription>
-              Bienvenido a Vive Loja
+              {businessContext ? 'Continúa para publicar tu negocio' : 'Bienvenido a Vive Loja'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -178,7 +216,7 @@ export default function SignInPage() {
 
             <p className="text-center text-sm text-muted-foreground">
               ¿No tienes cuenta?{' '}
-              <Link href="/auth/signup" className="text-primary hover:underline">
+              <Link href={businessContext ? `/auth/signup?intent=business&plan=${encodeURIComponent(businessContext.plan)}&cycle=${businessContext.cycle}` : returnTo ? `/auth/signup?returnTo=${encodeURIComponent(returnTo)}` : '/auth/signup'} className="text-primary hover:underline">
                 Regístrate
               </Link>
             </p>

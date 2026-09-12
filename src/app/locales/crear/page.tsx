@@ -6,7 +6,7 @@ export default async function CreateVenuePage() {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
-    redirect('/auth/signin')
+    redirect('/auth/signin?intent=business&plan=free&cycle=MONTHLY')
   }
 
   redirect('/dashboard/locales/crear')

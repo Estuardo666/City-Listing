@@ -22,7 +22,13 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://viveloja.com/contact' },
 }
 
-export default function ContactPage() {
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>
+}) {
+  const isEnterprise = (await searchParams).plan === 'enterprise'
+
   return (
     <div className="pb-16 pt-8">
       <section className="section-shell space-y-8">
@@ -30,21 +36,20 @@ export default function ContactPage() {
           <div className="space-y-3">
             <p className="eyebrow">Contáctanos</p>
             <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-              Contacto
+              {isEnterprise ? 'Hablemos de Enterprise' : 'Contacto'}
             </h1>
           </div>
         </div>
 
         <div className="max-w-3xl space-y-6 text-muted-foreground">
           <p className="text-lg leading-relaxed">
-            ¿Tienes preguntas, sugerencias o quieres colaborar con nosotros? Nos encantaría
-            saber de ti.
+            {isEnterprise ? 'Cuéntanos cuántas ubicaciones tienes y qué necesita tu operación. Diseñaremos contigo la configuración adecuada.' : '¿Tienes preguntas, sugerencias o quieres colaborar con nosotros? Nos encantaría saber de ti.'}
           </p>
 
           <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">
             <div>
               <p className="font-medium text-foreground">Email</p>
-              <p>contacto@viveloja.com</p>
+              <a className="text-primary underline-offset-4 hover:underline" href={`mailto:contacto@viveloja.com?subject=${encodeURIComponent(isEnterprise ? 'Solicitud Enterprise · Vive Loja' : 'Contacto · Vive Loja')}`}>contacto@viveloja.com</a>
             </div>
             <div>
               <p className="font-medium text-foreground">Redes sociales</p>

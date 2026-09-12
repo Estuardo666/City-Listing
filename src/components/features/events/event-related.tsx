@@ -16,6 +16,7 @@ function formatDate(date: Date) {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
+    timeZone: 'America/Guayaquil',
   })
 }
 

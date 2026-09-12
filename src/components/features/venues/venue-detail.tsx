@@ -386,7 +386,7 @@ export function VenueDetail({ venue, currentUserId, userRole, menu = [], userCol
                   <p className="text-xs text-muted-foreground">Necesitas estar conectado para poder reseñar.</p>
                 </div>
                 <Link
-                  href="/api/auth/signin"
+                  href={`/auth/signin?returnTo=${encodeURIComponent(`/locales/${venue.slug}`)}`}
                   className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                 >
                   Entrar

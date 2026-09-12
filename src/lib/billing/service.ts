@@ -99,7 +99,7 @@ export async function checkoutSubscription(input: CheckoutInput) {
   }
   const version = await latestPublishedVersion(input.planSlug)
   if (!version) throw new Error('El plan seleccionado no está disponible.')
-  if (version.plan.slug === 'red') throw new Error('El plan Red se activa por contacto con Vive Loja.')
+  if (version.plan.slug === 'enterprise') throw new Error('El plan Enterprise se activa por contacto con Vive Loja.')
   const account = await ensureBusinessAccount(input.userId)
   const existing = await prisma.order.findFirst({
     where: { accountId: account.id, idempotencyKey: input.idempotencyKey },
@@ -304,7 +304,7 @@ export async function selectPlanForClaim(input: ClaimPlanSelectionInput) {
   if (!['PENDING', 'VERIFIED'].includes(claim.status)) throw new Error('Este reclamo ya no admite selección de plan.')
   const version = await latestPublishedVersion(input.planSlug)
   if (!version) throw new Error('El plan seleccionado no está disponible.')
-  if (version.plan.slug === 'red') throw new Error('El plan Red se activa por contacto con Vive Loja.')
+  if (version.plan.slug === 'enterprise') throw new Error('El plan Enterprise se activa por contacto con Vive Loja.')
   const account = await ensureBusinessAccount(input.userId)
   const existing = await prisma.order.findFirst({
     where: { accountId: account.id, idempotencyKey: input.idempotencyKey, claimId: input.claimId },

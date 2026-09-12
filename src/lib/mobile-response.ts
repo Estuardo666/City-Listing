@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { TicketingError } from '@/lib/ticketing/constants'
 
 export function mobileSuccess<T>(data: T, meta?: Record<string, unknown>) {
   return NextResponse.json({ data, ...(meta ? { meta } : {}) })
@@ -22,8 +23,10 @@ export function withMobileErrors<Args extends unknown[]>(
     try {
       return await handler(request, ...args)
     } catch (error) {
+      if (error instanceof TicketingError) return mobileError(error.code, error.message, error.status, undefined, error.context)
       // Logged server-side only; the client gets no internal detail.
-      console.error('[mobile-api] unhandled error', request.url, error)
+      // Never log bearer tokens or private query strings from a request URL.
+      console.error('[mobile-api] unhandled error', new URL(request.url).pathname, error)
       return mobileError('INTERNAL_ERROR', 'Ocurrió un problema en el servidor. Inténtalo de nuevo.', 500)
     }
   }

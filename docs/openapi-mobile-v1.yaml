@@ -1460,13 +1460,13 @@ paths:
               required: [planSlug, cycle, idempotencyKey]
               additionalProperties: false
               properties:
-                planSlug: { type: string, enum: [free, plus, pro, red] }
+                planSlug: { type: string, enum: [free, plus, pro, enterprise] }
                 cycle: { type: string, enum: [MONTHLY, ANNUAL] }
                 idempotencyKey: { type: string }
                 device: { type: [string, 'null'] }
       responses:
         '200': { description: Completed simulated order with chargedAmount 0 }
-        '409': { description: Red contact flow, disabled beta or checkout failure }
+        '409': { description: Enterprise contact flow, disabled beta or checkout failure }
   /me/billing/addons:
     post:
       tags: [Billing]

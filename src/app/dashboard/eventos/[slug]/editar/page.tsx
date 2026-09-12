@@ -5,9 +5,12 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { EventEditForm } from '@/components/features/events'
+import { TicketingSettingsPanel } from '@/components/features/ticketing/ticketing-settings-panel'
+import { TicketingOrdersPanel } from '@/components/features/ticketing/ticketing-orders-panel'
 import { Button } from '@/components/ui/button'
 import { getEventBySlug, getEventCategories } from '@/lib/queries/events'
 import { getApprovedVenuesForEventForm } from '@/lib/queries/venues'
+import { canManageVenue } from '@/lib/billing/plans'
 
 type EventEditPageProps = {
   params: Promise<{
@@ -33,8 +36,9 @@ export default async function DashboardEventEditPage({ params }: EventEditPagePr
     notFound()
   }
 
-  // Only admin or event owner can edit
-  if (session.user.role !== 'ADMIN' && event.user.id !== session.user.id) {
+  // Admin, event owner, or an authorized venue manager can edit.
+  const canManage = session.user.role === 'ADMIN' || event.user.id === session.user.id || (event.venue?.id ? await canManageVenue(session.user.id, event.venue.id) : false)
+  if (!canManage) {
     redirect('/dashboard/eventos')
   }
 
@@ -68,6 +72,9 @@ export default async function DashboardEventEditPage({ params }: EventEditPagePr
         <div className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8">
           <EventEditForm event={event} categories={categories.map(c => ({ category: c }))} venues={venues} />
         </div>
+
+        <TicketingSettingsPanel eventId={event.id} isAdmin={session.user.role === 'ADMIN'} />
+        <TicketingOrdersPanel eventId={event.id} />
 
       </section>
     </div>

@@ -10,7 +10,7 @@ export const GET = withMobileErrors(async (request: Request) => {
   const snapshot = await getBusinessAccountSnapshot(principal.userId)
   return mobileSuccess(snapshot ?? {
     account: null,
-    plan: { slug: 'free', name: 'Gratis', source: 'INHERITED', capabilities: { maxLocations: 1, maxMembers: 1, maxMediaPerVenue: 0, googlePhotoEnabled: true, menuEnabled: false, servicesEnabled: true, monthlyEventsPerVenue: 0, maxActivePromotionsPerVenue: 0, analyticsRetentionDays: null, whatsappEnabled: false, messagingEnabled: false, reservationsEnabled: false, priorityModeration: false, includedBoostCredits: 0 }, entitlementsVersion: 'free-v1', monthlyPrice: 0, annualPrice: 0, currency: 'USD', versionId: 'free-default', version: 1 },
+    plan: { slug: 'free', name: 'Gratis', source: 'INHERITED', capabilities: { maxLocations: 1, maxMembers: 1, maxMediaPerVenue: 0, googlePhotoEnabled: true, menuEnabled: false, servicesEnabled: true, monthlyEventsPerVenue: 0, maxActivePromotionsPerVenue: 0, analyticsRetentionDays: null, whatsappEnabled: false, messagingEnabled: false, reservationsEnabled: false, priorityModeration: false, includedBoostCredits: 0, eventTicketingEnabled: false, seatMapsEnabled: false }, entitlementsVersion: 'free-v1', monthlyPrice: 0, annualPrice: 0, currency: 'USD', versionId: 'free-default', version: 1 },
     subscription: null,
     usage: { locations: { used: 0, limit: 1 }, members: { used: 0, limit: 1 }, boostCredits: { used: 0, limit: 0 }, venues: [] },
     members: [],

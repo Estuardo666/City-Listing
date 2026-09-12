@@ -15,6 +15,7 @@ import { ReviewForm } from '@/components/review/review-form'
 import { ReviewList } from '@/components/review/review-list'
 import { ShareButton } from '@/components/share/share-button'
 import { WhatsAppButton } from '@/components/venues/whatsapp-button'
+import { TicketingPanel } from '@/components/features/ticketing/ticketing-panel'
 
 const EventsMap = dynamic(
   () => import('@/components/features/events/events-map').then((mod) => mod.EventsMap),
@@ -329,6 +330,9 @@ export function EventDetail({ event, currentUserId, userRole }: EventDetailProps
 
         {/* RIGHT: sticky sidebar */}
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+
+          {/* Ticketing */}
+          <TicketingPanel eventSlug={event.slug} />
 
           {/* Actions */}
           <div className="flex flex-wrap gap-3">

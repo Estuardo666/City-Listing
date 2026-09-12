@@ -9,6 +9,7 @@ const sendCodeSchema = z.object({
   email: z.string().email('Correo inválido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
   turnstileToken: z.string().min(1, 'Token de verificación requerido'),
+  intent: z.enum(['visitor', 'business']).optional().default('visitor'),
 })
 
 export async function POST(request: NextRequest) {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email, password, turnstileToken } = parsed.data
+    const { email, password, turnstileToken, intent } = parsed.data
 
     // Verify Turnstile token
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Enviar email con código
-    await sendVerificationCodeEmail(email, code)
+    await sendVerificationCodeEmail(email, code, intent)
 
     return NextResponse.json({ success: true })
   } catch (error) {

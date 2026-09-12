@@ -13,9 +13,40 @@ import { OtpInput } from '@/components/auth/otp-input'
 import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 
 const RESEND_COOLDOWN = 60
+const BUSINESS_PLAN_SLUGS = new Set(['free', 'plus', 'pro', 'enterprise'])
+
+type BusinessContext = { plan: string; cycle: 'MONTHLY' | 'ANNUAL' }
+
+function safeReturnTo(value: string | null) {
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : null
+}
+
+function readBusinessContext(): BusinessContext | null {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('intent') !== 'business') return null
+  const plan = params.get('plan') ?? ''
+  const cycle = params.get('cycle')
+  if (!BUSINESS_PLAN_SLUGS.has(plan) || (cycle !== 'MONTHLY' && cycle !== 'ANNUAL')) return null
+  return { plan, cycle }
+}
+
+function activationPath(context: BusinessContext) {
+  return `/planes/activar?intent=business&plan=${encodeURIComponent(context.plan)}&cycle=${context.cycle}`
+}
+
+function visitorPath(returnTo: string | null) {
+  return returnTo ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}` : '/onboarding'
+}
 
 export default function SignUpPage() {
   const router = useRouter()
+  const [businessContext, setBusinessContext] = useState<BusinessContext | null>(null)
+  const [returnTo, setReturnTo] = useState<string | null>(null)
+
+  useEffect(() => {
+    setBusinessContext(readBusinessContext())
+    setReturnTo(safeReturnTo(new URLSearchParams(window.location.search).get('returnTo')))
+  }, [])
 
   // Step state
   const [step, setStep] = useState<1 | 2>(1)
@@ -75,7 +106,7 @@ export default function SignUpPage() {
       const res = await fetch('/api/auth/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, turnstileToken }),
+        body: JSON.stringify({ email, password, turnstileToken, intent: businessContext ? 'business' : 'visitor' }),
       })
 
       const data = await res.json()
@@ -93,7 +124,7 @@ export default function SignUpPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [email, password, confirmPassword, turnstileToken])
+  }, [businessContext, email, password, confirmPassword, turnstileToken])
 
   const handleVerifyCode = useCallback(async (code: string) => {
     setOtpError('')
@@ -103,7 +134,7 @@ export default function SignUpPage() {
       const res = await fetch('/api/auth/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ email, code, intent: businessContext ? 'business' : 'visitor' }),
       })
 
       const data = await res.json()
@@ -123,17 +154,21 @@ export default function SignUpPage() {
 
       if (result?.error) {
         // Si falla el login, redirigir a signin
-        router.push('/auth/signin?message=Cuenta+creada,+inicia+sesión')
+        const loginPath = businessContext
+          ? `/auth/signin?intent=business&plan=${encodeURIComponent(businessContext.plan)}&cycle=${businessContext.cycle}`
+          : returnTo
+            ? `/auth/signin?returnTo=${encodeURIComponent(returnTo)}`
+            : '/auth/signin?message=Cuenta+creada,+inicia+sesión'
+        router.push(loginPath)
         return
       }
 
-      // Redirect a onboarding
-      window.location.href = '/onboarding'
+      window.location.href = businessContext ? activationPath(businessContext) : visitorPath(returnTo)
     } catch {
       setOtpError('Error al verificar código')
       setIsLoading(false)
     }
-  }, [email, password, router])
+  }, [businessContext, email, password, returnTo, router])
 
   const handleResendCode = useCallback(async () => {
     if (resendCooldown > 0) return
@@ -149,7 +184,7 @@ export default function SignUpPage() {
       const res = await fetch('/api/auth/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, turnstileToken }),
+        body: JSON.stringify({ email, password, turnstileToken, intent: businessContext ? 'business' : 'visitor' }),
       })
 
       const data = await res.json()
@@ -164,10 +199,10 @@ export default function SignUpPage() {
     } catch {
       setOtpError('Error al reenviar código')
     }
-  }, [email, password, resendCooldown, turnstileToken])
+  }, [businessContext, email, password, resendCooldown, turnstileToken])
 
   const handleGoogleSignUp = () => {
-    signIn('google', { callbackUrl: '/onboarding' })
+    signIn('google', { callbackUrl: businessContext ? activationPath(businessContext) : visitorPath(returnTo) })
   }
 
   const slideVariants = {
@@ -191,7 +226,7 @@ export default function SignUpPage() {
             </CardTitle>
             <CardDescription>
               {step === 1
-                ? 'Únete a Vive Loja'
+                ? businessContext ? 'Crea tu acceso para publicar tu negocio' : 'Únete a Vive Loja'
                 : `Enviamos un código a ${email}`}
             </CardDescription>
           </CardHeader>
@@ -303,7 +338,7 @@ export default function SignUpPage() {
 
                   <p className="text-center text-sm text-muted-foreground mt-4">
                     ¿Ya tienes cuenta?{' '}
-                    <Link href="/auth/signin" className="text-primary hover:underline">
+                    <Link href={businessContext ? `/auth/signin?intent=business&plan=${encodeURIComponent(businessContext.plan)}&cycle=${businessContext.cycle}` : returnTo ? `/auth/signin?returnTo=${encodeURIComponent(returnTo)}` : '/auth/signin'} className="text-primary hover:underline">
                       Inicia sesión
                     </Link>
                   </p>

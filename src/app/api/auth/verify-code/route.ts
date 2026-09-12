@@ -6,6 +6,7 @@ import { sendWelcomeEmail } from '@/lib/email/templates/welcome'
 const verifyCodeSchema = z.object({
   email: z.string().email('Correo inválido'),
   code: z.string().length(6, 'El código debe tener 6 dígitos'),
+  intent: z.enum(['visitor', 'business']).optional().default('visitor'),
 })
 
 const MAX_ATTEMPTS = 3
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email, code } = parsed.data
+    const { email, code, intent } = parsed.data
 
     // Buscar token de verificación
     const token = await prisma.verificationToken.findUnique({
@@ -136,10 +137,13 @@ export async function POST(request: NextRequest) {
       where: { identifier: `pw:${email}` },
     })
 
-    // Enviar welcome email (async, non-blocking)
-    sendWelcomeEmail(email, null).catch((err) =>
-      console.error('Welcome email error:', err)
-    )
+    // Business accounts continue to plan activation and must not receive the
+    // consumer welcome email or be sent through interest onboarding.
+    if (intent === 'visitor') {
+      sendWelcomeEmail(email, null).catch((err) =>
+        console.error('Welcome email error:', err)
+      )
+    }
 
     return NextResponse.json({ success: true, userId: user.id })
   } catch (error) {

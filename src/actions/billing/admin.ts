@@ -11,20 +11,20 @@ import type { ActionResponse } from '@/types/action-response'
 
 const accountPlanSchema = z.object({
   accountId: z.string().min(1),
-  planSlug: z.enum(['free', 'plus', 'pro', 'red']),
+  planSlug: z.enum(['free', 'plus', 'pro', 'enterprise']),
   cycle: z.enum(['MONTHLY', 'ANNUAL']),
   reason: z.string().trim().min(3).max(500),
 })
 
 const overrideSchema = z.object({
   venueId: z.string().min(1),
-  planSlug: z.enum(['free', 'plus', 'pro', 'red']),
+  planSlug: z.enum(['free', 'plus', 'pro', 'enterprise']),
   endsAt: z.coerce.date().optional().nullable(),
   reason: z.string().trim().min(3).max(500),
 })
 
 const versionSchema = z.object({
-  planSlug: z.enum(['free', 'plus', 'pro', 'red']),
+  planSlug: z.enum(['free', 'plus', 'pro', 'enterprise']),
   monthlyPrice: z.number().min(0),
   annualPrice: z.number().min(0),
   maxLocations: z.number().int().min(0).nullable(),
@@ -41,11 +41,13 @@ const versionSchema = z.object({
   reservationsEnabled: z.boolean(),
   priorityModeration: z.boolean(),
   includedBoostCredits: z.number().int().min(0),
+  eventTicketingEnabled: z.boolean().default(false),
+  seatMapsEnabled: z.boolean().default(false),
   reason: z.string().trim().min(3).max(500),
 })
 
 const planShellSchema = z.object({
-  planSlug: z.enum(['free', 'plus', 'pro', 'red']),
+  planSlug: z.enum(['free', 'plus', 'pro', 'enterprise']),
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(300).nullable(),
   displayOrder: z.number().int().min(0).max(100),
@@ -221,6 +223,8 @@ export async function adminPublishPlanVersionAction(input: unknown): Promise<Act
         reservationsEnabled: parsed.data.reservationsEnabled,
         priorityModeration: parsed.data.priorityModeration,
         includedBoostCredits: parsed.data.includedBoostCredits,
+        eventTicketingEnabled: parsed.data.eventTicketingEnabled,
+        seatMapsEnabled: parsed.data.seatMapsEnabled,
         isPublished: true,
         publishedAt: new Date(),
         createdById: actorId,

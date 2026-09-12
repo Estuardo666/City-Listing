@@ -3,7 +3,7 @@ import 'server-only'
 import { Prisma, type PlanVersion } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
-export const PLAN_SLUGS = ['free', 'plus', 'pro', 'red'] as const
+export const PLAN_SLUGS = ['free', 'plus', 'pro', 'enterprise'] as const
 export type PlanSlug = (typeof PLAN_SLUGS)[number]
 export type BillingCycle = 'MONTHLY' | 'ANNUAL'
 
@@ -34,6 +34,8 @@ export type PlanCapabilities = {
   reservationsEnabled: boolean
   priorityModeration: boolean
   includedBoostCredits: number
+  eventTicketingEnabled?: boolean
+  seatMapsEnabled?: boolean
 }
 
 export type EffectivePlan = {
@@ -90,6 +92,8 @@ const FREE_CAPABILITIES: PlanCapabilities = {
   reservationsEnabled: false,
   priorityModeration: false,
   includedBoostCredits: 0,
+  eventTicketingEnabled: false,
+  seatMapsEnabled: false,
 }
 
 function capabilitiesOf(version: PlanVersion): PlanCapabilities {
@@ -108,6 +112,8 @@ function capabilitiesOf(version: PlanVersion): PlanCapabilities {
     reservationsEnabled: version.reservationsEnabled,
     priorityModeration: version.priorityModeration,
     includedBoostCredits: version.includedBoostCredits,
+    eventTicketingEnabled: version.eventTicketingEnabled,
+    seatMapsEnabled: version.seatMapsEnabled,
   }
 }
 
@@ -163,6 +169,8 @@ function expandedCapabilities(current: PlanCapabilities, latest: PlanCapabilitie
     reservationsEnabled: current.reservationsEnabled || latest.reservationsEnabled,
     priorityModeration: current.priorityModeration || latest.priorityModeration,
     includedBoostCredits: Math.max(current.includedBoostCredits, latest.includedBoostCredits),
+    eventTicketingEnabled: current.eventTicketingEnabled || latest.eventTicketingEnabled,
+    seatMapsEnabled: current.seatMapsEnabled || latest.seatMapsEnabled,
   }
 }
 
@@ -208,10 +216,10 @@ async function ensureFreePlan(db: Db): Promise<PlanVersionWithPlan> {
 }
 
 const INITIAL_CATALOG = [
-  { slug: 'free', name: 'Gratis', description: 'Presencia esencial para empezar.', order: 0, monthlyPrice: 0, annualPrice: 0, maxLocations: 1, maxMembers: 1, maxMediaPerVenue: 0, menuEnabled: false, monthlyEventsPerVenue: 0, maxActivePromotionsPerVenue: 0, analyticsRetentionDays: null, whatsappEnabled: false, messagingEnabled: false, reservationsEnabled: false, priorityModeration: false, includedBoostCredits: 0 },
-  { slug: 'plus', name: 'Plus', description: 'Más presencia y actividad para tu negocio.', order: 1, monthlyPrice: 9.90, annualPrice: 99, maxLocations: 2, maxMembers: 2, maxMediaPerVenue: 15, menuEnabled: true, monthlyEventsPerVenue: 4, maxActivePromotionsPerVenue: 2, analyticsRetentionDays: 90, whatsappEnabled: true, messagingEnabled: true, reservationsEnabled: false, priorityModeration: true, includedBoostCredits: 1 },
-  { slug: 'pro', name: 'Pro', description: 'Herramientas completas para crecer y convertir.', order: 2, monthlyPrice: 24.90, annualPrice: 249, maxLocations: 4, maxMembers: 5, maxMediaPerVenue: 30, menuEnabled: true, monthlyEventsPerVenue: null, maxActivePromotionsPerVenue: 10, analyticsRetentionDays: null, whatsappEnabled: true, messagingEnabled: true, reservationsEnabled: true, priorityModeration: true, includedBoostCredits: 4 },
-  { slug: 'red', name: 'Red', description: 'Una solución configurable para varias ubicaciones.', order: 3, monthlyPrice: 99, annualPrice: 0, maxLocations: null, maxMembers: null, maxMediaPerVenue: null, menuEnabled: true, monthlyEventsPerVenue: null, maxActivePromotionsPerVenue: null, analyticsRetentionDays: null, whatsappEnabled: true, messagingEnabled: true, reservationsEnabled: true, priorityModeration: true, includedBoostCredits: 0 },
+  { slug: 'free', name: 'Gratis', description: 'Presencia esencial para empezar.', order: 0, monthlyPrice: 0, annualPrice: 0, maxLocations: 1, maxMembers: 1, maxMediaPerVenue: 0, menuEnabled: false, monthlyEventsPerVenue: 0, maxActivePromotionsPerVenue: 0, analyticsRetentionDays: null, whatsappEnabled: false, messagingEnabled: false, reservationsEnabled: false, priorityModeration: false, includedBoostCredits: 0, eventTicketingEnabled: false, seatMapsEnabled: false },
+  { slug: 'plus', name: 'Plus', description: 'Más presencia y actividad para tu negocio.', order: 1, monthlyPrice: 9.90, annualPrice: 99, maxLocations: 2, maxMembers: 2, maxMediaPerVenue: 15, menuEnabled: true, monthlyEventsPerVenue: 4, maxActivePromotionsPerVenue: 2, analyticsRetentionDays: 90, whatsappEnabled: true, messagingEnabled: true, reservationsEnabled: false, priorityModeration: true, includedBoostCredits: 1, eventTicketingEnabled: true, seatMapsEnabled: false },
+  { slug: 'pro', name: 'Pro', description: 'Herramientas completas para crecer y convertir.', order: 2, monthlyPrice: 24.90, annualPrice: 249, maxLocations: 4, maxMembers: 5, maxMediaPerVenue: 30, menuEnabled: true, monthlyEventsPerVenue: null, maxActivePromotionsPerVenue: 10, analyticsRetentionDays: null, whatsappEnabled: true, messagingEnabled: true, reservationsEnabled: true, priorityModeration: true, includedBoostCredits: 4, eventTicketingEnabled: true, seatMapsEnabled: true },
+  { slug: 'enterprise', name: 'Enterprise', description: 'Una solución configurable para varias ubicaciones.', order: 3, monthlyPrice: 99, annualPrice: 0, maxLocations: null, maxMembers: null, maxMediaPerVenue: null, menuEnabled: true, monthlyEventsPerVenue: null, maxActivePromotionsPerVenue: null, analyticsRetentionDays: null, whatsappEnabled: true, messagingEnabled: true, reservationsEnabled: true, priorityModeration: true, includedBoostCredits: 0, eventTicketingEnabled: true, seatMapsEnabled: true },
 ] as const
 
 export async function ensureInitialCatalog() {
@@ -241,15 +249,21 @@ export async function ensureInitialCatalog() {
         reservationsEnabled: item.reservationsEnabled,
         priorityModeration: item.priorityModeration,
         includedBoostCredits: item.includedBoostCredits,
+        eventTicketingEnabled: item.eventTicketingEnabled,
+        seatMapsEnabled: item.seatMapsEnabled,
         isPublished: true,
         publishedAt: new Date(),
       }
+      // The initial Enterprise row was historically stored as plan_red_v1;
+      // keep that identifier so existing subscriptions and versions remain
+      // stable after the public rename.
+      const versionId = item.slug === 'enterprise' ? 'plan_red_v1' : `plan_${item.slug}_v1`
       await tx.planVersion.upsert({
-        where: { id: `plan_${item.slug}_v1` },
+        where: { id: versionId },
         // Existing versions are immutable; only the plan shell may be kept
         // published by the bootstrap.
         update: {},
-        create: { id: `plan_${item.slug}_v1`, ...versionData },
+        create: { id: versionId, ...versionData },
       })
     }
     const addons = [

@@ -9,13 +9,22 @@ export const metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function OnboardingPage() {
+function safeReturnTo(value: string | undefined) {
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : null
+}
+
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ returnTo?: string }>
+}) {
+  const returnTo = safeReturnTo((await searchParams).returnTo)
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) redirect('/auth/signin')
 
-  if (session.user.onboardingCompleted) redirect('/dashboard')
-  if (session.user.onboardingSkipped) redirect('/dashboard')
+  if (session.user.onboardingCompleted) redirect(returnTo ?? '/dashboard')
+  if (session.user.onboardingSkipped) redirect(returnTo ?? '/dashboard')
 
   const [categories, venues] = await Promise.all([
     getOnboardingVenueCategories(),
@@ -27,6 +36,7 @@ export default async function OnboardingPage() {
       categories={categories}
       venues={venues}
       userName={session.user.name ?? null}
+      returnTo={returnTo}
     />
   )
 }

@@ -4,7 +4,7 @@ import { getMobilePrincipal } from '@/lib/mobile-auth'
 import { mobileError, mobileSuccess, withMobileErrors } from '@/lib/mobile-response'
 
 const checkoutSchema = z.object({
-  planSlug: z.enum(['free', 'plus', 'pro', 'red']),
+  planSlug: z.enum(['free', 'plus', 'pro', 'enterprise']),
   cycle: z.enum(['MONTHLY', 'ANNUAL']),
   idempotencyKey: z.string().trim().min(8).max(120),
   device: z.string().trim().max(40).optional().nullable(),
@@ -20,7 +20,7 @@ export const POST = withMobileErrors(async (request: Request) => {
     return mobileSuccess(order)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'No se pudo activar el plan.'
-    const code = message.includes('Red') ? 'PLAN_CONTACT_REQUIRED' : message.includes('pausada') ? 'BILLING_DISABLED' : 'CHECKOUT_FAILED'
+    const code = message.includes('Enterprise') ? 'PLAN_CONTACT_REQUIRED' : message.includes('pausada') ? 'BILLING_DISABLED' : 'CHECKOUT_FAILED'
     return mobileError(code, message, 409)
   }
 })
