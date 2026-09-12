@@ -36,6 +36,7 @@ import {
   Tv,
   Star,
   CreditCard,
+  Ticket,
 } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -63,6 +64,7 @@ const MANAGE_NAV: NavItem[] = [
   { href: '/dashboard/locales', label: 'Mis Locales', icon: MapPin },
   { href: '/dashboard/blog', label: 'Mis Artículos', icon: FileText },
   { href: '/dashboard/reservas', label: 'Mis Reservas', icon: ClipboardList },
+  { href: '/dashboard/entradas', label: 'Mis Entradas', icon: Ticket },
   { href: '/dashboard/favoritos', label: 'Mis Favoritos', icon: Heart },
   { href: '/dashboard/intereses', label: 'Mis Intereses', icon: Sparkles },
   { href: '/dashboard/colecciones', label: 'Colecciones', icon: Folder },
