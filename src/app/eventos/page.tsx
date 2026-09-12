@@ -121,9 +121,8 @@ export default async function EventosPage() {
 
   return (
     <div className="bg-background pt-14">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6"><h1 className="mb-6 text-4xl font-semibold">Agenda de Loja</h1><Agenda /></div>
-      {/* Mapa */}
-      <div className="h-[70vh] w-full overflow-hidden">
+      {/* Mapa: primero, ocupa el viewport util */}
+      <div className="h-[60vh] w-full overflow-hidden sm:h-[70vh]">
         <ExploreClient
           initialVenues={[]}
           initialEvents={serializedEvents}
@@ -135,20 +134,21 @@ export default async function EventosPage() {
       </div>
 
       {/* Contenido debajo del mapa */}
-      <div className="mx-auto max-w-7xl space-y-16 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="section-shell space-y-14 py-10 sm:space-y-16 sm:py-12">
 
         {/* Header */}
         <div className="space-y-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-            Agenda verificada
-          </span>
-          <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+          <span className="eyebrow text-primary">Agenda verificada</span>
+          <h1 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
             Eventos en Loja
-          </h2>
+          </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
             Conciertos, cultura, deportes y actividades recomendadas por la comunidad. Filtra por categoria y encuentra ubicaciones en el mapa.
           </p>
         </div>
+
+        {/* Agenda por fecha */}
+        <Agenda />
 
         {/* Destacados */}
         <ListingSection
@@ -182,6 +182,7 @@ export default async function EventosPage() {
 
         {/* Todos */}
         <ListingSection
+          id="todos-los-eventos"
           title="Todos los eventos"
           icon={<LayoutGrid className="h-5 w-5" />}
           items={allEvents}

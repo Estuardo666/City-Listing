@@ -16,6 +16,7 @@ import { HomePromoGridSection } from '@/components/features/home/home-promo-grid
 import { HomeRelatedEventsSection } from '@/components/features/home/home-related-events-section'
 import { HomeHeroMapSection } from '@/components/features/home/home-hero-map-section'
 import { HomeBlogSection } from '@/components/features/home/home-blog-section'
+import { HomeAppCta } from '@/components/features/home/home-app-cta'
 import { HomeHeroMapSkeleton } from '@/components/features/home/home-hero-map-skeleton'
 import { HomeCategoriesGridSkeleton } from '@/components/features/home/home-categories-grid-skeleton'
 import { HomeFeaturedEventsSkeleton } from '@/components/features/home/home-featured-events-skeleton'
@@ -168,6 +169,9 @@ export default async function HomePage() {
               </div>
             </MotionDiv>
           </section>
+
+          {/* CTA descarga app iOS */}
+          <HomeAppCta />
         </div>
       </main>
     </div>

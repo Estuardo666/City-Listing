@@ -9,6 +9,7 @@ import type { EventListItem } from '@/types/event'
 import type { VenueBadgeType } from '@/lib/rankings'
 
 type ListingSectionProps = {
+  id?: string
   title: string
   icon: React.ReactNode
   preTitle?: string
@@ -25,6 +26,7 @@ type ListingSectionProps = {
 }
 
 export function ListingSection({
+  id,
   title,
   icon,
   preTitle,
@@ -75,7 +77,7 @@ export function ListingSection({
   if (items.length === 0) return null
 
   return (
-    <section className="space-y-5">
+    <section id={id} className="scroll-mt-24 space-y-5">
       {preTitle && (
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
           {preTitle}
