@@ -34,6 +34,14 @@ export const ONBOARDING_COPY = {
 
 export const MIN_INTERESTS = 3
 
+export async function runWithSingleRetry<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation()
+  } catch {
+    return operation()
+  }
+}
+
 export type LifestyleOption = typeof LIFESTYLE_OPTIONS[number]
 export type LifestyleId = LifestyleOption['id']
 

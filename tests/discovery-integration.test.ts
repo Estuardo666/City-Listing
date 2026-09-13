@@ -2,6 +2,20 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import test from 'node:test'
 
+import { runWithSingleRetry } from '../src/lib/constants/onboarding'
+
+test('onboarding completion retries one transient failure', async () => {
+  let attempts = 0
+  const result = await runWithSingleRetry(async () => {
+    attempts += 1
+    if (attempts === 1) throw new Error('network changed')
+    return { success: true }
+  })
+
+  assert.deepEqual(result, { success: true })
+  assert.equal(attempts, 2)
+})
+
 test('today filters drafts, private collections, closed venues and expired events; metrics dedupe without Redis', async t => {
   if (!process.env.DATABASE_URL) { t.skip('requires dedicated disposable database'); return }
   process.env.NEXTAUTH_SECRET ||= 'discovery-test-secret'

@@ -196,7 +196,7 @@ export function VenueWizard({ categories }: VenueWizardProps) {
           ...data.customServices.map((s) => ({
             name: s.name,
             description: s.description || null,
-            icon: s.icon || '✨',
+            icon: s.icon || null,
             isCustom: true,
           })),
         ],
@@ -361,7 +361,7 @@ function StepBasicInfo({
                       : 'border-border bg-card text-foreground hover:bg-muted/50 hover:border-foreground/20'
                   }`}
                 >
-                  <span>{cat.icon}</span>
+                  <Building2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                   <span className="text-xs">{cat.name}</span>
                   {active && <Check className="h-3 w-3" />}
                 </button>
@@ -750,7 +750,7 @@ function StepServices({
           <div className="flex flex-wrap gap-2">
             {data.customServices.map((cs, idx) => (
               <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card px-3 py-1.5 text-sm">
-                <span>{cs.icon || '✨'}</span>
+                <Building2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 <span className="text-xs font-medium">{cs.name}</span>
                 <button type="button" onClick={() => removeCustomService(idx)} className="ml-0.5 text-muted-foreground hover:text-destructive">
                   <Trash2 className="h-3 w-3" />
@@ -762,14 +762,7 @@ function StepServices({
 
         {showCustomForm ? (
           <div className="space-y-2 rounded-lg border border-dashed border-border/60 p-3">
-            <div className="grid grid-cols-[48px_1fr] gap-2">
-              <Input
-                placeholder="✨"
-                value={customForm.icon}
-                onChange={(e) => setCustomForm((p) => ({ ...p, icon: e.target.value }))}
-                className="text-center text-sm h-8"
-                maxLength={4}
-              />
+            <div>
               <Input
                 placeholder="Nombre del servicio *"
                 value={customForm.name}
@@ -1102,7 +1095,8 @@ function StepSummary({
           {/* Category badge */}
           {category && (
             <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
-              {category.icon} {category.name}
+              <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
+              {category.name}
             </span>
           )}
 
@@ -1181,7 +1175,8 @@ function StepSummary({
               })}
               {data.customServices.map((cs, idx) => (
                 <span key={idx} className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-900">
-                  {cs.icon || '✨'} {cs.name}
+                  <Building2 className="h-3 w-3" aria-hidden="true" />
+                  {cs.name}
                 </span>
               ))}
             </div>

@@ -14,7 +14,7 @@ import { InterestsStep } from './steps/interests-step'
 import { LifestyleStep } from './steps/lifestyle-step'
 import { VenuesStep } from './steps/venues-step'
 import { WelcomeStep } from './steps/welcome-step'
-import { ONBOARDING_COPY, MIN_INTERESTS } from '@/lib/constants/onboarding'
+import { ONBOARDING_COPY, MIN_INTERESTS, runWithSingleRetry } from '@/lib/constants/onboarding'
 import { saveInterestsAction } from '@/actions/onboarding/save-interests'
 import { saveLifestylePreferencesAction } from '@/actions/onboarding/save-lifestyle-preferences'
 import { followVenueAction } from '@/actions/onboarding/follow-venue'
@@ -103,10 +103,12 @@ export function OnboardingClient({ categories, venues, userName, returnTo }: Onb
     startTransition(async () => {
       try {
         if (currentStep === 0) {
-          await saveInterestsAction(selectedInterests)
+          const result = await saveInterestsAction(selectedInterests)
+          if (!result.success) throw new Error('No se pudieron guardar los intereses')
           trackOnboardingEventAction('STEP_COMPLETED', 0, { interests: selectedInterests })
         } else if (currentStep === 1) {
-          await saveLifestylePreferencesAction(selectedLifestyle)
+          const result = await saveLifestylePreferencesAction(selectedLifestyle)
+          if (!result.success) throw new Error('No se pudieron guardar las preferencias')
           trackOnboardingEventAction('STEP_COMPLETED', 1, { preferences: selectedLifestyle })
         } else if (currentStep === 2) {
           if (followedVenues.length > 0) {
@@ -138,15 +140,15 @@ export function OnboardingClient({ categories, venues, userName, returnTo }: Onb
   const handleComplete = useCallback(() => {
     startTransition(async () => {
       try {
-        const result = await completeOnboardingAction()
+        const result = await runWithSingleRetry(() => completeOnboardingAction())
         if (result.success) {
           toast.success('Tus preferencias ya están aplicadas')
           router.push(returnTo ?? '/')
         } else {
-          toast.error('Error al completar el onboarding')
+          toast.error('No pudimos guardar tus preferencias. Revisa tu conexión e inténtalo otra vez.')
         }
       } catch {
-        toast.error('Error al completar el onboarding')
+        toast.error('No pudimos guardar tus preferencias. Revisa tu conexión e inténtalo otra vez.')
       }
     })
   }, [returnTo, router])
