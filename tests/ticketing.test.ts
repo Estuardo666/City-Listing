@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { calculatePlatformFee, dollarsToCents } from '../src/lib/ticketing/money'
-import { normalizePayphonePhone, parsePayphoneNotification, payphoneReturnStatus, preparePayphoneCheckout } from '../src/lib/ticketing/provider/payphone'
+import { normalizePayphonePhone, parsePayphoneNotification, payphoneRedirectDocument, payphoneReturnStatus, preparePayphoneCheckout, safePayphoneCheckoutUrl } from '../src/lib/ticketing/provider/payphone'
 import { TicketingError, TICKETING_ERROR_CODES } from '../src/lib/ticketing/constants'
 import { createPublicToken, decryptSecret, encryptSecret } from '../src/lib/ticketing/secrets'
 import { ticketScanUrl, ticketingBaseUrl } from '../src/lib/ticketing/links'
+import { ticketCheckoutEntryUrl } from '../src/lib/ticketing/service'
 
 test('ticketing money is calculated in integer cents', () => {
   assert.equal(dollarsToCents(12.34), 1234)
@@ -70,6 +71,32 @@ test('PayPhone checkout rejects non-HTTPS provider links', async () => {
   } finally {
     globalThis.fetch = previousFetch
   }
+})
+
+test('PayPhone checkout only accepts official hosted payment forms', () => {
+  assert.equal(
+    safePayphoneCheckoutUrl('https://pay.payphonetodoesposible.com/Anonymous/Index?paymentId=payment-123'),
+    'https://pay.payphonetodoesposible.com/Anonymous/Index?paymentId=payment-123',
+  )
+  assert.equal(safePayphoneCheckoutUrl('https://example.com/Anonymous/Index?paymentId=payment-123'), null)
+  assert.equal(safePayphoneCheckoutUrl('https://pay.payphonetodoesposible.com/other'), null)
+})
+
+test('PayPhone redirect document establishes the authorized web origin before navigation', () => {
+  const checkoutUrl = 'https://pay.payphonetodoesposible.com/Anonymous/Index?paymentId=payment-123&method=card'
+  const document = payphoneRedirectDocument(checkoutUrl)
+  assert.match(document, /<meta name="referrer" content="origin">/)
+  assert.match(document, /window\.location\.replace\("https:\/\/pay\.payphonetodoesposible\.com\/Anonymous\/Index\?paymentId=payment-123&method=card"\)/)
+  assert.match(document, /paymentId=payment-123&amp;method=card/)
+  assert.throws(() => payphoneRedirectDocument('https://example.com/checkout'), /no es válido/i)
+})
+
+test('ticket checkout starts on the authorized Vive Loja web origin', () => {
+  const token = 'private token/with symbols'
+  const url = new URL(ticketCheckoutEntryUrl(token))
+  assert.equal(url.origin, 'https://viveloja.com')
+  assert.equal(url.pathname, '/checkout/payphone')
+  assert.equal(url.searchParams.get('token'), token)
 })
 
 test('ticket QR encodes a scannable Vive Loja URL instead of the raw token', () => {

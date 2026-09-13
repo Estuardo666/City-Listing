@@ -35,27 +35,20 @@ interface OnboardingClientProps {
 
 const TOTAL_STEPS = 4
 
-const stepTransition = {
-  type: 'spring' as const,
-  stiffness: 300,
-  damping: 30,
-}
+const stepTransition = { duration: 0.2, ease: [0.23, 1, 0.32, 1] as const }
 
 const stepVariants = {
   enter: (direction: number) => ({
-    x: direction > 0 ? 200 : -200,
+    x: direction > 0 ? 16 : -16,
     opacity: 0,
-    scale: 0.96,
   }),
   center: {
     x: 0,
     opacity: 1,
-    scale: 1,
   },
   exit: (direction: number) => ({
-    x: direction < 0 ? 200 : -200,
+    x: direction < 0 ? 16 : -16,
     opacity: 0,
-    scale: 0.96,
   }),
 }
 
@@ -147,7 +140,7 @@ export function OnboardingClient({ categories, venues, userName, returnTo }: Onb
       try {
         const result = await completeOnboardingAction()
         if (result.success) {
-          toast.success('¡Bienvenido a ViveLoja!')
+          toast.success('Tus preferencias ya están aplicadas')
           router.push(returnTo ?? '/')
         } else {
           toast.error('Error al completar el onboarding')
@@ -162,9 +155,9 @@ export function OnboardingClient({ categories, venues, userName, returnTo }: Onb
     startTransition(async () => {
       try {
         await skipOnboardingAction()
-        router.push(returnTo ?? '/dashboard')
+        router.push(returnTo ?? '/')
       } catch {
-        router.push(returnTo ?? '/dashboard')
+        router.push(returnTo ?? '/')
       }
     })
   }, [returnTo, router])
@@ -202,7 +195,7 @@ export function OnboardingClient({ categories, venues, userName, returnTo }: Onb
                   size="sm"
                   onClick={handleBack}
                   disabled={isPending}
-                  className="gap-1 text-muted-foreground"
+                  className="min-h-11 gap-1 text-muted-foreground"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Atrás
@@ -267,8 +260,8 @@ export function OnboardingClient({ categories, venues, userName, returnTo }: Onb
               {currentStep === 3 && (
                 <WelcomeStep
                   interests={selectedInterestCategories}
+                  preferences={selectedLifestyle}
                   followingVenues={followingVenueData}
-                  totalPoints={50}
                 />
               )}
             </motion.div>
@@ -276,7 +269,7 @@ export function OnboardingClient({ categories, venues, userName, returnTo }: Onb
         </div>
 
         {/* Bottom CTA */}
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border/30 bg-background/80 px-4 py-4 backdrop-blur-xl sm:px-6">
+        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border/60 bg-background/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl sm:px-6">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
             <div className="text-xs text-muted-foreground">
               {currentStep === 0 && (

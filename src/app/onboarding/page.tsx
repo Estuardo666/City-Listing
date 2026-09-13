@@ -23,8 +23,8 @@ export default async function OnboardingPage({
 
   if (!session?.user?.id) redirect('/auth/signin')
 
-  if (session.user.onboardingCompleted) redirect(returnTo ?? '/dashboard')
-  if (session.user.onboardingSkipped) redirect(returnTo ?? '/dashboard')
+  if (session.user.onboardingCompleted) redirect(returnTo ?? '/')
+  if (session.user.onboardingSkipped) redirect(returnTo ?? '/')
 
   const [categories, venues] = await Promise.all([
     getOnboardingVenueCategories(),

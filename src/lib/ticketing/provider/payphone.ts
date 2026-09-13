@@ -51,15 +51,42 @@ export function normalizePayphonePhone(value: string) {
   return `+593${national}`
 }
 
-function safeCheckoutUrl(value: unknown) {
+export function safePayphoneCheckoutUrl(value: unknown) {
   if (typeof value !== 'string' || !value) return null
   try {
     const url = new URL(value)
-    if (url.protocol !== 'https:' || url.username || url.password) return null
+    if (
+      url.protocol !== 'https:'
+      || url.username
+      || url.password
+      || url.hostname !== 'pay.payphonetodoesposible.com'
+      || !['/Anonymous/Index', '/PayPhone/Index'].includes(url.pathname)
+    ) return null
     return url.toString()
   } catch {
     return null
   }
+}
+
+export function payphoneRedirectDocument(checkoutUrl: string) {
+  const safeUrl = safePayphoneCheckoutUrl(checkoutUrl)
+  if (!safeUrl) throw new TicketingError(TICKETING_ERROR_CODES.PROVIDER_ERROR, 'El enlace de pago de PayPhone no es válido.', 502)
+  const scriptUrl = JSON.stringify(safeUrl).replace(/</g, '\\u003c')
+  const href = safeUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="origin">
+  <title>Abriendo PayPhone…</title>
+</head>
+<body>
+  <p>Abriendo el pago seguro de PayPhone…</p>
+  <p><a href="${href}">Continuar al pago</a></p>
+  <script>window.location.replace(${scriptUrl})</script>
+</body>
+</html>`
 }
 
 async function post(path: string, credentials: PayphoneCredentials, body: unknown): Promise<unknown> {
@@ -147,8 +174,8 @@ export async function preparePayphoneCheckout(input: {
     throw new TicketingError(TICKETING_ERROR_CODES.PROVIDER_ERROR, 'PayPhone no generó una sesión de pago.', 502, diagnostics)
   }
 
-  const payWithPayPhone = safeCheckoutUrl(payload.payWithPayPhone)
-  const payWithCard = safeCheckoutUrl(payload.payWithCard)
+  const payWithPayPhone = safePayphoneCheckoutUrl(payload.payWithPayPhone)
+  const payWithCard = safePayphoneCheckoutUrl(payload.payWithCard)
   if (!payWithPayPhone && !payWithCard) throw new TicketingError(TICKETING_ERROR_CODES.PROVIDER_ERROR, 'PayPhone no generó un enlace seguro de pago.', 502)
 
   return {

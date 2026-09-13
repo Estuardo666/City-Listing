@@ -10,7 +10,7 @@ export async function skipOnboardingAction() {
 
   await prisma.user.update({
     where: { id: session.user.id },
-    data: { onboardingSkippedAt: new Date() },
+    data: { onboardingSkippedAt: new Date(), onboardingCompletedAt: null },
   })
 
   return { success: true }

@@ -119,11 +119,11 @@ export function PricingCards({ catalog, currentSlug, showComparison = false }: {
       setMessage(result.success
         ? { text: 'Plan activado. Ya puedes publicar tu negocio desde tu dashboard.', success: true }
         : { text: result.error ?? 'No se pudo activar el plan.', success: false })
+      if (result.success) setSelectedPlan(null)
     })
   }
 
   function choose(plan: CatalogPlan) {
-    if (status === 'authenticated') return activate(plan.slug)
     setSelectedPlan(plan)
   }
 
@@ -153,7 +153,7 @@ export function PricingCards({ catalog, currentSlug, showComparison = false }: {
                 <p className="min-h-10 text-sm text-muted-foreground">{isEnterprise ? 'Diseñado contigo para una red de locales.' : plan.description}</p>
               </div>
               <div className="mt-6 flex-1 space-y-3 border-t border-border/60 pt-5">
-                {benefitLines(plan).map((benefit) => <p key={benefit} className="flex gap-2 text-sm text-foreground"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />{benefit}</p>)}
+                {benefitLines(plan).map((benefit, index) => <p key={`${index}-${benefit}`} className="flex gap-2 text-sm text-foreground"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />{benefit}</p>)}
               </div>
               <div className="mt-7">
                 {isEnterprise ? <Link href="/contact?plan=enterprise" className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-accent">Hablar con Vive Loja</Link> : isCurrent ? <span className="flex min-h-11 items-center justify-center rounded-xl bg-secondary px-4 text-sm font-semibold text-muted-foreground">Plan actual</span> : <button type="button" disabled={isPending || !catalog.simulation.enabled} onClick={() => choose(plan)} className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">{isPending && <Loader2 className="h-4 w-4 animate-spin" />}{catalog.simulation.enabled ? (status === 'authenticated' ? 'Elegir plan · beta $0' : 'Continuar para publicar') : 'Activación pausada'}</button>}
@@ -182,7 +182,7 @@ export function PricingCards({ catalog, currentSlug, showComparison = false }: {
         <div className="w-full max-w-lg rounded-t-[2rem] border border-border bg-background p-6 shadow-2xl sm:rounded-[2rem] sm:p-8">
           <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Publicar tu negocio</p><h2 id="checkout-title" className="mt-2 text-2xl font-semibold">Plan {selectedPlan.name}</h2><p className="mt-2 text-sm text-muted-foreground">Elige este plan y después crea tu acceso. No pedimos tarjeta durante la beta.</p></div><button type="button" onClick={() => setSelectedPlan(null)} className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border hover:bg-secondary" aria-label="Cerrar selección"><X className="h-5 w-5" /></button></div>
           <div className="mt-6 space-y-3 rounded-2xl border border-border/70 bg-card p-4 text-sm"><div className="flex items-center justify-between"><span className="text-muted-foreground">Ciclo</span><span className="font-semibold">{cycle === 'ANNUAL' ? 'Anual' : 'Mensual'}</span></div><div className="flex items-center justify-between"><span className="text-muted-foreground">Total durante la beta</span><span className="font-semibold text-emerald-700">$0 · sin renovación</span></div><div className="flex items-start gap-2 border-t border-border/60 pt-3 text-muted-foreground"><Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" />Te enviaremos el código de verificación y, al activar, la confirmación del plan.</div></div>
-          <div className="mt-6 space-y-3"><Link href={businessPath('signup', selectedPlan, cycle)} className="flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 font-semibold text-primary-foreground transition-opacity hover:opacity-90">Crear acceso para publicar</Link><Link href={businessPath('signin', selectedPlan, cycle)} className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold transition-colors hover:bg-accent">Ya tengo cuenta</Link></div>
+          <div className="mt-6 space-y-3">{status === 'authenticated' ? <button type="button" disabled={isPending} onClick={() => activate(selectedPlan.slug)} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 font-semibold text-primary-foreground transition-[transform,opacity] duration-150 active:scale-[0.98] hover:opacity-90 disabled:opacity-60">{isPending && <Loader2 className="h-4 w-4 animate-spin" />}Activar beta sin costo</button> : <><Link href={businessPath('signup', selectedPlan, cycle)} className="flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 font-semibold text-primary-foreground transition-[transform,opacity] duration-150 active:scale-[0.98] hover:opacity-90">Crear acceso para publicar</Link><Link href={businessPath('signin', selectedPlan, cycle)} className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold transition-colors hover:bg-accent">Ya tengo cuenta</Link></>}</div>
         </div>
       </div>}
     </div>

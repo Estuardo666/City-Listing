@@ -29,7 +29,7 @@ export async function completeOnboardingAction() {
 
   await prisma.user.update({
     where: { id: userId },
-    data: { onboardingCompletedAt: new Date() },
+    data: { onboardingCompletedAt: new Date(), onboardingSkippedAt: null },
   })
 
   await awardPointsAction(userId, POINTS.ONBOARDING_COMPLETED, 'onboarding_completed')
@@ -42,7 +42,7 @@ export async function completeOnboardingAction() {
         badgeType: 'ONBOARDING_COMPLETED',
         name: 'Explorador Nivel 1',
         description: 'Completaste tu perfil de descubrimiento',
-        icon: '🧭',
+        icon: 'compass',
       },
       update: {},
     })

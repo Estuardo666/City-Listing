@@ -921,6 +921,16 @@ paths:
         "200": { description: Interests saved, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "422": { $ref: "#/components/responses/BadRequest" }
+  /me/onboarding/skip:
+    post:
+      tags: [User]
+      summary: Skip discovery onboarding for now
+      description: The user can still configure interests later from settings.
+      security: [{ bearerAuth: [] }]
+      operationId: skipMobileDiscoveryOnboarding
+      responses:
+        "200": { description: Onboarding skipped, content: { application/json: { schema: { $ref: "#/components/schemas/SuccessEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
     patch:
       tags: [User]
       summary: Update the authenticated user's profile
@@ -1866,7 +1876,12 @@ components:
       required: [categoryIds]
       properties:
         categoryIds: { type: array, maxItems: 30, items: { type: string } }
-        preferences: { type: array, maxItems: 20, items: { type: string, maxLength: 80 } }
+        preferences:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            enum: [NIGHTLIFE, DATES, FAMILY, REMOTE_WORK, CONCERTS, NATURE, GASTRONOMY, INSTAGRAMMABLE, SPORTS, CULTURE, COFFEE_HOPPING, WELLNESS]
     ReservationRequest:
       type: object
       required: [date, time, partySize]

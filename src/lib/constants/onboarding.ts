@@ -1,34 +1,34 @@
 export const LIFESTYLE_OPTIONS = [
-  { id: 'NIGHTLIFE', label: 'Salir con amigos', emoji: '🍻', color: 'from-amber-400 to-orange-500' },
-  { id: 'DATES', label: 'Citas', emoji: '❤️', color: 'from-rose-400 to-pink-500' },
-  { id: 'FAMILY', label: 'Planes familiares', emoji: '👨‍👩‍👧', color: 'from-sky-400 to-blue-500' },
-  { id: 'REMOTE_WORK', label: 'Trabajar fuera', emoji: '💻', color: 'from-violet-400 to-purple-500' },
-  { id: 'CONCERTS', label: 'Conciertos', emoji: '🎵', color: 'from-fuchsia-400 to-pink-500' },
-  { id: 'NATURE', label: 'Naturaleza', emoji: '🌄', color: 'from-emerald-400 to-green-500' },
-  { id: 'GASTRONOMY', label: 'Gastronomía', emoji: '🍽️', color: 'from-orange-400 to-red-500' },
-  { id: 'INSTAGRAMMABLE', label: 'Lugares instagrameables', emoji: '📸', color: 'from-cyan-400 to-teal-500' },
-  { id: 'SPORTS', label: 'Deportes', emoji: '⚽', color: 'from-lime-400 to-emerald-500' },
-  { id: 'CULTURE', label: 'Cultura', emoji: '🎭', color: 'from-indigo-400 to-blue-500' },
-  { id: 'COFFEE_HOPPING', label: 'Coffee hopping', emoji: '☕', color: 'from-amber-500 to-yellow-500' },
-  { id: 'WELLNESS', label: 'Bienestar', emoji: '🧘', color: 'from-teal-400 to-cyan-500' },
+  { id: 'NIGHTLIFE', label: 'Salir con amigos', description: 'Bares, música y planes para la noche', icon: 'Users', keywords: ['bar', 'discoteca', 'noche', 'coctel', 'cerveza'] },
+  { id: 'DATES', label: 'Planes en pareja', description: 'Lugares tranquilos y experiencias para dos', icon: 'Heart', keywords: ['románt', 'café', 'restaurante', 'mirador'] },
+  { id: 'FAMILY', label: 'En familia', description: 'Actividades y espacios para todas las edades', icon: 'Baby', keywords: ['famil', 'niñ', 'parque', 'recreación'] },
+  { id: 'REMOTE_WORK', label: 'Trabajar fuera', description: 'Cafés y espacios cómodos para concentrarse', icon: 'Laptop', keywords: ['café', 'cowork', 'biblioteca', 'internet'] },
+  { id: 'CONCERTS', label: 'Música en vivo', description: 'Conciertos, festivales y presentaciones', icon: 'Music2', keywords: ['música', 'concierto', 'festival', 'show'] },
+  { id: 'NATURE', label: 'Aire libre', description: 'Naturaleza, rutas y miradores', icon: 'Trees', keywords: ['naturaleza', 'parque', 'sender', 'mirador', 'aire libre'] },
+  { id: 'GASTRONOMY', label: 'Comer bien', description: 'Restaurantes, sabores locales y novedades', icon: 'Utensils', keywords: ['restaurante', 'comida', 'gastronom', 'cocina'] },
+  { id: 'INSTAGRAMMABLE', label: 'Lugares con buena vista', description: 'Arquitectura, paisajes y espacios fotogénicos', icon: 'Camera', keywords: ['mirador', 'arte', 'arquitectura', 'paisaje'] },
+  { id: 'SPORTS', label: 'Deporte', description: 'Partidos, entrenamiento y actividad física', icon: 'Dumbbell', keywords: ['deporte', 'fútbol', 'gimnasio', 'cancha'] },
+  { id: 'CULTURE', label: 'Arte y cultura', description: 'Teatro, museos, cine y exposiciones', icon: 'Landmark', keywords: ['cultura', 'arte', 'teatro', 'museo', 'cine'] },
+  { id: 'COFFEE_HOPPING', label: 'Café y conversación', description: 'Cafeterías para descubrir sin prisa', icon: 'Coffee', keywords: ['café', 'cafetería', 'panadería'] },
+  { id: 'WELLNESS', label: 'Bienestar', description: 'Salud, descanso y cuidado personal', icon: 'Leaf', keywords: ['bienestar', 'spa', 'salud', 'yoga'] },
 ] as const
 
 export const ONBOARDING_COPY = {
   step1: {
-    title: '¿Qué te interesa descubrir en Loja?',
-    subtitle: 'Personaliza tu experiencia seleccionando lo que más te gusta.',
+    title: '¿Qué quieres encontrar en Loja?',
+    subtitle: 'Elige al menos tres temas. Esto define qué aparece primero en tu inicio.',
   },
   step2: {
-    title: '¿Qué tipo de planes disfrutas?',
-    subtitle: 'Ayúdanos a mostrarte mejores recomendaciones.',
+    title: '¿Cómo te gusta vivir la ciudad?',
+    subtitle: 'Puedes combinar varias opciones y cambiarlas después.',
   },
   step3: {
-    title: 'Sigue algunos lugares populares',
-    subtitle: 'Crea tu red de locales favoritos para descubrir más.',
+    title: '¿Quieres seguir algún lugar?',
+    subtitle: 'Es opcional. Seguir un lugar hace que sus novedades aparezcan antes.',
   },
   step4: {
-    title: '¡Bienvenido a ViveLoja!',
-    subtitle: 'Tu experiencia personalizada está lista.',
+    title: 'Tu inicio ya tiene una dirección',
+    subtitle: 'Usaremos estas señales para ordenar eventos, lugares y novedades.',
   },
 } as const
 
@@ -36,3 +36,10 @@ export const MIN_INTERESTS = 3
 
 export type LifestyleOption = typeof LIFESTYLE_OPTIONS[number]
 export type LifestyleId = LifestyleOption['id']
+
+export function getLifestyleKeywords(preferences: string[]) {
+  const selected = new Set(preferences)
+  return LIFESTYLE_OPTIONS
+    .filter((option) => selected.has(option.id))
+    .flatMap((option) => option.keywords)
+}

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Compass, MapPin, Heart, Sparkles } from 'lucide-react'
+import { CalendarDays, Heart, SlidersHorizontal } from 'lucide-react'
+import { DiscoveryIcon } from '@/components/onboarding/discovery-icon'
+import { LIFESTYLE_OPTIONS } from '@/lib/constants/onboarding'
 import type { getOnboardingVenueCategories } from '@/lib/queries/onboarding'
 
 type Category = Awaited<ReturnType<typeof getOnboardingVenueCategories>>[number]
@@ -14,165 +14,66 @@ interface FollowingVenueData {
   image: string | null
   avgRating: number | null
   reviewCount: number
-  venueCategories: {
-    category: { id: string; name: string; icon: string | null }
-  }[]
+  venueCategories: { category: { id: string; name: string; icon: string | null } }[]
 }
 
 interface WelcomeStepProps {
   interests: Category[]
+  preferences: string[]
   followingVenues: FollowingVenueData[]
-  totalPoints: number
 }
 
-const containerVariants = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.3 },
-  },
-} as const
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: 'spring' as const, stiffness: 300, damping: 22 },
-  },
-} as const
-
-function AnimatedCounter({ value }: { value: number }) {
-  const [display, setDisplay] = useState(0)
-
-  useEffect(() => {
-    const duration = 800
-    const steps = 20
-    const increment = value / steps
-    let current = 0
-    const interval = setInterval(() => {
-      current += increment
-      if (current >= value) {
-        setDisplay(value)
-        clearInterval(interval)
-      } else {
-        setDisplay(Math.floor(current))
-      }
-    }, duration / steps)
-    return () => clearInterval(interval)
-  }, [value])
-
-  return <span>{display}</span>
-}
-
-function FloatingEmoji({ emoji, delay }: { emoji: string; delay: number }) {
-  return (
-    <motion.span
-      initial={{ opacity: 0, y: 0 }}
-      animate={{
-        opacity: [0, 1, 1, 0],
-        y: [-20, -60, -100, -140],
-        x: [0, Math.random() * 30 - 15, Math.random() * 40 - 20],
-      }}
-      transition={{
-        duration: 3,
-        delay,
-        repeat: Infinity,
-        repeatDelay: 2,
-      }}
-      className="pointer-events-none absolute text-xl"
-      style={{
-        left: `${Math.random() * 80 + 10}%`,
-        bottom: '10%',
-      }}
-    >
-      {emoji}
-    </motion.span>
-  )
-}
-
-export function WelcomeStep({ interests, followingVenues, totalPoints }: WelcomeStepProps) {
-  const emojis = ['🎉', '🧭', '⭐', '🎊', '💫', '✨']
+export function WelcomeStep({ interests, preferences, followingVenues }: WelcomeStepProps) {
+  const selectedPreferences = LIFESTYLE_OPTIONS.filter((option) => preferences.includes(option.id))
 
   return (
-    <div className="relative flex flex-col items-center">
-      {/* Floating emojis */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {emojis.map((emoji, i) => (
-          <FloatingEmoji key={i} emoji={emoji} delay={i * 0.4} />
+    <div className="space-y-5">
+      <div className="overflow-hidden rounded-3xl border border-border bg-card">
+        <div className="border-b border-border bg-foreground px-5 py-5 text-background sm:px-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-background/65">Tu cartelera personal</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">Loja, ordenada para ti</h2>
+          <p className="mt-2 max-w-lg text-sm leading-relaxed text-background/70">
+            Primero verás coincidencias con tus intereses. Después, lo más relevante de la ciudad.
+          </p>
+        </div>
+
+        <div className="grid gap-px bg-border sm:grid-cols-3">
+          <div className="bg-card p-5">
+            <CalendarDays className="h-5 w-5 text-primary" />
+            <p className="mt-4 text-2xl font-semibold tabular-nums">{interests.length}</p>
+            <p className="text-xs text-muted-foreground">temas elegidos</p>
+          </div>
+          <div className="bg-card p-5">
+            <SlidersHorizontal className="h-5 w-5 text-primary" />
+            <p className="mt-4 text-2xl font-semibold tabular-nums">{selectedPreferences.length}</p>
+            <p className="text-xs text-muted-foreground">formas de disfrutar Loja</p>
+          </div>
+          <div className="bg-card p-5">
+            <Heart className="h-5 w-5 text-primary" />
+            <p className="mt-4 text-2xl font-semibold tabular-nums">{followingVenues.length}</p>
+            <p className="text-xs text-muted-foreground">lugares seguidos</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2" aria-label="Resumen de preferencias">
+        {interests.slice(0, 5).map((interest) => (
+          <span key={interest.id} className="inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-medium text-foreground">
+            <DiscoveryIcon category={interest} className="h-3.5 w-3.5 text-primary" />
+            {interest.name}
+          </span>
+        ))}
+        {selectedPreferences.slice(0, 3).map((option) => (
+          <span key={option.id} className="inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-medium text-foreground">
+            <DiscoveryIcon lifestyleIcon={option.icon} className="h-3.5 w-3.5 text-primary" />
+            {option.label}
+          </span>
         ))}
       </div>
 
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="relative z-10 flex flex-col items-center gap-6 text-center"
-      >
-        {/* Badge */}
-        <motion.div
-          variants={itemVariants}
-          className="flex flex-col items-center gap-3"
-        >
-          <motion.div
-            animate={{ rotate: [0, -5, 5, -5, 0] }}
-            transition={{ duration: 0.6, delay: 0.8, ease: 'easeInOut' }}
-            className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 shadow-[0_0_40px_hsl(var(--primary)/0.2)]"
-          >
-            <Compass className="h-10 w-10 text-primary" />
-          </motion.div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">Has desbloqueado</p>
-            <p className="text-xl font-bold text-foreground">🧭 Explorador Nivel 1</p>
-          </div>
-        </motion.div>
-
-        {/* Points */}
-        <motion.div
-          variants={itemVariants}
-          className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-6 py-3"
-        >
-          <Sparkles className="h-5 w-5 text-amber-500" />
-          <span className="text-lg font-bold text-foreground">+<AnimatedCounter value={totalPoints} /> puntos</span>
-        </motion.div>
-
-        {/* Summary cards */}
-        <motion.div variants={itemVariants} className="grid w-full max-w-sm grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-border/50 bg-card p-4 text-center">
-            <div className="flex items-center justify-center gap-1.5 text-primary">
-              <MapPin className="h-4 w-4" />
-              <span className="text-2xl font-bold">{interests.length}</span>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">intereses</p>
-          </div>
-          <div className="rounded-2xl border border-border/50 bg-card p-4 text-center">
-            <div className="flex items-center justify-center gap-1.5 text-rose-500">
-              <Heart className="h-4 w-4" />
-              <span className="text-2xl font-bold">{followingVenues.length}</span>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">lugares seguidos</p>
-          </div>
-        </motion.div>
-
-        {/* Interest chips */}
-        {interests.length > 0 && (
-          <motion.div variants={itemVariants} className="flex flex-wrap justify-center gap-2">
-            {interests.slice(0, 6).map((interest) => (
-              <span
-                key={interest.id}
-                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-              >
-                {interest.icon} {interest.name}
-              </span>
-            ))}
-            {interests.length > 6 && (
-              <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                +{interests.length - 6} más
-              </span>
-            )}
-          </motion.div>
-        )}
-      </motion.div>
+      <p className="text-center text-xs leading-relaxed text-muted-foreground">
+        Podrás cambiar todo esto en Configuración → Preferencias de descubrimiento.
+      </p>
     </div>
   )
 }

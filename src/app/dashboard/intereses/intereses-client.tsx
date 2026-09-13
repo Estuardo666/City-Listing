@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, Check, Star, MapPin, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { LIFESTYLE_OPTIONS } from '@/lib/constants/onboarding'
+import { DiscoveryIcon } from '@/components/onboarding/discovery-icon'
 import { saveInterestsAction } from '@/actions/onboarding/save-interests'
 import { saveLifestylePreferencesAction } from '@/actions/onboarding/save-lifestyle-preferences'
 import { followVenueAction, unfollowVenueAction } from '@/actions/onboarding/follow-venue'
@@ -41,16 +43,16 @@ export function InteresesClient({
   const handleSaveInterests = () => {
     startTransition(async () => {
       const result = await saveInterestsAction(interests)
-      if (result.success) toast.success('Intereses guardados')
-      else toast.error('Error al guardar')
+      if (result.success) toast.success('El inicio usará estos intereses')
+      else toast.error(result.error ?? 'No se pudieron guardar los intereses')
     })
   }
 
   const handleSavePreferences = () => {
     startTransition(async () => {
       const result = await saveLifestylePreferencesAction(preferences)
-      if (result.success) toast.success('Preferencias guardadas')
-      else toast.error('Error al guardar')
+      if (result.success) toast.success('El inicio usará estas preferencias')
+      else toast.error(result.error ?? 'No se pudieron guardar las preferencias')
     })
   }
 
@@ -85,7 +87,7 @@ export function InteresesClient({
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'relative flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors',
+              'relative min-h-11 flex-1 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               activeTab === tab.id
                 ? 'text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
@@ -127,10 +129,12 @@ export function InteresesClient({
                         isSelected ? prev.filter((id) => id !== cat.id) : [...prev, cat.id]
                       )
                     }
+                    type="button"
+                    aria-pressed={isSelected}
                     className={cn(
-                      'relative flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-all',
+                      'relative flex min-h-28 flex-col items-start justify-between rounded-2xl border p-4 text-left transition-[transform,border-color,background-color] duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       isSelected
-                        ? 'border-primary bg-primary/5 shadow-[0_0_16px_hsl(var(--primary)/0.15)]'
+                        ? 'border-primary bg-primary/[0.07]'
                         : 'border-border/50 hover:border-primary/30'
                     )}
                   >
@@ -139,10 +143,11 @@ export function InteresesClient({
                         <Check className="h-3 w-3" strokeWidth={3} />
                       </div>
                     )}
-                    <span className="text-2xl">{cat.icon ?? '📍'}</span>
+                    <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground')}>
+                      <DiscoveryIcon category={cat} />
+                    </span>
                     <span className={cn(
-                      'text-xs font-semibold',
-                      isSelected ? 'text-primary' : 'text-foreground'
+                      'text-xs font-semibold text-foreground'
                     )}>
                       {cat.name}
                     </span>
@@ -179,24 +184,21 @@ export function InteresesClient({
                         isSelected ? prev.filter((p) => p !== opt.id) : [...prev, opt.id]
                       )
                     }
+                    type="button"
+                    aria-pressed={isSelected}
                     className={cn(
-                      'relative flex flex-col items-center gap-2.5 rounded-2xl border p-4 text-center transition-all sm:p-5',
+                      'relative flex min-h-36 flex-col items-start justify-between rounded-2xl border p-4 text-left transition-[transform,border-color,background-color] duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-5',
                       isSelected
-                        ? 'border-primary bg-primary/5 shadow-[0_0_16px_hsl(var(--primary)/0.15)]'
+                        ? 'border-primary bg-primary/[0.07]'
                         : 'border-border/50 hover:border-primary/30'
                     )}
                   >
-                    <div className={cn(
-                      'flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-xl',
-                      opt.color
-                    )}>
-                      {opt.emoji}
-                    </div>
-                    <span className={cn(
-                      'text-xs font-semibold sm:text-sm',
-                      isSelected ? 'text-primary' : 'text-foreground'
-                    )}>
-                      {opt.label}
+                    <span className={cn('flex h-10 w-10 items-center justify-center rounded-xl', isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground')}>
+                      <DiscoveryIcon lifestyleIcon={opt.icon} />
+                    </span>
+                    <span>
+                      <span className="block text-xs font-semibold text-foreground sm:text-sm">{opt.label}</span>
+                      <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{opt.description}</span>
                     </span>
                   </button>
                 )
@@ -231,10 +233,10 @@ export function InteresesClient({
                   >
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl">
                       {venue.image ? (
-                        <img src={venue.image} alt={venue.name} className="h-full w-full object-cover" />
+                        <Image src={venue.image} alt={venue.name} fill unoptimized sizes="64px" className="object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
-                          <span className="text-2xl">{firstCategory?.icon ?? '📍'}</span>
+                          <DiscoveryIcon category={firstCategory ?? { name: 'Lugar', slug: 'lugar' }} className="h-6 w-6 text-primary" />
                         </div>
                       )}
                     </div>
@@ -242,7 +244,7 @@ export function InteresesClient({
                       <p className="truncate text-sm font-semibold text-foreground">{venue.name}</p>
                       {firstCategory && (
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          {firstCategory.icon} {firstCategory.name}
+                          {firstCategory.name}
                         </p>
                       )}
                       {venue.avgRating != null && (
@@ -253,10 +255,12 @@ export function InteresesClient({
                       )}
                     </div>
                     <button
+                      type="button"
                       onClick={() => handleToggleFollow(venue.id)}
                       disabled={isPending}
+                      aria-pressed={isFollowed}
                       className={cn(
-                        'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                        'flex min-h-11 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-[transform,background-color,color] duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         isFollowed
                           ? 'bg-primary/10 text-primary'
                           : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary'

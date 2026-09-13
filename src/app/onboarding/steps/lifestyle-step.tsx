@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { LIFESTYLE_OPTIONS } from '@/lib/constants/onboarding'
+import { Check } from 'lucide-react'
+import { DiscoveryIcon } from '@/components/onboarding/discovery-icon'
 
 interface LifestyleStepProps {
   selected: string[]
@@ -17,12 +19,11 @@ const containerVariants = {
 } as const
 
 const itemVariants = {
-  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  hidden: { opacity: 0, y: 8 },
   show: {
     opacity: 1,
-    scale: 1,
     y: 0,
-    transition: { type: 'spring' as const, stiffness: 320, damping: 22 },
+    transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] },
   },
 } as const
 
@@ -38,34 +39,30 @@ export function LifestyleStep({ selected, onToggle }: LifestyleStepProps) {
         const isSelected = selected.includes(opt.id)
         return (
           <motion.button
+            type="button"
             key={opt.id}
             variants={itemVariants}
-            whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.97 }}
-            animate={{
-              borderColor: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border) / 0.5)',
-            }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             onClick={() => onToggle(opt.id)}
+            aria-pressed={isSelected}
             className={cn(
-              'relative flex min-h-[120px] flex-col items-center justify-center gap-2.5 rounded-2xl border p-4 text-center transition-shadow sm:p-5',
+              'relative flex min-h-36 flex-col items-start justify-between rounded-2xl border p-4 text-left transition-[transform,border-color,background-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-5',
               isSelected
-                ? 'border-primary bg-primary/5 shadow-[0_0_20px_hsl(var(--primary)/0.15)]'
-                : 'border-border/50 bg-card hover:border-primary/30 hover:shadow-md'
+                ? 'border-primary bg-primary/[0.07]'
+                : 'border-border/70 bg-card hover:border-primary/40'
             )}
           >
-            <div className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-xl',
-              opt.color,
-              isSelected ? 'shadow-lg' : 'opacity-80'
-            )}>
-              {opt.emoji}
+            <div className="flex w-full items-start justify-between gap-3">
+              <span className={cn('flex h-10 w-10 items-center justify-center rounded-xl', isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground')}>
+                <DiscoveryIcon lifestyleIcon={opt.icon} />
+              </span>
+              <span className={cn('flex h-5 w-5 items-center justify-center rounded-full border', isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-transparent')}>
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </span>
             </div>
-            <span className={cn(
-              'text-xs font-semibold leading-tight sm:text-sm',
-              isSelected ? 'text-primary' : 'text-foreground'
-            )}>
-              {opt.label}
+            <span>
+              <span className="block text-sm font-semibold leading-tight text-foreground">{opt.label}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{opt.description}</span>
             </span>
           </motion.button>
         )

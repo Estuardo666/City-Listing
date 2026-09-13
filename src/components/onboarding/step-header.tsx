@@ -16,10 +16,10 @@ export function StepHeader({ title, subtitle, stepKey }: StepHeaderProps) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -12 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
         className="text-center space-y-2"
       >
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           {title}
         </h1>
         <p className="text-sm text-muted-foreground sm:text-base">

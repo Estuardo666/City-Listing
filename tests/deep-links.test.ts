@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, describe, it } from 'node:test'
 
 import {
+  CHECKOUT_RESULT_PATH_PATTERN,
   DEEP_LINK_PATH_PATTERNS,
   SHAREABLE_KINDS,
   SITE_URL,
@@ -18,7 +19,6 @@ after(() => {
 
 describe('canonical urls', () => {
   it('covers every shareable kind with a deep link pattern', () => {
-    assert.equal(DEEP_LINK_PATH_PATTERNS.length, SHAREABLE_KINDS.length)
     for (const kind of SHAREABLE_KINDS) {
       const path = canonicalPath(kind, 'prueba')
       const pattern = path.replace('/prueba', '/*')
@@ -27,6 +27,10 @@ describe('canonical urls', () => {
         `${kind} resolves to ${path} but no pattern claims it`,
       )
     }
+  })
+
+  it('returns completed PayPhone checkouts to the iOS app', () => {
+    assert.ok(DEEP_LINK_PATH_PATTERNS.includes(CHECKOUT_RESULT_PATH_PATTERN))
   })
 
   it('uses the Spanish web segments the site actually serves', () => {

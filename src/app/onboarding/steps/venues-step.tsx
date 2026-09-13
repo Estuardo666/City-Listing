@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, Star, MapPin, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { DiscoveryIcon } from '@/components/onboarding/discovery-icon'
 import type { getRecommendedVenuesForOnboarding } from '@/lib/queries/onboarding'
 
 type Venue = Awaited<ReturnType<typeof getRecommendedVenuesForOnboarding>>[number]
@@ -22,12 +24,11 @@ const containerVariants = {
 } as const
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 24, scale: 0.95 },
+  hidden: { opacity: 0, y: 8 },
   show: {
     opacity: 1,
     y: 0,
-    scale: 1,
-    transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
+    transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] },
   },
 } as const
 
@@ -41,16 +42,19 @@ function VenueImage({ venue }: { venue: Venue }) {
         'flex h-full w-full items-center justify-center',
         'bg-gradient-to-br from-primary/20 via-primary/10 to-secondary/20'
       )}>
-        <span className="text-3xl">{firstCategory?.icon ?? '📍'}</span>
+        <DiscoveryIcon category={firstCategory ?? { name: 'Lugar', slug: 'lugar' }} className="h-7 w-7 text-primary" />
       </div>
     )
   }
 
   return (
-    <img
+    <Image
       src={venue.image}
       alt={venue.name}
-      className="h-full w-full object-cover"
+      fill
+      unoptimized
+      sizes="64px"
+      className="object-cover"
       onError={() => setImgError(true)}
     />
   )
@@ -84,7 +88,7 @@ export function VenuesStep({ venues, followed, onFollow }: VenuesStepProps) {
               <p className="truncate text-sm font-semibold text-foreground">{venue.name}</p>
               {firstCategory && (
                 <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                  <span>{firstCategory.icon}</span>
+                  <DiscoveryIcon category={firstCategory} className="h-3.5 w-3.5" />
                   {firstCategory.name}
                 </p>
               )}
@@ -103,11 +107,12 @@ export function VenuesStep({ venues, followed, onFollow }: VenuesStepProps) {
 
             {/* Follow button */}
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.9 }}
+              type="button"
+              whileTap={{ scale: 0.97 }}
               onClick={() => onFollow(venue.id)}
+              aria-pressed={isFollowed}
               className={cn(
-                'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                'flex min-h-11 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-[transform,background-color,color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isFollowed
                   ? 'bg-primary/10 text-primary'
                   : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary'
@@ -117,10 +122,10 @@ export function VenuesStep({ venues, followed, onFollow }: VenuesStepProps) {
                 {isFollowed ? (
                   <motion.span
                     key="following"
-                    initial={{ scale: 0.5, opacity: 0 }}
+                    initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.5, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
                     className="flex items-center gap-1"
                   >
                     <Check className="h-3.5 w-3.5" />
@@ -129,9 +134,10 @@ export function VenuesStep({ venues, followed, onFollow }: VenuesStepProps) {
                 ) : (
                   <motion.span
                     key="follow"
-                    initial={{ scale: 0.5, opacity: 0 }}
+                    initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.5, opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
                     className="flex items-center gap-1"
                   >
                     <Heart className="h-3.5 w-3.5" />

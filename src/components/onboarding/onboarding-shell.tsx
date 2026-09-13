@@ -1,7 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
-
 interface OnboardingShellProps {
   children: React.ReactNode
   header: React.ReactNode
@@ -10,24 +8,10 @@ interface OnboardingShellProps {
 export function OnboardingShell({ children, header }: OnboardingShellProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      {/* Animated gradient background */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/10" />
-        <motion.div
-          animate={{
-            background: [
-              'radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.04), transparent 70%)',
-              'radial-gradient(circle at 80% 20%, hsl(var(--primary) / 0.06), transparent 70%)',
-              'radial-gradient(circle at 50% 80%, hsl(var(--primary) / 0.04), transparent 70%)',
-            ],
-          }}
-          transition={{ duration: 8, repeat: Infinity, repeatType: 'reverse' }}
-          className="absolute inset-0"
-        />
-      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[linear-gradient(180deg,hsl(var(--secondary)/0.65),transparent)]" />
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between border-b border-border/30 px-4 py-3 sm:px-6">
+      <header className="relative z-10 flex min-h-16 items-center justify-between border-b border-border/60 px-4 py-2 sm:px-6">
         {header}
       </header>
 

@@ -63,32 +63,27 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
   const pricingCatalog = await getPublishedCatalog()
-  const isPersonalized = !!session?.user?.id && session.user.onboardingCompleted
-
   let personalizedData = null
-  if (isPersonalized && session?.user?.id) {
+  if (session?.user?.id) {
     personalizedData = await getPersonalizedHomeData(session.user.id)
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20">
       <main className="space-y-16 sm:space-y-20">
-        {/* Personalized section for onboarding users */}
-        {/* {personalizedData && session?.user && (
-          <div className="pt-8">
-            <HomePersonalizedSection
-              data={personalizedData}
-              userName={session.user.name ?? 'Explorador'}
-            />
-          </div>
-        )} */}
-
         {/* Hero Map with Suspense - Loads in parallel, shows skeleton while loading */}
         <Suspense fallback={<HomeHeroMapSkeleton />}>
           <HomeHeroMapSection />
         </Suspense>
 
         <div className="section-shell space-y-20 sm:space-y-24">
+          {personalizedData && session?.user && (
+            <HomePersonalizedSection
+              data={personalizedData}
+              userName={session.user.name ?? ''}
+            />
+          )}
+
           {/* Composition configured in /admin/home and shared with the app; the
               fixed stack below is the fallback when nothing is configured. */}
           <HomeConfiguredSections
@@ -152,14 +147,14 @@ export default async function HomePage() {
                 Para negocios y organizadores
               </span>
               <h3 className="max-w-2xl text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
-                ¿Tienes un local o evento? Loja te está buscando. 📣
+                ¿Tienes un local o evento? Haz que más personas lo encuentren.
               </h3>
               <p className="max-w-xl text-base text-muted-foreground">
                 Publica gratis o elige un plan para sumar contenido, promociones, mensajes, reservas y más ubicaciones.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button size="lg" asChild className="h-12 rounded-xl px-7 text-base">
-                  <Link href="/auth/signup?intent=business&plan=free&cycle=MONTHLY">Publicar gratis 🚀</Link>
+                  <Link href="/auth/signup?intent=business&plan=free&cycle=MONTHLY">Publicar gratis</Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild className="h-12 rounded-xl px-7 text-base">
                   <Link href="/planes">

@@ -25,7 +25,12 @@ const SEGMENTS: Record<ShareableKind, string> = {
 export const SHAREABLE_KINDS = Object.keys(SEGMENTS) as ShareableKind[]
 
 /** Wildcard patterns for apple-app-site-association / assetlinks. */
-export const DEEP_LINK_PATH_PATTERNS = SHAREABLE_KINDS.map((kind) => `/${SEGMENTS[kind]}/*`)
+export const CHECKOUT_RESULT_PATH_PATTERN = '/checkout/result'
+
+export const DEEP_LINK_PATH_PATTERNS = [
+  ...SHAREABLE_KINDS.map((kind) => `/${SEGMENTS[kind]}/*`),
+  CHECKOUT_RESULT_PATH_PATTERN,
+]
 
 /** Root-relative canonical path, e.g. `/rutas/centro-historico`. */
 export function canonicalPath(kind: ShareableKind, slug: string): string {

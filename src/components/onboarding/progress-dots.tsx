@@ -9,24 +9,23 @@ interface ProgressDotsProps {
 
 export function ProgressDots({ currentStep, totalSteps }: ProgressDotsProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" role="progressbar" aria-label="Progreso de configuración" aria-valuemin={1} aria-valuemax={totalSteps} aria-valuenow={currentStep + 1}>
       {Array.from({ length: totalSteps }, (_, i) => (
         <motion.div
           key={i}
           animate={{
-            scale: i === currentStep ? 1.2 : 1,
-            width: i === currentStep ? 28 : 10,
+            width: i === currentStep ? 24 : 8,
             backgroundColor:
               i <= currentStep
                 ? 'hsl(var(--primary))'
                 : 'hsl(var(--muted))',
           }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-          className="h-2.5 rounded-full"
+          transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+          className="h-2 rounded-full"
         />
       ))}
       <span className="ml-2 text-xs font-medium text-muted-foreground">
-        {currentStep + 1}/{totalSteps}
+        Paso {currentStep + 1} de {totalSteps}
       </span>
     </div>
   )

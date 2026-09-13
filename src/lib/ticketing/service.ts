@@ -19,6 +19,7 @@ import {
   preparePayphoneCheckout,
   normalizePayphonePhone,
   reversePayphonePayment,
+  safePayphoneCheckoutUrl,
   type NormalizedPayphonePayment,
   type PayphoneCredentials,
 } from './provider/payphone'
@@ -88,6 +89,10 @@ function asJson(value: unknown): Prisma.InputJsonValue {
 
 function appUrl() {
   return ticketingBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL)
+}
+
+export function ticketCheckoutEntryUrl(holdToken: string) {
+  return `${appUrl()}/checkout/payphone?token=${encodeURIComponent(holdToken)}`
 }
 
 function assertHttpsUrl(value: string) {
@@ -576,7 +581,7 @@ export async function createTicketCheckout(input: { holdToken: string; buyerName
   let checkout
   try {
     const credentials = await credentialsForConfig(hold.ticketing)
-    checkout = await preparePayphoneCheckout({ credentials, clientTransactionId: orderWithItems.clientTransactionId, amountCents: orderWithItems.totalCents, reference: hold.event.title, responseUrl: `${appUrl()}/api/ticketing/payphone/return?token=${encodeURIComponent(input.holdToken)}`, cancellationUrl: `${appUrl()}/checkout/result?token=${encodeURIComponent(input.holdToken)}&cancelled=1`, buyer: { name: orderWithItems.buyerName, email: orderWithItems.buyerEmail, phone: orderWithItems.buyerPhone, documentId: orderWithItems.billingDocumentId }, lineItems: orderWithItems.items.map((item) => ({ name: item.nameSnapshot, unitPriceCents: item.unitPriceCents, quantity: item.quantity, totalCents: item.subtotalCents, sku: item.ticketTypeId })) })
+    checkout = await preparePayphoneCheckout({ credentials, clientTransactionId: orderWithItems.clientTransactionId, amountCents: orderWithItems.totalCents, reference: hold.event.title, responseUrl: `${appUrl()}/api/ticketing/payphone/return?token=${encodeURIComponent(input.holdToken)}`, cancellationUrl: `${appUrl()}/checkout/result?token=${encodeURIComponent(input.holdToken)}&clientTransactionId=${encodeURIComponent(orderWithItems.clientTransactionId)}&status=failed`, buyer: { name: orderWithItems.buyerName, email: orderWithItems.buyerEmail, phone: orderWithItems.buyerPhone, documentId: orderWithItems.billingDocumentId }, lineItems: orderWithItems.items.map((item) => ({ name: item.nameSnapshot, unitPriceCents: item.unitPriceCents, quantity: item.quantity, totalCents: item.subtotalCents, sku: item.ticketTypeId })) })
   } catch (error) {
     await serializable((tx) => releaseHoldTx(tx, hold.id, 'RELEASED'))
     throw error
@@ -586,11 +591,24 @@ export async function createTicketCheckout(input: { holdToken: string; buyerName
     await tx.ticketPaymentAttempt.updateMany({ where: { orderId: orderWithItems.id, clientTransactionId: orderWithItems.clientTransactionId }, data: { providerPaymentId: checkout.paymentId, status: 'REDIRECTED', rawResponse: asJson(checkout.raw) } })
     return tx.ticketOrder.findUniqueOrThrow({ where: { id: orderWithItems.id } })
   })
-  return { ...serializeOrderForCheckout(updated, input.holdToken), checkoutUrl: checkout.payWithCard ?? checkout.payWithPayPhone, payWithCard: checkout.payWithCard, payWithPayPhone: checkout.payWithPayPhone }
+  return serializeOrderForCheckout(updated, input.holdToken)
 }
 
 function serializeOrderForCheckout(order: { id: string; status: string; publicTokenLast4: string; expiresAt: Date; checkoutUrl: string | null; totalCents: number; currency: string; clientTransactionId: string }, holdToken: string) {
-  return { orderId: order.id, status: order.status, token: holdToken, tokenLast4: order.publicTokenLast4, expiresAt: order.expiresAt, checkoutUrl: order.checkoutUrl, totalCents: order.totalCents, currency: order.currency, clientTransactionId: order.clientTransactionId }
+  return { orderId: order.id, status: order.status, token: holdToken, tokenLast4: order.publicTokenLast4, expiresAt: order.expiresAt, checkoutUrl: order.checkoutUrl ? ticketCheckoutEntryUrl(holdToken) : null, totalCents: order.totalCents, currency: order.currency, clientTransactionId: order.clientTransactionId }
+}
+
+export async function getTicketCheckoutProviderUrl(holdToken: string) {
+  const order = await prisma.ticketOrder.findUnique({
+    where: { publicTokenHash: hashSecret(holdToken) },
+    select: { status: true, expiresAt: true, checkoutUrl: true },
+  })
+  if (!order || order.status !== 'PENDING_PAYMENT' || order.expiresAt <= new Date()) {
+    throw new TicketingError(TICKETING_ERROR_CODES.HOLD_EXPIRED, 'La sesión de pago no existe o expiró.', 410)
+  }
+  const checkoutUrl = safePayphoneCheckoutUrl(order.checkoutUrl)
+  if (!checkoutUrl) throw new TicketingError(TICKETING_ERROR_CODES.PROVIDER_ERROR, 'PayPhone no generó un enlace seguro de pago.', 502)
+  return checkoutUrl
 }
 
 function newTicketCode() {
