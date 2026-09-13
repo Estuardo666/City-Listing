@@ -22,6 +22,12 @@ Plataforma de eventos, locales y noticias para Loja, Ecuador.
 - 🗺️ Mapa interactivo
 - 🔍 Búsqueda y filtros
 
+## SEO
+
+- [Plan SEO de 90 días](docs/seo-plan-90-days.md): análisis de intención, arquitectura de keywords, cadencia editorial, KPI y checklist de publicación.
+- [Análisis SEO de competidores](docs/seo-competitor-analysis.md): resultados observados, brechas de búsqueda y estrategia por tipo de competidor.
+- `npm run content:seed:seo`: publica o actualiza los artículos SEO aprobados de la base editorial.
+
 ## Roles
 
 - **Visitante**: Ver contenido público

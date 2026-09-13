@@ -1,58 +1,99 @@
 import 'server-only'
 import type { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
+import { EVENT_LANDING_PATHS } from '@/lib/seo/event-landings'
+import { EDITORIAL_ARTICLE_PATHS } from '@/lib/seo/editorial-content'
+import { RANKED_VENUE_ARTICLE_PATHS } from '@/lib/seo/ranked-venue-articles'
 
 const SITE_URL = 'https://viveloja.com'
-const PAGE_SIZE = 5000
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [venueCount, eventCount, postCount, watchEventCount] = await Promise.all([
-    prisma.venue.count({ where: { status: 'APPROVED', isActive: true } }),
-    prisma.event.count({ where: { status: 'APPROVED' } }),
-    prisma.post.count({ where: { status: 'PUBLISHED' } }),
-    prisma.watchEvent.count({ where: { status: 'ACTIVE' } }),
+  const now = new Date()
+  const [venues, events, posts, categories] = await Promise.all([
+    prisma.venue.findMany({
+      where: { status: 'APPROVED', isActive: true },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+    }),
+    prisma.event.findMany({
+      where: {
+        status: 'APPROVED',
+        OR: [{ startDate: { gte: now } }, { endDate: { gte: now } }],
+      },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+    }),
+    prisma.post.findMany({
+      where: { status: 'APPROVED' },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+    }),
+    prisma.category.findMany({
+      where: { type: 'VENUE' },
+      select: { slug: true, updatedAt: true },
+      orderBy: { name: 'asc' },
+    }),
   ])
 
-  const entries: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/sitemaps/static`, lastModified: new Date() },
-    { url: `${SITE_URL}/sitemaps/categorias`, lastModified: new Date() },
-    { url: `${SITE_URL}/sitemaps/colecciones`, lastModified: new Date() },
-    { url: `${SITE_URL}/sitemaps/rutas`, lastModified: new Date() },
+  const lastModified = now
+  const staticRoutes = [
+    { path: '', changeFrequency: 'daily' as const, priority: 1 },
+    { path: 'explorar', changeFrequency: 'daily' as const, priority: 0.9 },
+    { path: 'eventos', changeFrequency: 'daily' as const, priority: 0.9 },
+    { path: 'locales', changeFrequency: 'daily' as const, priority: 0.8 },
+    { path: 'blog', changeFrequency: 'weekly' as const, priority: 0.7 },
+    { path: 'ofertas', changeFrequency: 'daily' as const, priority: 0.7 },
+    { path: 'rutas', changeFrequency: 'weekly' as const, priority: 0.6 },
+    { path: 'colecciones', changeFrequency: 'weekly' as const, priority: 0.6 },
+    { path: 'about', changeFrequency: 'monthly' as const, priority: 0.5 },
+    { path: 'contact', changeFrequency: 'monthly' as const, priority: 0.5 },
+    { path: 'planes', changeFrequency: 'weekly' as const, priority: 0.7 },
+    ...EVENT_LANDING_PATHS.map((path) => ({ path, changeFrequency: 'hourly' as const, priority: 0.85 })),
+    ...[...EDITORIAL_ARTICLE_PATHS, ...RANKED_VENUE_ARTICLE_PATHS].map((path) => ({
+      path: `blog/${path}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    })),
   ]
 
-  const localesPages = Math.max(1, Math.ceil(venueCount / PAGE_SIZE))
-  for (let i = 1; i <= localesPages; i++) {
-    entries.push({
-      url: `${SITE_URL}/sitemaps/locales?page=${i}`,
-      lastModified: new Date(),
-    })
-  }
-
-  const eventosPages = Math.max(1, Math.ceil(eventCount / PAGE_SIZE))
-  for (let i = 1; i <= eventosPages; i++) {
-    entries.push({
-      url: `${SITE_URL}/sitemaps/eventos?page=${i}`,
-      lastModified: new Date(),
-    })
-  }
-
-  const blogPages = Math.max(1, Math.ceil(postCount / PAGE_SIZE))
-  for (let i = 1; i <= blogPages; i++) {
-    entries.push({
-      url: `${SITE_URL}/sitemaps/blog?page=${i}`,
-      lastModified: new Date(),
-    })
-  }
-
-  if (watchEventCount > 0) {
-    const watchPages = Math.max(1, Math.ceil(watchEventCount / PAGE_SIZE))
-    for (let i = 1; i <= watchPages; i++) {
-      entries.push({
-        url: `${SITE_URL}/sitemaps/partidos?page=${i}`,
-        lastModified: new Date(),
-      })
-    }
-  }
-
-  return entries
+  return [
+    ...staticRoutes.map((route) => ({
+      url: route.path ? `${SITE_URL}/${route.path}` : SITE_URL,
+      lastModified,
+      changeFrequency: route.changeFrequency,
+      priority: route.priority,
+    })),
+    ...categories.flatMap((category) => [
+      {
+        url: `${SITE_URL}/${category.slug}`,
+        lastModified: category.updatedAt,
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      },
+      {
+        url: `${SITE_URL}/mejores/${category.slug}`,
+        lastModified: category.updatedAt,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      },
+    ]),
+    ...venues.map((venue) => ({
+      url: `${SITE_URL}/locales/${venue.slug}`,
+      lastModified: venue.updatedAt,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    })),
+    ...events.map((event) => ({
+      url: `${SITE_URL}/eventos/${event.slug}`,
+      lastModified: event.updatedAt,
+      changeFrequency: 'daily' as const,
+      priority: 0.8,
+    })),
+    ...posts.map((post) => ({
+      url: `${SITE_URL}/blog/${post.slug}`,
+      lastModified: post.updatedAt,
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    })),
+  ]
 }

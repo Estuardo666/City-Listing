@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const skip = (page - 1) * PAGE_SIZE
 
   const posts = await prisma.post.findMany({
-    where: { status: 'PUBLISHED' },
+    where: { status: 'APPROVED' },
     select: { slug: true, updatedAt: true },
     orderBy: { updatedAt: 'desc' },
     skip,

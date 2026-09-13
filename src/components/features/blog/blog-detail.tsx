@@ -17,6 +17,29 @@ function formatDate(date: Date | string | null): string {
   }).format(new Date(date))
 }
 
+function renderParagraph(paragraph: string) {
+  return paragraph.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+    if (!/^https?:\/\//i.test(part)) return <span key={index}>{part}</span>
+
+    const trailing = part.match(/[),.;:!?]+$/)?.[0] ?? ''
+    const href = trailing ? part.slice(0, -trailing.length) : part
+
+    return (
+      <span key={index}>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="break-all text-primary underline underline-offset-2"
+        >
+          {href}
+        </a>
+        {trailing}
+      </span>
+    )
+  })
+}
+
 export function BlogDetail({ post }: BlogDetailProps) {
   return (
     <article className="mx-auto max-w-3xl px-4 pb-20 pt-8 sm:px-6">
@@ -94,7 +117,7 @@ export function BlogDetail({ post }: BlogDetailProps) {
         {post.content.split('\n').map((paragraph, i) =>
           paragraph.trim() ? (
             <p key={i} className="mb-4 leading-relaxed text-foreground/90">
-              {paragraph}
+              {renderParagraph(paragraph)}
             </p>
           ) : null
         )}

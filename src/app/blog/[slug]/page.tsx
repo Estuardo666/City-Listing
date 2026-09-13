@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: BlogSlugPageProps): Promise<M
       title: post.title,
       description,
       url: canonical,
-      siteName: 'ViveLoja',
+      siteName: 'Vive Loja',
       type: 'article',
       locale: 'es_EC',
       images: post.image ? [post.image] : [],

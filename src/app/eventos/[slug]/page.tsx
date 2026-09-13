@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: EventDetailPageProps): Promis
       title: event.title,
       description,
       url: canonical,
-      siteName: 'ViveLoja',
+      siteName: 'Vive Loja',
       type: 'website',
       locale: 'es_EC',
       images: event.image ? [event.image] : [],

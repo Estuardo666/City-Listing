@@ -28,8 +28,39 @@ const CONNECT_SRC_DOMAINS = [
   'https://va.vercel-scripts.com',
 ].join(' ')
 
+const LEGACY_WORDPRESS_PATHS = [
+  '/shop',
+  '/youth',
+  '/tiny-kids',
+  '/my-account',
+  '/oferta-academica',
+  '/servicios-estudiantiles-2',
+  '/cart',
+]
+
+function isLegacyWordPressPath(pathname: string) {
+  const normalizedPath = pathname.toLowerCase().replace(/\/$/, '') || '/'
+  return (
+    LEGACY_WORDPRESS_PATHS.some((path) => normalizedPath === path || normalizedPath.startsWith(`${path}/`)) ||
+    normalizedPath.startsWith('/product/') ||
+    normalizedPath.startsWith('/color/') ||
+    normalizedPath.endsWith('/feed')
+  )
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  if (isLegacyWordPressPath(pathname)) {
+    return new NextResponse('Gone', {
+      status: 410,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'public, max-age=86400',
+        'X-Robots-Tag': 'noindex, nofollow',
+      },
+    })
+  }
 
   if (pathname.startsWith('/api/admin/imports/google/slow')) {
     const host = request.headers.get('host') || ''

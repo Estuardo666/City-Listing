@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { CalendarDays, Star, Sparkles, Tag, Ticket, LayoutGrid } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { Agenda } from '@/components/features/events/agenda'
@@ -8,6 +9,8 @@ import { ListingCta } from '@/components/features/listing/listing-cta'
 import { NearYouSection } from '@/components/features/listing/near-you-section'
 import type { ExploreEvent } from '@/types/explore'
 import type { EventListItem } from '@/types/event'
+import { JsonLd } from '@/components/json-ld'
+import { buildBreadcrumbListJsonLd, buildEventLandingJsonLd } from '@/lib/seo/json-ld-builders'
 
 export const metadata = {
   title: 'Eventos en Loja',
@@ -92,6 +95,9 @@ export default async function EventosPage() {
   ])
 
   const allEvents = allApproved.slice(0, ALL_TAKE) as EventListItem[]
+  const upcomingEventsForSchema = allApproved
+    .filter((event) => event.startDate >= now || (event.endDate && event.endDate >= now))
+    .slice(0, 20)
 
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -121,6 +127,20 @@ export default async function EventosPage() {
 
   return (
     <div className="bg-background pt-14">
+      <JsonLd
+        data={buildEventLandingJsonLd({
+          name: 'Eventos en Loja',
+          description: 'Agenda completa de eventos en Loja, Ecuador.',
+          path: 'eventos',
+          events: upcomingEventsForSchema,
+        })}
+      />
+      <JsonLd
+        data={buildBreadcrumbListJsonLd([
+          { name: 'Inicio', url: 'https://viveloja.com' },
+          { name: 'Eventos en Loja' },
+        ])}
+      />
       {/* Mapa: primero, ocupa el viewport util */}
       <div className="h-[60vh] w-full overflow-hidden sm:h-[70vh]">
         <ExploreClient
@@ -145,6 +165,23 @@ export default async function EventosPage() {
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
             Conciertos, cultura, deportes y actividades recomendadas por la comunidad. Filtra por categoria y encuentra ubicaciones en el mapa.
           </p>
+          <nav aria-label="Agendas temáticas de Loja" className="flex flex-wrap gap-2 pt-2">
+            {[
+              ['/conciertos-en-loja', 'Conciertos en Loja'],
+              ['/eventos-culturales-loja', 'Eventos culturales'],
+              ['/artes-vivas-loja', 'Artes Vivas'],
+              ['/eventos-hoy-en-loja', 'Eventos hoy'],
+              ['/eventos-este-fin-de-semana-en-loja', 'Este fin de semana'],
+            ].map(([href, label]) => (
+              <Link
+                key={href}
+                href={href}
+                className="rounded-full border border-border/70 bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/30 hover:bg-accent"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
         {/* Agenda por fecha */}

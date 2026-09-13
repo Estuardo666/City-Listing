@@ -10,6 +10,8 @@ import { SiteHeader, SiteFooter } from '@/components/layout'
 import { PageTransition } from '@/components/layout/page-transition'
 import { ScrollLockFix } from '@/components/ui/scroll-lock-fix'
 import { LazyGlobals } from '@/components/providers/lazy-globals'
+import { JsonLd } from '@/components/json-ld'
+import { buildWebsiteJsonLd } from '@/lib/seo/json-ld-builders'
 
 const geist = Geist({
   subsets: ['latin'],
@@ -18,6 +20,7 @@ const geist = Geist({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://viveloja.com'),
   title: 'Vive Loja - Eventos, Locales y Noticias',
   description:
     'Descubre todo lo que pasa en Loja, Ecuador. Eventos, restaurantes, bares, noticias y más. Tu guía completa de entretenimiento y diversión local.',
@@ -51,8 +54,6 @@ export const metadata: Metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
 }
 
@@ -94,6 +95,7 @@ document.addEventListener('touchend', function(e) {
         />
       </head>
       <body className={`${geist.variable} font-sans antialiased`}>
+        <JsonLd data={buildWebsiteJsonLd()} />
         <ScrollLockFix />
         <MapboxWorkerSetup />
         <QueryProvider>

@@ -9,6 +9,8 @@ import { BlogCard } from '@/components/features/blog'
 import { TrendingSection } from '@/components/features/blog/trending-section'
 import { Button } from '@/components/ui/button'
 import { MotionDiv, fadeInUp, staggerContainer } from '@/components/ui/motion'
+import { SEO_EDITORIAL_ARTICLES } from '@/lib/seo/editorial-content'
+import { RANKED_VENUE_ARTICLE_CONFIGS } from '@/lib/seo/ranked-venue-articles'
 
 export const metadata = {
   title: 'Blog — Vive Loja',
@@ -129,6 +131,34 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             ))}
           </div>
         ) : null}
+
+        <section className="mb-10 rounded-2xl border border-primary/15 bg-primary/5 p-5 sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow text-primary">Guías locales</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">Ideas para vivir Loja</h2>
+            </div>
+            <Link href="/eventos" className="text-sm font-semibold text-primary hover:underline">
+              Ver agenda de eventos
+            </Link>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              ...SEO_EDITORIAL_ARTICLES.map((article) => ({ href: `/blog/${article.slug}`, title: article.title })),
+              ...RANKED_VENUE_ARTICLE_CONFIGS
+                .filter((article) => article.indexable !== false)
+                .map((article) => ({ href: `/blog/${article.slug}`, title: article.title })),
+            ].map((article) => (
+              <Link
+                key={article.href}
+                href={article.href}
+                className="rounded-xl border border-border/60 bg-card px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-accent"
+              >
+                {article.title}
+              </Link>
+            ))}
+          </div>
+        </section>
 
         {/* Trending posts */}
         <TrendingSection posts={trending} period="week" />

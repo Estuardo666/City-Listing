@@ -264,22 +264,80 @@ export function buildEventJsonLd(event: EventForJsonLd) {
     }
   }
 
-  jsonLd.organizer = {
-    '@type': 'Organization',
-    name: 'Vive Loja',
-    url: SITE_URL,
-  }
-
-  const price = event.price ?? 0
-  jsonLd.offers = {
-    '@type': 'Offer',
-    price: String(price),
-    priceCurrency: 'USD',
-    availability: 'https://schema.org/InStock',
-    url: `${SITE_URL}/eventos/${event.slug}`,
+  if (event.price !== null && event.price !== undefined) {
+    jsonLd.offers = {
+      '@type': 'Offer',
+      price: String(event.price),
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url: `${SITE_URL}/eventos/${event.slug}`,
+    }
   }
 
   return jsonLd
+}
+
+export function buildEventLandingJsonLd(params: {
+  name: string
+  description: string
+  path: string
+  events: Array<{
+    title: string
+    slug: string
+    startDate: Date
+    image: string | null
+    location: string
+  }>
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: params.name,
+    description: params.description,
+    url: `${SITE_URL}/${params.path}`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: params.events.length,
+      itemListElement: params.events.slice(0, 20).map((event, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'Event',
+          name: event.title,
+          url: `${SITE_URL}/eventos/${event.slug}`,
+          startDate: event.startDate.toISOString(),
+          location: {
+            '@type': 'Place',
+            name: event.location,
+          },
+          ...(event.image ? { image: toAbsoluteUrl(event.image) } : {}),
+        },
+      })),
+    },
+  }
+}
+
+export function buildWebsiteJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${SITE_URL}/#organization`,
+        name: 'Vive Loja',
+        url: SITE_URL,
+        logo: `${SITE_URL}/viveloja.png`,
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${SITE_URL}/#website`,
+        name: 'Vive Loja',
+        url: SITE_URL,
+        inLanguage: 'es-EC',
+        publisher: { '@id': `${SITE_URL}/#organization` },
+      },
+    ],
+  }
 }
 
 export function buildArticleJsonLd(post: PostForJsonLd) {
@@ -321,6 +379,41 @@ export function buildArticleJsonLd(post: PostForJsonLd) {
   }
 
   return jsonLd
+}
+
+export function buildVenueRankingJsonLd(params: {
+  name: string
+  description: string
+  path: string
+  venues: Array<{
+    name: string
+    slug: string
+    image: string | null
+    address: string | null
+  }>
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: params.name,
+    description: params.description,
+    url: `${SITE_URL}/${params.path}`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: params.venues.length,
+      itemListElement: params.venues.map((venue, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'LocalBusiness',
+          name: venue.name,
+          url: `${SITE_URL}/locales/${venue.slug}`,
+          ...(venue.image ? { image: toAbsoluteUrl(venue.image) } : {}),
+          ...(venue.address ? { address: buildPostalAddress(venue.address) } : {}),
+        },
+      })),
+    },
+  }
 }
 
 export interface RouteForJsonLd {

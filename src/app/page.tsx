@@ -29,6 +29,8 @@ import { HomePersonalizedSection } from '@/components/features/home/home-persona
 import { HomeConfiguredSections } from '@/components/features/home/home-configured-sections'
 import { PricingCards } from '@/components/billing/pricing-cards'
 import { getPublishedCatalog } from '@/lib/billing/plans'
+import { JsonLd } from '@/components/json-ld'
+import { buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 
 // Revalidate every 1 hour for ISR (Incremental Static Regeneration)
 export const revalidate = 3600
@@ -58,6 +60,7 @@ export const metadata: Metadata = {
     description: 'Explora los mejores eventos, restaurantes, bares y noticias de Loja, Ecuador.',
     images: ['https://viveloja.com/viveloja.png'],
   },
+  alternates: { canonical: 'https://viveloja.com/' },
 }
 
 export default async function HomePage() {
@@ -70,6 +73,9 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20">
+      <JsonLd
+        data={buildBreadcrumbListJsonLd([{ name: 'Inicio', url: 'https://viveloja.com' }])}
+      />
       <main className="space-y-16 sm:space-y-20">
         {/* Hero Map with Suspense - Loads in parallel, shows skeleton while loading */}
         <Suspense fallback={<HomeHeroMapSkeleton />}>
