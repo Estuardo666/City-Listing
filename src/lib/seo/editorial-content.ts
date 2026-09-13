@@ -3,7 +3,7 @@ export type EditorialArticle = {
   title: string
   excerpt: string
   content: string[]
-  image: string
+  image: string | null
   tags: string[]
   featured?: boolean
 }
@@ -14,7 +14,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Eventos en Loja: guía para encontrar conciertos, cultura y planes',
     excerpt:
       'Cómo buscar eventos en Loja, comparar horarios y elegir planes culturales, conciertos, ferias y actividades para cada fecha.',
-    image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1200&q=80',
+    image: null,
     tags: ['eventos en Loja', 'agenda de Loja', 'qué hacer en Loja'],
     featured: true,
     content: [
@@ -31,7 +31,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Conciertos en Loja: cómo encontrar música en vivo y elegir tu plan',
     excerpt:
       'Consejos para encontrar conciertos en Loja, revisar sedes, horarios, precios y enlaces de entradas antes de asistir.',
-    image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200&q=80',
+    image: null,
     tags: ['conciertos en Loja', 'música en Loja', 'eventos musicales'],
     content: [
       'Cuando buscas conciertos en Loja, la fecha y el lugar son tan importantes como el artista. La programación puede aparecer en teatros, centros culturales, bares, universidades, ferias y espacios abiertos, por lo que conviene revisar una agenda que reúna distintas categorías.',
@@ -47,7 +47,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Qué hacer este fin de semana en Loja: ideas para salir y disfrutar',
     excerpt:
       'Ideas para planificar un fin de semana en Loja con cultura, parques, gastronomía, naturaleza y eventos locales.',
-    image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&q=80',
+    image: null,
     tags: ['qué hacer en Loja', 'fin de semana en Loja', 'estilo de vida'],
     featured: true,
     content: [
@@ -64,7 +64,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Artes Vivas y FIAVL en Loja: cómo consultar la programación',
     excerpt:
       'Guía práctica para seguir el FIAVL, encontrar teatro, danza y artes vivas en Loja, y verificar la información oficial.',
-    image: 'https://images.unsplash.com/photo-1503095396549-807759245b35?w=1200&q=80',
+    image: null,
     tags: ['Artes Vivas Loja', 'FIAVL', 'cultura en Loja'],
     content: [
       'Las Artes Vivas en Loja reúnen expresiones escénicas y artísticas como teatro, danza, performance, música y propuestas interdisciplinarias. Para encontrar actividades, combina la agenda local con los canales oficiales de cada organización.',
@@ -80,7 +80,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Plan de un día en Loja: cultura, café y paseo sin prisas',
     excerpt:
       'Una idea flexible para disfrutar Loja en un día combinando cultura, espacios verdes, gastronomía y una agenda local actualizada.',
-    image: 'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=1200&q=80',
+    image: null,
     tags: ['estilo de vida en Loja', 'turismo en Loja', 'planes en Loja'],
     content: [
       'Un día en Loja se disfruta mejor con un itinerario flexible. Elige una actividad cultural como punto central, deja tiempo para caminar y consulta la agenda antes de cerrar la ruta.',
@@ -96,7 +96,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Comida típica lojana: qué probar y cómo descubrir lugares locales',
     excerpt:
       'Una guía para conocer sabores tradicionales de Loja y encontrar restaurantes y mercados locales en la agenda de Vive Loja.',
-    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=80',
+    image: null,
     tags: ['comida típica lojana', 'gastronomía de Loja', 'restaurantes en Loja'],
     content: [
       'La gastronomía de Loja se puede explorar empezando por sus preparaciones tradicionales y continuando con restaurantes, mercados y cafeterías de la ciudad. La experiencia cambia según el local, el horario y la temporada, así que es buena idea revisar información actualizada.',
@@ -112,7 +112,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Lugares turísticos en Loja, Ecuador: guía para organizar tu visita',
     excerpt:
       'Una guía para explorar lugares turísticos de Loja con cultura, naturaleza y recorridos urbanos, usando fuentes oficiales para confirmar cada visita.',
-    image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&q=80',
+    image: null,
     tags: ['lugares turísticos en Loja', 'turismo en Loja', 'Loja Ecuador'],
     featured: true,
     content: [
@@ -129,7 +129,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Parque Nacional Podocarpus desde Loja: cómo planificar la visita',
     excerpt:
       'Información práctica para preparar una visita al Parque Nacional Podocarpus desde Loja, con rutas, horarios de ingreso y recomendaciones de conservación.',
-    image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&q=80',
+    image: null,
     tags: ['Parque Nacional Podocarpus', 'naturaleza en Loja', 'turismo de naturaleza'],
     content: [
       'El Parque Nacional Podocarpus es una opción de turismo de naturaleza cerca de Loja, pero no debe planificarse como un paseo urbano improvisado. La visita depende de la zona de ingreso, el estado de la vía, el clima y el tipo de sendero que quieras recorrer.',
@@ -145,7 +145,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Qué hacer en Loja con niños: ideas para un día en familia',
     excerpt:
       'Ideas para organizar un plan familiar en Loja con parques, actividades culturales y una agenda que puedas verificar antes de salir.',
-    image: 'https://images.unsplash.com/photo-1504150558240-0b4fd8946624?w=1200&q=80',
+    image: null,
     tags: ['qué hacer en Loja con niños', 'planes familiares en Loja', 'estilo de vida en Loja'],
     featured: true,
     content: [
@@ -162,7 +162,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Centro Histórico de Loja: qué visitar y cómo armar un recorrido',
     excerpt:
       'Un recorrido flexible por el Centro Histórico de Loja con plazas, iglesias, museos y actividades culturales para consultar antes de caminar.',
-    image: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=1200&q=80',
+    image: null,
     tags: ['Centro Histórico de Loja', 'turismo cultural en Loja', 'qué visitar en Loja'],
     content: [
       'El Centro Histórico de Loja es una buena base para un recorrido cultural a pie porque concentra plazas, iglesias, edificios patrimoniales, museos y actividades de la ciudad. La mejor ruta depende del tiempo que tengas y de los espacios que estén abiertos ese día.',
@@ -178,7 +178,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Turismo religioso en Loja: cómo planificar una visita relacionada con la Virgen del Cisne',
     excerpt:
       'Guía respetuosa para organizar turismo religioso en Loja y consultar información oficial sobre la Romería de la Virgen del Cisne.',
-    image: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=1200&q=80',
+    image: null,
     tags: ['turismo religioso en Loja', 'Virgen del Cisne', 'tradiciones de Loja'],
     content: [
       'El turismo religioso en Loja está relacionado con la devoción a la Virgen del Cisne y con actividades que reúnen a residentes y visitantes. Para participar de forma responsable, consulta primero la programación, los recorridos y las recomendaciones oficiales de la fecha.',
@@ -194,7 +194,7 @@ export const SEO_EDITORIAL_ARTICLES: EditorialArticle[] = [
     title: 'Lojanismos: palabras y expresiones que forman parte de la identidad de Loja',
     excerpt:
       'Un recorrido por palabras y expresiones lojanas documentadas por el Municipio, ideal para conocer el lenguaje cotidiano y la cultura local.',
-    image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1200&q=80',
+    image: null,
     tags: ['lojanismos', 'cultura lojana', 'identidad de Loja'],
     content: [
       'Los lojanismos son palabras y expresiones que ayudan a reconocer la identidad lingüística de Loja. No son solo curiosidades: también aparecen en conversaciones, recetas, relatos y formas de nombrar lugares o costumbres.',

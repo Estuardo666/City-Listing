@@ -84,6 +84,7 @@ test('event landings and editorial articles keep their SEO source coverage', () 
   ])
 
   assert.equal(SEO_EDITORIAL_ARTICLES.length, 12)
+  assert.ok(SEO_EDITORIAL_ARTICLES.every((article) => article.image === null))
   assert.ok(SEO_EDITORIAL_ARTICLES.every((article) => article.content.some((paragraph) => paragraph.includes('https://'))))
   assert.ok(SEO_EDITORIAL_ARTICLES.every((article) => article.tags.length >= 2))
   assert.equal(RANKED_VENUE_ARTICLE_CONFIGS.length, 10)
