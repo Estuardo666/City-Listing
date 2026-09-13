@@ -92,11 +92,18 @@ test('PayPhone redirect document establishes the authorized web origin before na
 })
 
 test('ticket checkout starts on the authorized Vive Loja web origin', () => {
-  const token = 'private token/with symbols'
-  const url = new URL(ticketCheckoutEntryUrl(token))
-  assert.equal(url.origin, 'https://viveloja.com')
-  assert.equal(url.pathname, '/checkout/payphone')
-  assert.equal(url.searchParams.get('token'), token)
+  const previous = process.env.NEXT_PUBLIC_APP_URL
+  process.env.NEXT_PUBLIC_APP_URL = 'https://viveloja.com'
+  try {
+    const token = 'private token/with symbols'
+    const url = new URL(ticketCheckoutEntryUrl(token))
+    assert.equal(url.origin, 'https://viveloja.com')
+    assert.equal(url.pathname, '/checkout/payphone')
+    assert.equal(url.searchParams.get('token'), token)
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_APP_URL
+    else process.env.NEXT_PUBLIC_APP_URL = previous
+  }
 })
 
 test('ticket QR encodes a scannable Vive Loja URL instead of the raw token', () => {
