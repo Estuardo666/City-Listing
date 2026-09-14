@@ -4,14 +4,43 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { ArrowRight, CalendarDays, MapPin, Settings2, Star } from 'lucide-react'
+import { ArrowRight, MapPin, Settings2, Star } from 'lucide-react'
 import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
 import { DiscoveryIcon } from '@/components/onboarding/discovery-icon'
 import { Button } from '@/components/ui/button'
+import { displayableEventImageUrl } from '@/lib/media/event-image'
 import { LIFESTYLE_OPTIONS } from '@/lib/constants/onboarding'
 import type { getPersonalizedHomeData } from '@/lib/queries/onboarding'
 
 type PersonalizedData = Awaited<ReturnType<typeof getPersonalizedHomeData>>
+type PersonalizedEvent = PersonalizedData['relatedEvents'][number]
+
+function PersonalizedEventCard({ event }: { event: PersonalizedEvent }) {
+  const [imageError, setImageError] = useState(false)
+  const image = !imageError ? displayableEventImageUrl(event.image) : null
+
+  return (
+    <Link href={`/eventos/${event.slug}`} className="group overflow-hidden rounded-2xl border border-border bg-card transition-[transform,border-color] duration-200 active:scale-[0.98] hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      {image && (
+        <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
+          <Image
+            src={image}
+            alt={event.title}
+            fill
+            unoptimized
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+            onError={() => setImageError(true)}
+          />
+        </div>
+      )}
+      <div className="p-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-primary">{new Intl.DateTimeFormat('es-EC', { day: 'numeric', month: 'short' }).format(new Date(event.startDate))}</p>
+        <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-foreground">{event.title}</p>
+      </div>
+    </Link>
+  )
+}
 
 export function HomePersonalizedSectionLoader() {
   const { data: session, status } = useSession()
@@ -88,15 +117,7 @@ export function HomePersonalizedSection({ data, userName }: { data: Personalized
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {relatedEvents.slice(0, 4).map((event) => (
-              <Link key={event.id} href={`/eventos/${event.slug}`} className="group overflow-hidden rounded-2xl border border-border bg-card transition-[transform,border-color] duration-200 active:scale-[0.98] hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <div className="relative aspect-[16/10] overflow-hidden bg-secondary">
-                  {event.image ? <Image src={event.image} alt={event.title} fill unoptimized sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover transition-transform duration-200 group-hover:scale-[1.02]" /> : <div className="flex h-full items-center justify-center"><CalendarDays className="h-7 w-7 text-muted-foreground" /></div>}
-                </div>
-                <div className="p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-primary">{new Intl.DateTimeFormat('es-EC', { day: 'numeric', month: 'short' }).format(new Date(event.startDate))}</p>
-                  <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-foreground">{event.title}</p>
-                </div>
-              </Link>
+              <PersonalizedEventCard key={event.id} event={event} />
             ))}
           </div>
         </div>

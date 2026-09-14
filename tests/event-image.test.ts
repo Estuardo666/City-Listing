@@ -4,6 +4,7 @@ import { displayableEventImageUrl } from '../src/lib/media/event-image'
 
 test('rejects stock images for events', () => {
   assert.equal(displayableEventImageUrl('https://images.unsplash.com/photo-123?w=800'), null)
+  assert.equal(displayableEventImageUrl('https://www.unsplash.com/photo-123?w=800'), null)
 })
 
 test('keeps source artwork and local uploads', () => {
