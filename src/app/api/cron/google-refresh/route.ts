@@ -2,7 +2,9 @@ import { googleHoursSync } from '@/lib/google/google-hours-sync'
 import { GOOGLE_DATA_MAX_AGE_DAYS, GOOGLE_REFRESH_AFTER_DAYS } from '@/lib/google/freshness'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+// Vercel Hobby functions are capped at 60 seconds. The refresh job already
+// advances in bounded batches, so subsequent cron runs continue the backlog.
+export const maxDuration = 60
 
 /**
  * Batch size per run. Each venue costs one Place Details call plus a 2s pause
