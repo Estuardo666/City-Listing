@@ -48,7 +48,11 @@ test.describe('mobile explore', () => {
     await expect(page.getByText('Mapa disponible bajo demanda')).toBeHidden()
     expect(mapboxRequests).toEqual([])
 
-    await page.getByRole('button', { name: 'Mapa', exact: true }).click()
+    const mapButton = page.getByRole('button', { name: 'Mapa', exact: true })
+    await expect(async () => {
+      await mapButton.click()
+      await expect(mapButton).toHaveAttribute('aria-pressed', 'true', { timeout: 2_000 })
+    }).toPass({ timeout: 15_000 })
     await expect(page.locator('.mapboxgl-canvas')).toBeVisible({ timeout: 15_000 })
     expect(mapboxRequests.length).toBeGreaterThan(0)
     expect(imageFailures).toEqual([])
