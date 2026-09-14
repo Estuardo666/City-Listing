@@ -21,6 +21,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "events:import:scraped": "tsx scripts/import-scraped-loja-events-2026.ts",
     "content:seed:seo": "tsx scripts/seed-seo-editorial.ts",
     "db:seed:home": "tsx prisma/seed-home-sections.ts",
     "sync:google": "tsx scripts/sync-google-hours.ts",
