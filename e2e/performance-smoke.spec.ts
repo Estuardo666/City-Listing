@@ -18,6 +18,8 @@ test('home serves a bounded open-now section without broken optimized images', a
 
   expect(response?.status()).toBe(200)
   await expect(page.getByRole('heading', { name: 'Abiertos ahora' })).toBeVisible()
+  await expect(page.locator('[data-map-markers-ready="true"]')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('[data-map-initial-zoom="14"]')).toBeVisible()
   expect(imageFailures).toEqual([])
 
   const mobileHome = await request.get('/api/mobile/v1/home')

@@ -66,8 +66,7 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
   const [locationLoading, setLocationLoading] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [proximityRadius, setProximityRadius] = useState<number | null>(null)
-  const [currentZoom, setCurrentZoom] = useState(13) // Track current map zoom level
-  const [visibleLimit, setVisibleLimit] = useState(12) // Reduced from 20 to 12 for initial load
+  const [currentZoom, setCurrentZoom] = useState(14) // Match the closer default view over Loja
 
   const quickSearches = [
     'Café', 'Restaurantes', 'Bares', 'Conciertos', 'Arte',
@@ -106,11 +105,11 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
     }
   }, [])
 
-  // Debounce search query and reset visible limit
+  // Debounce search query. Marker count is derived from zoom below so the
+  // search timer cannot overwrite it after the map has initialized.
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQ(q)
-      setVisibleLimit(12) // Reset to initial limit on new search
     }, 300)
     return () => clearTimeout(timer)
   }, [q])
@@ -126,23 +125,12 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
     return allItems.filter((item) => matchesSearch(item, debouncedQ))
   }, [allItems, debouncedQ])
 
-  // Zoom-based progressive loading: load more markers as user zooms in
-  useEffect(() => {
-    if (debouncedQ.trim()) {
-      // Always show limited results during search
-      setVisibleLimit(20)
-    } else {
-      // Zoom-based loading when not searching
-      if (currentZoom < 12) {
-        setVisibleLimit(8) // Very zoomed out: show fewer
-      } else if (currentZoom < 13) {
-        setVisibleLimit(12) // Initial zoom: show 12
-      } else if (currentZoom < 14) {
-        setVisibleLimit(25) // Zoomed in a bit: show more
-      } else {
-        setVisibleLimit(Math.min(visibleItems.length, 50)) // Zoomed in far: show all up to 50
-      }
-    }
+  const visibleLimit = useMemo(() => {
+    if (debouncedQ.trim()) return 20
+    if (currentZoom < 12) return 8
+    if (currentZoom < 13) return 12
+    if (currentZoom < 14) return 25
+    return Math.min(visibleItems.length, 50)
   }, [currentZoom, debouncedQ, visibleItems.length])
 
   const markers = useMemo(() => buildMarkers(visibleItems.slice(0, visibleLimit)), [visibleItems, visibleLimit])

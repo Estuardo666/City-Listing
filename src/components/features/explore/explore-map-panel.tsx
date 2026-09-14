@@ -30,7 +30,7 @@ type ExploreMapPanelProps = {
   className?: string
 }
 
-const DEFAULT_CENTER = { latitude: -3.99313, longitude: -79.20422, zoom: 13 }
+const DEFAULT_CENTER = { latitude: -3.99313, longitude: -79.20422, zoom: 14 }
 const CANVAS_CLUSTER_LAYER_ID = 'canvas-clusters'
 const CANVAS_CLUSTER_COUNT_LAYER_ID = 'canvas-cluster-count'
 const CANVAS_UNCLUSTERED_LAYER_ID = 'canvas-unclustered-points'
@@ -394,6 +394,7 @@ export function ExploreMapPanel({
   const [zoom, setZoom]                   = useState(DEFAULT_CENTER.zoom)
   const [canvasMarkers, setCanvasMarkers] = useState<ExploreMapMarker[]>(markers)
   const [canvasLayerOpacity, setCanvasLayerOpacity] = useState(1)
+  const [canvasMarkersReady, setCanvasMarkersReady] = useState(false)
   const [isMobileViewport, setIsMobileViewport] = useState(false)
   const containerRef                      = useRef<HTMLDivElement | null>(null)
   const mapRef                            = useRef<MapRef | null>(null)
@@ -620,6 +621,17 @@ export function ExploreMapPanel({
   const ensureAllEmojiImages = useCallback((map: any) => {
     EMOJI_IMAGE_IDS.forEach((imageId) => ensureEmojiImage(map, imageId))
   }, [ensureEmojiImage])
+
+  const handleMapIdle = useCallback(() => {
+    if (markerRenderMode !== 'canvas') return
+    if (canvasSignatureRef.current !== markerSignature) return
+    const map = mapRef.current?.getMap()
+    if (!map) return
+    const rendered = map.queryRenderedFeatures({
+      layers: [CANVAS_CLUSTER_LAYER_ID, CANVAS_UNCLUSTERED_LAYER_ID],
+    })
+    setCanvasMarkersReady(rendered.length > 0)
+  }, [markerRenderMode, markerSignature])
 
   const handleMapLoad = useCallback((event: any) => {
     const map = event?.target
@@ -879,7 +891,12 @@ export function ExploreMapPanel({
   }, [])
 
   return (
-    <div ref={containerRef} className={cn('relative h-full w-full', className)}>
+    <div
+      ref={containerRef}
+      className={cn('relative h-full w-full', className)}
+      data-map-initial-zoom={DEFAULT_CENTER.zoom}
+      data-map-markers-ready={markerRenderMode !== 'canvas' || canvasMarkersReady}
+    >
       {/* Search-on-move toggle */}
       {showSearchOnMoveToggle && (
         <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2 max-w-[calc(100%-4rem)] px-2 sm:max-w-none">
@@ -916,6 +933,7 @@ export function ExploreMapPanel({
         reuseMaps
         style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
         onLoad={handleMapLoad}
+        onIdle={handleMapIdle}
         onStyleData={handleMapStyleData}
         onMoveEnd={handleMoveEnd}
         onClick={handleMapClick}
