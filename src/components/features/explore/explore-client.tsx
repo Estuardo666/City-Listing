@@ -499,6 +499,7 @@ export function ExploreClient({
                 <button
                   type="button"
                   onClick={() => setMobileView('list')}
+                  aria-pressed={mobileView === 'list'}
                   className={cn(
                     'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
                     mobileView === 'list'
@@ -512,6 +513,7 @@ export function ExploreClient({
                 <button
                   type="button"
                   onClick={() => setMobileView('map')}
+                  aria-pressed={mobileView === 'map'}
                   className={cn(
                     'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
                     mobileView === 'map'

@@ -13,6 +13,8 @@
     "test:config": "node --require ./tests/register-server-only.cjs --import tsx --test tests/resend-config.test.ts tests/resend-delivery.test.ts tests/env-contract.test.ts tests/signup-role.test.ts tests/deep-links.test.ts tests/route-itinerary.test.ts tests/today.test.ts tests/open-now.test.ts tests/mobile-open-now.test.ts tests/user-geolocation.test.ts tests/explore-date.test.ts tests/seo.test.ts",
     "test:billing": "node --require ./tests/register-server-only.cjs --import tsx --test tests/billing-projection.test.ts",
     "test:ticketing": "node --require ./tests/register-server-only.cjs --import tsx --test tests/ticketing.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium",
     "smoke:ticketing": "node scripts/ticketing-smoke.mjs",
     "lint": "eslint .",
     "db:push": "prisma db push",
@@ -78,6 +80,7 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.7",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^20",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18",
