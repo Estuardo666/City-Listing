@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  capOpenNowItems,
   mobileOpenNowCategories as categoriesForOpenNow,
   mobileOpenNowDefaultExclusions as defaultExclusions,
   mobileOpenNowEligibility as eligible,
@@ -57,4 +58,8 @@ test('overnight windows and special closures use Loja time', () => {
   assert.equal(eligible(overnight, [], new Date('2026-09-07T06:00:00Z')).include, true)
   assert.equal(eligible(regular, [], now, { isClosed: true, openTime: null, closeTime: null }).include, false)
   assert.equal(eligible([], [{ slug: 'salud' }], now, { isClosed: true, openTime: null, closeTime: null }).include, false)
+})
+test('configured open-now payload never exceeds its server limit', () => {
+  assert.deepEqual(capOpenNowItems([1, 2, 3, 4], 2), [1, 2])
+  assert.equal(capOpenNowItems(Array.from({ length: 125 }), 12).length, 12)
 })

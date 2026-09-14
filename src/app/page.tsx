@@ -1,11 +1,8 @@
 import { Suspense } from 'react'
 import { TodayInLoja } from '@/components/features/home/today-in-loja'
-import { getServerSession } from 'next-auth'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, Compass, Search } from 'lucide-react'
-import { authOptions } from '@/lib/auth'
-import { getPersonalizedHomeData } from '@/lib/queries/onboarding'
 import { Button } from '@/components/ui/button'
 import { MotionDiv, fadeInUp, viewportOnce } from '@/components/ui/motion'
 import { HomeCategoriesGridSection } from '@/components/features/home/home-categories-grid-section'
@@ -25,7 +22,7 @@ import { HomeFeaturedVenuesSkeleton } from '@/components/features/home/home-feat
 import { HomePromoGridSkeleton } from '@/components/features/home/home-promo-grid-skeleton'
 import { HomeRelatedEventsSkeleton } from '@/components/features/home/home-related-events-skeleton'
 import { HomeBlogSkeleton } from '@/components/features/home/home-blog-skeleton'
-import { HomePersonalizedSection } from '@/components/features/home/home-personalized-section'
+import { HomePersonalizedSectionLoader } from '@/components/features/home/home-personalized-section'
 import { HomeConfiguredSections } from '@/components/features/home/home-configured-sections'
 import { PricingCards } from '@/components/billing/pricing-cards'
 import { getPublishedCatalog } from '@/lib/billing/plans'
@@ -63,14 +60,46 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://viveloja.com/' },
 }
 
-export default async function HomePage() {
-  const session = await getServerSession(authOptions)
+async function HomePricingSection() {
   const pricingCatalog = await getPublishedCatalog()
-  let personalizedData = null
-  if (session?.user?.id) {
-    personalizedData = await getPersonalizedHomeData(session.user.id)
-  }
 
+  return (
+    <section className="relative overflow-hidden border-y border-border/60 bg-card/60 py-14 sm:py-20">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
+      <div className="section-shell space-y-10">
+        <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+          <div><p className="eyebrow text-primary">Tu local, a tu ritmo</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Empieza visible.<br/>Crece cuando te haga falta.</h2></div>
+          <p className="max-w-xl text-base leading-relaxed text-muted-foreground lg:justify-self-end">Compara sin registrarte. Elige primero y crea tu acceso únicamente al confirmar. Durante la beta, todos los planes se activan por $0 y muestran su precio comercial de referencia.</p>
+        </div>
+        <PricingCards catalog={pricingCatalog} />
+      </div>
+    </section>
+  )
+}
+
+function HomeSectionsSkeleton() {
+  return (
+    <div className="space-y-20" aria-label="Cargando contenido de Vive Loja">
+      <div className="h-48 animate-pulse rounded-3xl bg-muted/60" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((item) => <div key={item} className="h-40 animate-pulse rounded-2xl bg-muted/60" />)}
+      </div>
+    </div>
+  )
+}
+
+function HomePricingSkeleton() {
+  return (
+    <section className="relative overflow-hidden border-y border-border/60 bg-card/60 py-14 sm:py-20">
+      <div className="section-shell space-y-10">
+        <div className="space-y-3"><div className="h-3 w-28 animate-pulse rounded-full bg-muted" /><div className="h-10 w-80 max-w-full animate-pulse rounded-xl bg-muted" /></div>
+        <div className="grid gap-4 md:grid-cols-3"><div className="h-64 animate-pulse rounded-2xl bg-muted/60" /><div className="h-64 animate-pulse rounded-2xl bg-muted/60" /><div className="h-64 animate-pulse rounded-2xl bg-muted/60" /></div>
+      </div>
+    </section>
+  )
+}
+
+export default async function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/20">
       <JsonLd
@@ -83,67 +112,57 @@ export default async function HomePage() {
         </Suspense>
 
         <div className="section-shell space-y-20 sm:space-y-24">
-          {personalizedData && session?.user && (
-            <HomePersonalizedSection
-              data={personalizedData}
-              userName={session.user.name ?? ''}
-            />
-          )}
+          <HomePersonalizedSectionLoader />
 
           {/* Composition configured in /admin/home and shared with the app; the
               fixed stack below is the fallback when nothing is configured. */}
-          <HomeConfiguredSections
-            fallback={
-              <>
-              <TodayInLoja />
-              {/* Categories Grid with Suspense */}
-              <Suspense fallback={<HomeCategoriesGridSkeleton />}>
-                <HomeCategoriesGridSection />
-              </Suspense>
+          <Suspense fallback={<HomeSectionsSkeleton />}>
+            <HomeConfiguredSections
+              fallback={
+                <>
+                <TodayInLoja />
+                {/* Categories Grid with Suspense */}
+                <Suspense fallback={<HomeCategoriesGridSkeleton />}>
+                  <HomeCategoriesGridSection />
+                </Suspense>
 
-              {/* Featured Events with Suspense */}
-              <Suspense fallback={<HomeFeaturedEventsSkeleton />}>
-                <HomeFeaturedEventsSection />
-              </Suspense>
+                {/* Featured Events with Suspense */}
+                <Suspense fallback={<HomeFeaturedEventsSkeleton />}>
+                  <HomeFeaturedEventsSection />
+                </Suspense>
 
-              {/* Latest Venues with Suspense */}
-              <Suspense fallback={<HomeLatestVenuesSkeleton />}>
-                <HomeLatestVenuesSection />
-              </Suspense>
+                {/* Latest Venues with Suspense */}
+                <Suspense fallback={<HomeLatestVenuesSkeleton />}>
+                  <HomeLatestVenuesSection />
+                </Suspense>
 
-              {/* Featured Venues with Suspense */}
-              <Suspense fallback={<HomeFeaturedVenuesSkeleton />}>
-                <HomeFeaturedVenuesSection />
-              </Suspense>
+                {/* Featured Venues with Suspense */}
+                <Suspense fallback={<HomeFeaturedVenuesSkeleton />}>
+                  <HomeFeaturedVenuesSection />
+                </Suspense>
 
-              {/* Promo Grid with Suspense */}
-              <Suspense fallback={<HomePromoGridSkeleton />}>
-                <HomePromoGridSection />
-              </Suspense>
+                {/* Promo Grid with Suspense */}
+                <Suspense fallback={<HomePromoGridSkeleton />}>
+                  <HomePromoGridSection />
+                </Suspense>
 
-              {/* Related Events with Suspense */}
-              <Suspense fallback={<HomeRelatedEventsSkeleton />}>
-                <HomeRelatedEventsSection />
-              </Suspense>
+                {/* Related Events with Suspense */}
+                <Suspense fallback={<HomeRelatedEventsSkeleton />}>
+                  <HomeRelatedEventsSection />
+                </Suspense>
 
-              {/* Blog Section with Suspense */}
-              <Suspense fallback={<HomeBlogSkeleton />}>
-                <HomeBlogSection />
-              </Suspense>
-              </>
-            }
-          />
+                {/* Blog Section with Suspense */}
+                <Suspense fallback={<HomeBlogSkeleton />}>
+                  <HomeBlogSection />
+                </Suspense>
+                </>
+              }
+            />
+          </Suspense>
 
-          <section className="relative overflow-hidden border-y border-border/60 bg-card/60 py-14 sm:py-20">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
-            <div className="section-shell space-y-10">
-              <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
-                <div><p className="eyebrow text-primary">Tu local, a tu ritmo</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Empieza visible.<br/>Crece cuando te haga falta.</h2></div>
-                <p className="max-w-xl text-base leading-relaxed text-muted-foreground lg:justify-self-end">Compara sin registrarte. Elige primero y crea tu acceso únicamente al confirmar. Durante la beta, todos los planes se activan por $0 y muestran su precio comercial de referencia.</p>
-              </div>
-              <PricingCards catalog={pricingCatalog} />
-            </div>
-          </section>
+          <Suspense fallback={<HomePricingSkeleton />}>
+            <HomePricingSection />
+          </Suspense>
 
           {/* CTA final */}
           <section className="rounded-3xl border border-primary/20 bg-gradient-to-r from-primary/10 via-accent to-primary/5 px-6 py-10 sm:px-10 sm:py-14">

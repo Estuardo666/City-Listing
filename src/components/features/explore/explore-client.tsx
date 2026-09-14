@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   LayoutList,
@@ -16,7 +17,6 @@ import {
 import { ExploreFiltersPanel } from './explore-filters'
 import { ExploreFilterDrawer } from './explore-filter-drawer'
 import { ExploreCard } from './explore-card'
-import { ExploreMapPanel } from './explore-map-panel'
 import { cn } from '@/lib/utils'
 import type {
   ExploreFilters,
@@ -30,6 +30,21 @@ import type {
 import { PROXIMITY_STEPS } from '@/types/explore'
 import { toast } from 'sonner'
 import { requestUserLocation } from './user-geolocation'
+
+const ExploreMapPanel = dynamic(
+  () => import('./explore-map-panel').then((mod) => mod.ExploreMapPanel),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center bg-muted/20">
+        <div className="text-center">
+          <MapIcon className="mx-auto h-8 w-8 animate-pulse text-primary" />
+          <p className="mt-2 text-sm text-muted-foreground">Cargando mapa…</p>
+        </div>
+      </div>
+    ),
+  }
+)
 
 type Category = {
   id: string
@@ -81,6 +96,7 @@ const DEFAULT_FILTERS: ExploreFilters = {
 }
 
 const SEARCH_TAKE = 60
+const INITIAL_RESULTS_PER_TYPE = 24
 const SEARCH_DEBOUNCE_MS = 500
 
 function formatRadius(m: number): string {
@@ -139,6 +155,7 @@ export function ExploreClient({
   const [loadingMore, setLoadingMore] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false)
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
@@ -151,8 +168,8 @@ export function ExploreClient({
   const listScrollRef = useRef<HTMLDivElement | null>(null)
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null)
   const [pagination, setPagination] = useState<ExploreSearchPageInfo>({
-    hasMoreVenues: initialVenues.length >= SEARCH_TAKE,
-    hasMoreEvents: initialEvents.length >= SEARCH_TAKE,
+    hasMoreVenues: initialVenues.length === INITIAL_RESULTS_PER_TYPE,
+    hasMoreEvents: initialEvents.length === INITIAL_RESULTS_PER_TYPE,
     nextVenueSkip: initialVenues.length,
     nextEventSkip: initialEvents.length,
   })
@@ -396,12 +413,27 @@ export function ExploreClient({
   }, [])
 
   useEffect(() => {
+    const media = window.matchMedia('(min-width: 640px)')
+    const update = () => setIsDesktopViewport(media.matches)
+    update()
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', update)
+      return () => media.removeEventListener('change', update)
+    }
+
+    media.addListener(update)
+    return () => media.removeListener(update)
+  }, [])
+
+  useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [])
 
   const showResults = mode === 'all'
+  const shouldRenderMap = !showResults || mobileView === 'map' || isDesktopViewport
   const colorScheme: 'monochrome' | 'blue' | 'orange' = mode === 'venues' ? 'blue' : mode === 'events' ? 'orange' : 'monochrome'
 
   return (
@@ -780,21 +812,31 @@ export function ExploreClient({
                 </AnimatePresence>
               )}
 
-              <ExploreMapPanel
-                markers={markers}
-                items={allItems}
-                activeId={activeId}
-                onMarkerClick={handleMarkerClick}
-                onBoundsChange={handleBoundsChange}
-                mapboxToken={mapboxToken}
-                mapStyle={mapStyle}
-                userLocation={userLocation}
-                proximityRadius={proximityRadius}
-                onMapRef={(ref) => { mapRef.current = ref }}
-                showSearchOnMoveToggle={showResults}
-                colorScheme={colorScheme}
-                className="h-full w-full"
-              />
+              {shouldRenderMap ? (
+                <ExploreMapPanel
+                  markers={markers}
+                  items={allItems}
+                  activeId={activeId}
+                  onMarkerClick={handleMarkerClick}
+                  onBoundsChange={handleBoundsChange}
+                  mapboxToken={mapboxToken}
+                  mapStyle={mapStyle}
+                  userLocation={userLocation}
+                  proximityRadius={proximityRadius}
+                  onMapRef={(ref) => { mapRef.current = ref }}
+                  showSearchOnMoveToggle={showResults}
+                  colorScheme={colorScheme}
+                  className="h-full w-full"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-muted/20 text-center sm:hidden">
+                  <div>
+                    <MapIcon className="mx-auto h-8 w-8 text-primary/70" />
+                    <p className="mt-2 text-sm font-medium text-foreground">Mapa disponible bajo demanda</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Cambia a Mapa cuando quieras explorar por ubicación.</p>
+                  </div>
+                </div>
+              )}
 
               {/* Bottom bar: search + location — only when no results */}
               {!showResults && (

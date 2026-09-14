@@ -59,6 +59,7 @@ function matchesSearch(item: ExploreItem, query: string): boolean {
 
 export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroMapProps) {
   const router = useRouter()
+  const [mapReady, setMapReady] = useState(false)
   const [q, setQ] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -77,6 +78,33 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
   const [isDragging, setIsDragging] = useState(false)
   const [startX, setStartX] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
+
+  // Mapbox is the heaviest client-side dependency on the landing page. Keep
+  // the hero controls and the rest of the page responsive before asking the
+  // browser to initialize the map.
+  useEffect(() => {
+    let cancelled = false
+    let idleId: number | null = null
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled) setMapReady(true)
+    }, 1600)
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+
+    if (idleWindow.requestIdleCallback) {
+      idleId = idleWindow.requestIdleCallback(() => {
+        if (!cancelled) setMapReady(true)
+      }, { timeout: 1400 })
+    }
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+      if (idleId !== null) idleWindow.cancelIdleCallback?.(idleId)
+    }
+  }, [])
 
   // Debounce search query and reset visible limit
   useEffect(() => {
@@ -213,24 +241,34 @@ export function HomeHeroMap({ venues, events, mapboxToken, mapStyle }: HomeHeroM
 
   return (
     <section className="relative h-[100vh] sm:h-[85vh] w-full overflow-hidden border-y border-border/60 bg-background">
-      <ExploreMapPanel
-        markers={markers}
-        items={visibleItems}
-        activeId={activeId}
-        onMarkerClick={setActiveId}
-        onBoundsChange={() => undefined}
-        onZoomChange={setCurrentZoom}
-        markerRenderMode="canvas"
-        mapboxToken={mapboxToken}
-        mapStyle={mapStyle}
-        userLocation={userLocation}
-        proximityRadius={proximityRadius}
-        onMapRef={(ref) => {
-          mapRef.current = ref
-        }}
-        showSearchOnMoveToggle={false}
-        className="h-full w-full opacity-70 transition-opacity duration-500"
-      />
+      {mapReady ? (
+        <ExploreMapPanel
+          markers={markers}
+          items={visibleItems}
+          activeId={activeId}
+          onMarkerClick={setActiveId}
+          onBoundsChange={() => undefined}
+          onZoomChange={setCurrentZoom}
+          markerRenderMode="canvas"
+          mapboxToken={mapboxToken}
+          mapStyle={mapStyle}
+          userLocation={userLocation}
+          proximityRadius={proximityRadius}
+          onMapRef={(ref) => {
+            mapRef.current = ref
+          }}
+          showSearchOnMoveToggle={false}
+          className="h-full w-full opacity-70 transition-opacity duration-500"
+        />
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/20" aria-hidden="true">
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-card shadow-sm">
+            <MapIcon className="h-8 w-8 animate-pulse text-primary" />
+            <div className="absolute inset-0 animate-ping rounded-2xl ring-2 ring-primary/20" />
+          </div>
+          <p className="text-sm text-muted-foreground">Preparando el mapa…</p>
+        </div>
+      )}
 
       <motion.div
         layout

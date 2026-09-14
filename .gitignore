@@ -33,3 +33,5 @@ coverage/
 Thumbs.db
 .vercel
 .env*.local
+.gstack/
+.gstack/

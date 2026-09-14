@@ -8,6 +8,10 @@ import { RANKED_VENUE_ARTICLE_PATHS } from '@/lib/seo/ranked-venue-articles'
 const SITE_URL = 'https://viveloja.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Cloud Run source builds use the preview environment. Generate the sitemap
+  // at request time there so the build never needs the production database.
+  if (process.env.VERCEL_ENV === 'preview') return []
+
   const now = new Date()
   const [venues, events, posts, categories] = await Promise.all([
     prisma.venue.findMany({

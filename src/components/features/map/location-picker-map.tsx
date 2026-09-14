@@ -6,6 +6,7 @@ import type { MapRef, MapMouseEvent } from 'react-map-gl'
 import { motion } from 'framer-motion'
 import { MapPin, LocateFixed, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMapboxWorkerSetup } from './mapbox-worker-setup'
 
 type LocationPickerMapProps = {
   lat: number | null
@@ -28,6 +29,7 @@ export function LocationPickerMap({
   mapStyle,
   className,
 }: LocationPickerMapProps) {
+  useMapboxWorkerSetup()
   const mapRef = useRef<MapRef | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 

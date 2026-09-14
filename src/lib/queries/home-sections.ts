@@ -1,9 +1,12 @@
 import 'server-only'
 import {
+  capOpenNowItems,
   mobileOpenNowCategories,
   mobileOpenNowDefaultExclusions,
   mobileOpenNowEligibility,
 } from '@/lib/mobile-open-now'
+import { buildOpenNowFilter, getSpecialHoursByVenue } from '@/lib/open-now-query'
+import { displayableImageUrl } from '@/lib/media/image-url'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { invalidateCache, withCache } from '@/lib/cache'
@@ -145,7 +148,7 @@ function mapVenueCard(venue: VenueCard, now: Date): HomeItemDTO {
     slug: venue.slug,
     title: venue.name,
     subtitle: venue.location,
-    imageUrl: venue.image,
+    imageUrl: displayableImageUrl(venue.image),
     badge: venue.promotions.length
       ? 'Con promoción'
       : isNew
@@ -171,7 +174,7 @@ function mapEventCard(event: EventCard, now: Date): HomeItemDTO {
     slug: event.slug,
     title: event.title,
     subtitle: event.location,
-    imageUrl: event.image,
+    imageUrl: displayableImageUrl(event.image),
     badge: soon ? '¡Últimos días!' : isNew ? '¡Nuevo!' : null,
     priceLabel: eventPriceLabel(event.price),
     rating: event.avgRating,
@@ -225,10 +228,19 @@ async function resolveVenueList(params: HomeSectionParams['venueList'], now: Dat
  * applies its display limit after category filtering so a fallback category
  * remains selectable even when standard venues are present.
  */
-export async function resolveMobileOpenNow(now: Date): Promise<HomeItemDTO[]> {
+export async function resolveMobileOpenNow(
+  now: Date,
+  params?: Pick<HomeSectionParams['openNow'], 'limit' | 'categorySlugs'>,
+): Promise<HomeItemDTO[]> {
   const { date, prevDate } = lojaNowParts(now)
+  const specialsByVenue = await getSpecialHoursByVenue(now)
+  const selected = new Set(params?.categorySlugs ?? [])
   const venues = await prisma.venue.findMany({
-    where: { status: 'APPROVED', isActive: true },
+    where: {
+      status: 'APPROVED',
+      isActive: true,
+      AND: [buildOpenNowFilter(specialsByVenue, now)],
+    },
     orderBy: [{ featured: 'desc' }, { avgRating: 'desc' }, { id: 'asc' }],
     select: {
       ...venueCardSelect,
@@ -248,17 +260,58 @@ export async function resolveMobileOpenNow(now: Date): Promise<HomeItemDTO[]> {
     return eligibility.include ? [{ item: { ...mapVenueCard(venue, now), categories }, eligibility }] : []
   })
   const exclusions = mobileOpenNowDefaultExclusions(eligible.map(value => value.eligibility))
-  return eligible.map((value, index) => ({
-    ...value.item,
-    excludedFromOpenNowDefault: exclusions[index],
-  }))
+  const items = eligible.flatMap((value, index) => {
+    if (selected.size > 0 && !value.item.categories.some((category) => selected.has(category.slug))) return []
+    return [{
+      ...value.item,
+      excludedFromOpenNowDefault: exclusions[index],
+    }]
+  })
+  return params?.limit ? capOpenNowItems(items, params.limit) : items
 }
 
 async function resolveOpenNow(params: HomeSectionParams['openNow'], now: Date) {
-  const items = await resolveMobileOpenNow(now)
-  if (!params.categorySlugs?.length) return items
-  const selected = new Set(params.categorySlugs)
-  return items.filter((item) => item.categories?.some((category) => selected.has(category.slug)) === true)
+  const { date, prevDate } = lojaNowParts(now)
+  const specialsByVenue = await getSpecialHoursByVenue(now)
+  const selected = new Set(params.categorySlugs ?? [])
+  const candidates = await prisma.venue.findMany({
+    where: {
+      status: 'APPROVED',
+      isActive: true,
+      AND: [buildOpenNowFilter(specialsByVenue, now)],
+    },
+    orderBy: [{ featured: 'desc' }, { avgRating: 'desc' }, { id: 'asc' }],
+    select: {
+      ...venueCardSelect,
+      businessHours: true,
+      specialHours: { where: { date: { in: [new Date(`${date}T00:00:00Z`), new Date(`${prevDate}T00:00:00Z`)] } } },
+      venueCategories: { select: { category: { select: { slug: true, name: true } } } },
+    },
+  })
+
+  const eligible = candidates.flatMap((venue) => {
+    const categories = mobileOpenNowCategories(
+      venue.venueCategories.map((value) => value.category),
+      { name: venue.name, slug: venue.slug },
+    )
+    const eligibility = mobileOpenNowEligibility(
+      venue.businessHours,
+      categories,
+      now,
+      venue.specialHours.find((value) => value.date.toISOString().slice(0, 10) === date),
+      venue.specialHours.find((value) => value.date.toISOString().slice(0, 10) === prevDate),
+    )
+    return eligibility.include ? [{ item: { ...mapVenueCard(venue, now), categories }, eligibility }] : []
+  })
+  const exclusions = mobileOpenNowDefaultExclusions(eligible.map((value) => value.eligibility))
+  const items = eligible.flatMap((value, index) => {
+    if (selected.size > 0 && !value.item.categories.some((category) => selected.has(category.slug))) return []
+    return [{
+      ...value.item,
+      excludedFromOpenNowDefault: exclusions[index],
+    }]
+  })
+  return capOpenNowItems(items, params.limit)
 }
 
 function eventDateWindow(range: HomeSectionParams['eventList']['dateRange'], now: Date) {
@@ -348,7 +401,7 @@ async function resolveCollection(params: HomeSectionParams['collection'], now: D
           slug: item.post.slug,
           title: item.post.title,
           subtitle: item.note ?? item.post.excerpt,
-          imageUrl: item.post.image,
+          imageUrl: displayableImageUrl(item.post.image),
           deeplink: deeplink('post', item.post.slug),
         },
       ]
@@ -360,7 +413,7 @@ async function resolveCollection(params: HomeSectionParams['collection'], now: D
           slug: item.route.slug,
           title: item.route.title,
           subtitle: item.note ?? (item.route.days > 1 ? `${item.route.days} días` : item.route.difficulty),
-          imageUrl: item.route.image,
+          imageUrl: displayableImageUrl(item.route.image),
           deeplink: deeplink('route', item.route.slug),
         },
       ]
@@ -394,7 +447,7 @@ async function resolvePromotions(params: HomeSectionParams['promotions'], now: D
     slug: promotion.venue.slug,
     title: promotion.title,
     subtitle: promotion.description,
-    imageUrl: promotion.image ?? promotion.venue.image,
+    imageUrl: displayableImageUrl(promotion.image ?? promotion.venue.image),
     badge: promotion.discount ? `${promotion.discount} de descuento` : 'Oferta',
     venueName: promotion.venue.name,
     dateLabel: `Hasta ${dateFormatter.format(promotion.validUntil)}`,
@@ -419,7 +472,7 @@ async function resolvePosts(params: HomeSectionParams['posts']) {
     slug: post.slug,
     title: post.title,
     subtitle: post.excerpt,
-    imageUrl: post.image,
+    imageUrl: displayableImageUrl(post.image),
     deeplink: deeplink('post', post.slug),
   }))
 }
@@ -450,7 +503,7 @@ async function resolveRoutes(params: HomeSectionParams['routes']) {
         : route.estimatedMinutes
           ? `${route.estimatedMinutes} min`
           : route.difficulty,
-    imageUrl: route.image,
+    imageUrl: displayableImageUrl(route.image),
     deeplink: deeplink('route', route.slug),
   }))
 }
@@ -522,7 +575,7 @@ async function resolveManual(params: HomeSectionParams['manual'], now: Date) {
       slug: post.slug,
       title: post.title,
       subtitle: post.excerpt,
-      imageUrl: post.image,
+      imageUrl: displayableImageUrl(post.image),
       deeplink: deeplink('post', post.slug),
     }),
   )
@@ -533,7 +586,7 @@ async function resolveManual(params: HomeSectionParams['manual'], now: Date) {
       slug: route.slug,
       title: route.title,
       subtitle: route.days > 1 ? `${route.days} días` : route.difficulty,
-      imageUrl: route.image,
+      imageUrl: displayableImageUrl(route.image),
       deeplink: deeplink('route', route.slug),
     }),
   )
@@ -659,7 +712,9 @@ export async function resolveHomeSection(
       items = await resolveVenueList(params as HomeSectionParams['venueList'], now)
       break
     case 'openNow':
-      items = platform === 'ios' ? await resolveMobileOpenNow(now) : await resolveOpenNow(params as HomeSectionParams['openNow'], now)
+      items = platform === 'ios'
+        ? await resolveMobileOpenNow(now, params as HomeSectionParams['openNow'])
+        : await resolveOpenNow(params as HomeSectionParams['openNow'], now)
       break
     case 'eventList':
       items = await resolveEventList(params as HomeSectionParams['eventList'], now)

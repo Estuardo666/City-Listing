@@ -1,5 +1,9 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { ArrowRight, CalendarDays, MapPin, Settings2, Star } from 'lucide-react'
 import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-photo'
 import { DiscoveryIcon } from '@/components/onboarding/discovery-icon'
@@ -8,6 +12,29 @@ import { LIFESTYLE_OPTIONS } from '@/lib/constants/onboarding'
 import type { getPersonalizedHomeData } from '@/lib/queries/onboarding'
 
 type PersonalizedData = Awaited<ReturnType<typeof getPersonalizedHomeData>>
+
+export function HomePersonalizedSectionLoader() {
+  const { data: session, status } = useSession()
+  const [data, setData] = useState<PersonalizedData | null>(null)
+
+  useEffect(() => {
+    if (status !== 'authenticated') {
+      setData(null)
+      return
+    }
+    const controller = new AbortController()
+    fetch('/api/home/personalized', { cache: 'no-store', signal: controller.signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => setData(payload?.data ?? null))
+      .catch((error) => {
+        if (error instanceof Error && error.name !== 'AbortError') setData(null)
+      })
+    return () => controller.abort()
+  }, [status])
+
+  if (!data || !session?.user) return null
+  return <HomePersonalizedSection data={data} userName={session.user.name ?? ''} />
+}
 
 export function HomePersonalizedSection({ data, userName }: { data: PersonalizedData; userName: string }) {
   const { interests, preferences, followingVenues, relatedEvents, relatedVenues } = data
@@ -66,7 +93,7 @@ export function HomePersonalizedSection({ data, userName }: { data: Personalized
                   {event.image ? <Image src={event.image} alt={event.title} fill unoptimized sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover transition-transform duration-200 group-hover:scale-[1.02]" /> : <div className="flex h-full items-center justify-center"><CalendarDays className="h-7 w-7 text-muted-foreground" /></div>}
                 </div>
                 <div className="p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-primary">{new Intl.DateTimeFormat('es-EC', { day: 'numeric', month: 'short' }).format(event.startDate)}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-primary">{new Intl.DateTimeFormat('es-EC', { day: 'numeric', month: 'short' }).format(new Date(event.startDate))}</p>
                   <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-foreground">{event.title}</p>
                 </div>
               </Link>

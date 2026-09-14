@@ -7,6 +7,7 @@ import { CalendarDays, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMapThemeStyle } from '@/components/theme/use-map-theme-style'
 import { cn, formatDateTime } from '@/lib/utils'
+import { useMapboxWorkerSetup } from '@/components/features/map/mapbox-worker-setup'
 import type { EventMapItem } from '@/types/event'
 
 type EventsMapProps = {
@@ -28,6 +29,7 @@ function hasCoordinates(event: EventMapItem): event is EventMapItem & { lat: num
 }
 
 export function EventsMap({ events, mapboxToken, mapStyle, className, zoom = 12 }: EventsMapProps) {
+  useMapboxWorkerSetup()
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const themedMapStyle = useMapThemeStyle(mapStyle)
 

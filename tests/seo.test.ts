@@ -7,6 +7,13 @@ import {
 import { EVENT_LANDING_CONFIGS } from '../src/lib/seo/event-landings'
 import { SEO_EDITORIAL_ARTICLES } from '../src/lib/seo/editorial-content'
 import { RANKED_VENUE_ARTICLE_CONFIGS, RANKED_VENUE_ARTICLE_PATHS } from '../src/lib/seo/ranked-venue-articles'
+import { displayableImageUrl } from '../src/lib/media/image-url'
+
+test('public cards reject video files and retired Clearbit logos as images', () => {
+  assert.equal(displayableImageUrl('https://cdn.example.com/event.mp4?token=abc'), null)
+  assert.equal(displayableImageUrl('https://logo.clearbit.com/example.com'), null)
+  assert.equal(displayableImageUrl('https://cdn.example.com/photo.webp'), 'https://cdn.example.com/photo.webp')
+})
 
 test('event JSON-LD omits an offer when the price is unknown', () => {
   const event = buildEventJsonLd({

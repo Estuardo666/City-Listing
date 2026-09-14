@@ -55,3 +55,8 @@ export function mobileOpenNowDefaultExclusions(
   const hasStandardVenue = items.some(item => !item.excludedFromDefault)
   return items.map(item => hasStandardVenue ? item.excludedFromDefault : !item.is24HourFallback)
 }
+
+export function capOpenNowItems<T>(items: T[], limit: number): T[] {
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : 12
+  return items.slice(0, safeLimit)
+}

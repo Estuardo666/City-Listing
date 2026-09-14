@@ -57,7 +57,9 @@ async function getHeroData(limit: number) {
 }
 
 export async function HomeHeroMapSection() {
-  const { heroVenues, heroEvents } = await getHeroData(80)
+  // The hero only needs enough points to make the first viewport useful. The
+  // full discovery surface is paginated in /explorar.
+  const { heroVenues, heroEvents } = await getHeroData(24)
   const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
   const mapStyle =
     process.env.MAPBOX_STYLE ??

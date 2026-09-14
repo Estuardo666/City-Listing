@@ -72,6 +72,11 @@ export const getCategoryBySlug = serverCache(async (slug: string) => {
 })
 
 export async function getCategorySlugsForStaticParams() {
+  // Cloud Run source builds use the preview environment. Avoid requiring the
+  // production database during that build; category pages are rendered on
+  // demand there and still use the database at request time.
+  if (process.env.VERCEL_ENV === 'preview') return []
+
   const categories = await prisma.category.findMany({
     where: {
       type: 'VENUE',

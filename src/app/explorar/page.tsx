@@ -3,6 +3,9 @@ import { getEvents } from '@/lib/queries/events'
 import { prisma } from '@/lib/prisma'
 import { ExploreClient } from '@/components/features/explore/explore-client'
 import type { ExploreVenue, ExploreEvent } from '@/types/explore'
+import { displayableImageUrl } from '@/lib/media/image-url'
+
+export const revalidate = 300
 
 export const metadata = {
   title: 'Explorar — Locales y Eventos en Loja',
@@ -26,7 +29,7 @@ export const metadata = {
   alternates: { canonical: 'https://viveloja.com/explorar' },
 }
 
-const INITIAL_EXPLORE_LIMIT = 60
+const INITIAL_EXPLORE_LIMIT = 24
 
 export default async function ExplorarPage() {
   const [venueList, eventList, categories] = await Promise.all([
@@ -59,7 +62,7 @@ export default async function ExplorarPage() {
     name: v.name,
     slug: v.slug,
     description: v.description,
-    image: v.image,
+    image: displayableImageUrl(v.image),
     location: v.location,
     address: v.address,
     lat: v.lat ?? null,
@@ -82,7 +85,7 @@ export default async function ExplorarPage() {
     title: e.title,
     slug: e.slug,
     description: e.description,
-    image: e.image,
+    image: displayableImageUrl(e.image),
     startDate: e.startDate.toISOString(),
     endDate: e.endDate?.toISOString() ?? null,
     location: e.location,

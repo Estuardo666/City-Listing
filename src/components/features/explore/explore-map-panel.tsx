@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { CalendarDays, CheckSquare, MapPin, Square, X } from 'lucide-react'
 import { useMapThemeStyle } from '@/components/theme/use-map-theme-style'
 import { cn } from '@/lib/utils'
+import { useMapboxWorkerSetup } from '@/components/features/map/mapbox-worker-setup'
 import { formatExploreEventDate } from './explore-date'
 import type { ExploreMapMarker, ExploreItem, MapBounds, UserLocation } from '@/types/explore'
 
@@ -378,6 +379,7 @@ export function ExploreMapPanel({
   colorScheme,
   className,
 }: ExploreMapPanelProps) {
+  useMapboxWorkerSetup()
   const themedMapStyle = useMapThemeStyle(mapStyle)
   const safeUserLocation = userLocation ?? null
   const safeProximityRadius = proximityRadius ?? null
@@ -458,7 +460,6 @@ export function ExploreMapPanel({
     onMapRef(mapRef.current ? {
       flyTo: (opts) => mapRef.current?.flyTo(opts),
     } : null)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onMapRef])
 
   // Auto-zoom when proximity radius changes: less distance = more zoom
@@ -625,6 +626,7 @@ export function ExploreMapPanel({
     if (!map) return
 
     ensureAllEmojiImages(map)
+    onMapRef?.({ flyTo: (opts) => mapRef.current?.flyTo(opts) })
 
     if (!emojiMissingListenerAttached.has(map)) {
       map.on('styleimagemissing', (e: { id: string }) => {
@@ -642,7 +644,7 @@ export function ExploreMapPanel({
     } else if (colorScheme === 'orange') {
       canvas.style.filter = 'hue-rotate(-15deg) saturate(0.9) brightness(1.05)'
     }
-  }, [ensureAllEmojiImages, ensureEmojiImage, colorScheme])
+  }, [ensureAllEmojiImages, ensureEmojiImage, colorScheme, onMapRef])
 
   const handleMapStyleData = useCallback((event: any) => {
     const map = event?.target
@@ -771,7 +773,7 @@ export function ExploreMapPanel({
         offset: [0, 0],
       })
     },
-    [isMobileViewport, onMarkerClick]
+    [onMarkerClick]
   )
 
   // Clicking map background (or canvas layer points/clusters) → handle interaction

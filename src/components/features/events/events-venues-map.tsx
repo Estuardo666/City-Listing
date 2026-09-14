@@ -6,6 +6,7 @@ import Map, { Marker, NavigationControl, Popup } from 'react-map-gl'
 import { CalendarDays, MapPin, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, formatDateTime } from '@/lib/utils'
+import { useMapboxWorkerSetup } from '@/components/features/map/mapbox-worker-setup'
 import type { EventMapItem } from '@/types/event'
 import type { VenueMapItem } from '@/types/venue'
 
@@ -32,6 +33,7 @@ function hasVenueCoordinates(venue: VenueMapItem): venue is VenueMapItem & { lat
 }
 
 export function EventsVenuesMap({ events, venues, mapboxToken, mapStyle, className }: EventsVenuesMapProps) {
+  useMapboxWorkerSetup()
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<'event' | 'venue' | null>(null)
 

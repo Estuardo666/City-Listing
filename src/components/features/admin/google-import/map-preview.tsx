@@ -24,6 +24,7 @@ export function MapPreview({ lat, lng, radius = 5000, className = '' }: MapPrevi
       if (!token || cancelled || !mapContainerRef.current) return
 
       mapboxgl.default.accessToken = token
+      mapboxgl.default.workerUrl = '/mapbox-gl-csp-worker.js'
 
       if (mapRef.current) {
         mapRef.current.flyTo({ center: [lng, lat], zoom: getZoomForRadius(radius) })

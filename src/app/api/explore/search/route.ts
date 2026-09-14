@@ -4,6 +4,7 @@ import { withCache, getCacheKey, CACHE_TTL } from '@/lib/cache'
 import { lojaDay, lojaNowParts, openStatus } from '@/lib/loja-day'
 import { pageSlice } from '@/lib/explore-page'
 import { Prisma } from '@prisma/client'
+import { buildOpenNowFilter, getSpecialHoursByVenue } from '@/lib/open-now-query'
 
 const DEFAULT_TAKE = 60
 const MAX_TAKE = 100
@@ -69,88 +70,6 @@ function getDateRange(preset: string): { start: Date; end: Date } {
       break
   }
   return { start, end }
-}
-
-type SpecialEntry = { today?: { openTime: string | null; closeTime: string | null; isClosed: boolean }
-                      yesterday?: { openTime: string | null; closeTime: string | null; isClosed: boolean } }
-
-/**
- * Horarios especiales (feriados, cierres puntuales) de hoy y ayer en Loja, por venue.
- * Se consulta por rango porque SpecialHours.date puede venir con offset segun como
- * se haya guardado; la clasificacion final la hace la fecha de Loja.
- */
-async function getSpecialHoursByVenue(now = new Date()): Promise<Map<string, SpecialEntry>> {
-  const { date, prevDate } = lojaNowParts(now)
-  const rows = await prisma.specialHours.findMany({
-    where: {
-      date: {
-        gte: new Date(`${prevDate}T00:00:00Z`),
-        lt: new Date(new Date(`${date}T00:00:00Z`).getTime() + 86400_000),
-      },
-    },
-    select: { venueId: true, date: true, openTime: true, closeTime: true, isClosed: true },
-  })
-
-  const byVenue = new Map<string, SpecialEntry>()
-  for (const row of rows) {
-    const day = lojaDay(row.date).date
-    const entry = byVenue.get(row.venueId) ?? {}
-    if (day === date) entry.today = row
-    else if (day === prevDate) entry.yesterday = row
-    else continue
-    byVenue.set(row.venueId, entry)
-  }
-  return byVenue
-}
-
-/**
- * Venues abiertos ahora segun la hora de Loja (UTC-5), resuelto en SQL.
- * Cubre horario normal, horario partido y cierre pasada la medianoche.
- * SpecialHours sustituye por completo el horario regular de ese dia.
- */
-function buildOpenNowFilter(specialsByVenue: Map<string, SpecialEntry>, now = new Date()): Prisma.VenueWhereInput {
-  const { weekday, prevWeekday, minute } = lojaNowParts(now)
-
-  const regular: Prisma.VenueWhereInput = {
-    businessHours: {
-      some: {
-        OR: [
-          // Ventana normal de hoy: 09:00 -> 18:00
-          { dayOfWeek: weekday, isClosed: false, crossesMidnight: false, openMinute: { lte: minute }, closeMinute: { gt: minute } },
-          // Abierto 24 h (openTime === closeTime)
-          { dayOfWeek: weekday, isClosed: false, isAllDay: true },
-          // Abrio hoy y cierra manana: 20:00 -> 02:00, antes de medianoche
-          { dayOfWeek: weekday, isClosed: false, crossesMidnight: true, openMinute: { lte: minute } },
-          // Abrio ayer y todavia no cierra: 20:00 -> 02:00, pasada la medianoche
-          { dayOfWeek: prevWeekday, isClosed: false, crossesMidnight: true, closeMinute: { gt: minute } },
-        ],
-      },
-    },
-  }
-
-  if (specialsByVenue.size === 0) return regular
-
-  // Los venues con horario especial hoy o ayer salen del calculo regular y se
-  // reincorporan solo si su horario especial los deja abiertos ahora mismo.
-  const overriddenIds: string[] = []
-  const openBySpecialIds: string[] = []
-  for (const [venueId, entry] of specialsByVenue) {
-    overriddenIds.push(venueId)
-    if (openStatus([], { specialToday: entry.today ?? null, specialYesterday: entry.yesterday ?? null, now }).isOpen) {
-      openBySpecialIds.push(venueId)
-    }
-  }
-
-  return {
-    OR: [
-      { AND: [regular, { id: { notIn: overriddenIds } }] },
-      // A special opening can override a regular schedule, but it must not
-      // create a schedule for a venue that has no business-hours rows at all.
-      ...(openBySpecialIds.length > 0
-        ? [{ id: { in: openBySpecialIds }, businessHours: { some: {} } }]
-        : []),
-    ],
-  }
 }
 
 export async function GET(request: NextRequest) {

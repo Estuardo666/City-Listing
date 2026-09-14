@@ -79,7 +79,7 @@ export async function GET() {
 
   const sections = await sectionsPromise
 
-  return mobileSuccess({
+  const response = mobileSuccess({
     sections,
     // `venues` and `events` remain the original featured aliases consumed by
     // older clients. The named sections make parity explicit for new clients.
@@ -100,4 +100,9 @@ export async function GET() {
       nextEventSkip: allEvents.length,
     },
   })
+  // Public, anonymous home payload. Keep device browsers revalidating while
+  // letting Vercel's edge absorb repeated app launches between data refreshes.
+  response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate')
+  response.headers.set('Vercel-CDN-Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+  return response
 }

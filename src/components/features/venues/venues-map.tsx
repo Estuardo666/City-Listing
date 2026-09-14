@@ -7,6 +7,7 @@ import { MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMapThemeStyle } from '@/components/theme/use-map-theme-style'
 import { cn } from '@/lib/utils'
+import { useMapboxWorkerSetup } from '@/components/features/map/mapbox-worker-setup'
 import type { VenueMapItem } from '@/types/venue'
 
 type VenuesMapProps = {
@@ -28,6 +29,7 @@ function hasCoordinates(venue: VenueMapItem): venue is VenueMapItem & { lat: num
 }
 
 export function VenuesMap({ venues, mapboxToken, mapStyle, className, zoom = 12 }: VenuesMapProps) {
+  useMapboxWorkerSetup()
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null)
   const themedMapStyle = useMapThemeStyle(mapStyle)
 

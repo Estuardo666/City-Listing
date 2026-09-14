@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-function generateNonce(): string {
-  const array = new Uint8Array(16)
-  crypto.getRandomValues(array)
-  return btoa(String.fromCharCode(...array))
-}
-
 const SCRIPT_SRC_DOMAINS = [
   'https://va.vercel-scripts.com',
   'https://api.mapbox.com',
@@ -73,11 +67,12 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  const nonce = generateNonce()
-
   const csp = [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' ${SCRIPT_SRC_DOMAINS}`,
+    // A per-request nonce forced every page through dynamic rendering. Next
+    // emits small inline bootstrap scripts, so cacheable public pages need the
+    // nonce-free policy below until script hashes are supported end to end.
+    `script-src 'self' 'unsafe-inline' ${SCRIPT_SRC_DOMAINS}`,
     `style-src 'self' 'unsafe-inline' ${STYLE_SRC_DOMAINS}`,
     `img-src 'self' data: blob: https:`,
     `font-src 'self' data: https://fonts.gstatic.com`,
@@ -112,8 +107,6 @@ export function proxy(request: NextRequest) {
     'Strict-Transport-Security',
     'max-age=63072000; includeSubDomains; preload'
   )
-  response.headers.set('x-nonce', nonce)
-
   return response
 }
 
