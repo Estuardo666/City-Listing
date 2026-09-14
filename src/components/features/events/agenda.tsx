@@ -86,8 +86,8 @@ function AgendaCard({ event }: { event: AgendaEvent }) {
       href={`/eventos/${event.slug}`}
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.99]"
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-accent">
-        {usable ? (
+      {usable && (
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-accent">
           <Image
             src={event.image as string}
             alt={event.title}
@@ -96,22 +96,18 @@ function AgendaCard({ event }: { event: AgendaEvent }) {
             className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
             onError={() => setImageError(true)}
           />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 via-accent to-coral/15">
-            <CalendarDays className="h-7 w-7 text-primary/50" />
-          </div>
-        )}
-        <span className="absolute left-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-semibold capitalize text-white backdrop-blur-sm">
-          {shortDateFormat.format(new Date(event.startDate))} · {timeFormat.format(new Date(event.startDate))}
-        </span>
-        <span
-          className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${
-            free ? 'bg-emerald text-emerald-foreground' : 'bg-white/90 text-neutral-900'
-          }`}
-        >
-          {priceLabel(event.price)}
-        </span>
-      </div>
+          <span className="absolute left-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-semibold capitalize text-white backdrop-blur-sm">
+            {shortDateFormat.format(new Date(event.startDate))} · {timeFormat.format(new Date(event.startDate))}
+          </span>
+          <span
+            className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${
+              free ? 'bg-emerald text-emerald-foreground' : 'bg-white/90 text-neutral-900'
+            }`}
+          >
+            {priceLabel(event.price)}
+          </span>
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <h4 className="line-clamp-2 text-base font-medium leading-snug text-foreground transition-colors duration-150 group-hover:text-primary">
