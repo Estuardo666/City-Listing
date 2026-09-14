@@ -471,16 +471,9 @@ async function main() {
           .filter((id): id is string => Boolean(id)),
       ),
     )
-    const content = [
-      'Borrador importado desde fuentes públicas para revisión editorial.',
-      `Fuente principal: ${draft.source}`,
-      `Identificador de importación: ${draft.importKey}`,
-      draft.organizer ? `Organizador publicado: ${draft.organizer}` : null,
-      draft.parish ? `Parroquia publicada: ${draft.parish}` : null,
-      'Estado de carga: PENDING. Validar vigencia, horario, precio e imagen antes de aprobar o publicar.',
-    ]
-      .filter(Boolean)
-      .join('\n')
+    const content = draft.source === CINEMA_SOURCE
+      ? `Fuente principal: [${CINEMA_SOURCE}](${CINEMA_SOURCE})`
+      : null
 
     const event = await prisma.event.create({
       data: {
