@@ -26,9 +26,9 @@ export const EVENT_LANDING_CONFIGS: Record<string, EventLandingConfig> = {
   concerts: {
     path: 'conciertos-en-loja',
     eyebrow: 'Música en Loja',
-    title: 'Conciertos en Loja: agenda de música y eventos en vivo',
+    title: 'Conciertos en Loja: agenda de música en vivo',
     description:
-      'Encuentra conciertos en Loja, música en vivo, festivales y presentaciones de artistas. Revisa fechas, lugares, precios y cómo asistir.',
+      'Consulta conciertos en Loja, música en vivo y festivales: fechas, lugares, precios y enlaces para confirmar cómo asistir.',
     intro:
       'Consulta los próximos conciertos en Loja y descubre música en vivo, festivales, presentaciones y noches especiales. Vive Loja reúne la agenda local en un solo lugar con fecha, ubicación y detalles útiles para planificar tu salida.',
     terms: ['concierto', 'conciertos', 'música', 'musica', 'festival', 'salsa', 'rock', 'dj'],
@@ -50,9 +50,9 @@ export const EVENT_LANDING_CONFIGS: Record<string, EventLandingConfig> = {
   culture: {
     path: 'eventos-culturales-loja',
     eyebrow: 'Cultura y comunidad',
-    title: 'Eventos culturales en Loja: agenda y programación',
+    title: 'Eventos culturales en Loja: agenda y actividades',
     description:
-      'Agenda de eventos culturales en Loja: teatro, danza, exposiciones, folklore, ferias, talleres y actividades para disfrutar en la ciudad.',
+      'Consulta la agenda cultural de Loja: teatro, danza, exposiciones, ferias, talleres y actividades con fechas y lugares.',
     intro:
       'Encuentra actividades culturales en Loja para todas las edades: teatro, danza, exposiciones, folklore, ferias, talleres y encuentros comunitarios. Consulta la programación, el lugar y la fecha de cada actividad antes de salir.',
     terms: ['cultural', 'cultura', 'teatro', 'danza', 'folklore', 'exposición', 'exposicion', 'feria', 'taller'],
@@ -74,9 +74,9 @@ export const EVENT_LANDING_CONFIGS: Record<string, EventLandingConfig> = {
   arts: {
     path: 'artes-vivas-loja',
     eyebrow: 'Arte, teatro y danza',
-    title: 'Artes Vivas en Loja: teatro, danza y programación artística',
+    title: 'Artes Vivas en Loja: agenda de teatro, danza y FIAVL',
     description:
-      'Descubre Artes Vivas en Loja, teatro, danza, performance, exposiciones y actividades artísticas. Consulta fechas, sedes y programación local.',
+      'Consulta la agenda de Artes Vivas en Loja: teatro, danza, performance, FIAVL y actividades artísticas con sedes y fechas.',
     intro:
       'Explora la escena de Artes Vivas en Loja: teatro, danza, performance, exposiciones y propuestas de artistas locales e invitados. Esta guía reúne actividades publicadas en la ciudad y enlaza a la agenda general para que encuentres nuevos planes.',
     terms: ['artes vivas', 'fiavl', 'teatro', 'danza', 'performance', 'arte', 'artística', 'artistica'],
@@ -100,9 +100,9 @@ export const EVENT_LANDING_CONFIGS: Record<string, EventLandingConfig> = {
   fiavl: {
     path: 'fiavl',
     eyebrow: 'Festival Internacional de Artes Vivas',
-    title: 'FIAVL en Loja: festival, programación y actividades',
+    title: 'FIAVL en Loja: programación, fechas y actividades',
     description:
-      'Guía del FIAVL en Loja: programación del Festival Internacional de Artes Vivas, teatro, danza, sedes, fechas y actividades relacionadas.',
+      'Consulta información del FIAVL en Loja: programación, teatro, danza, sedes, fechas y enlaces oficiales para verificar cada anuncio.',
     intro:
       'Vive Loja te ayuda a descubrir actividades relacionadas con el FIAVL y la escena artística de la ciudad. Consulta eventos publicados, sedes y enlaces oficiales para confirmar la programación, entradas y cambios de última hora.',
     terms: ['fiavl', 'festival internacional de artes vivas', 'artes vivas', 'festival de loja', 'teatro', 'danza'],
@@ -126,9 +126,9 @@ export const EVENT_LANDING_CONFIGS: Record<string, EventLandingConfig> = {
   today: {
     path: 'eventos-hoy-en-loja',
     eyebrow: 'Agenda de hoy',
-    title: 'Eventos hoy en Loja: qué hacer y dónde ir',
+    title: 'Eventos hoy en Loja: agenda y qué hacer',
     description:
-      'Revisa los eventos de hoy en Loja, Ecuador: conciertos, cultura, actividades, ferias y planes disponibles para este día.',
+      'Descubre qué hacer hoy en Loja: conciertos, cultura, ferias y actividades con horarios, lugares y precios publicados.',
     intro:
       '¿Buscas qué hacer hoy en Loja? Revisa las actividades publicadas para este día, consulta horarios y ubicaciones, y elige un plan cerca de ti.',
     period: 'today',
@@ -150,9 +150,9 @@ export const EVENT_LANDING_CONFIGS: Record<string, EventLandingConfig> = {
   weekend: {
     path: 'eventos-este-fin-de-semana-en-loja',
     eyebrow: 'Planifica tu fin de semana',
-    title: 'Eventos este fin de semana en Loja',
+    title: 'Eventos este fin de semana en Loja: qué hacer',
     description:
-      'Descubre qué hacer este fin de semana en Loja: conciertos, eventos culturales, ferias, actividades gratuitas y planes para salir.',
+      'Planifica qué hacer este fin de semana en Loja: conciertos, eventos culturales, ferias y actividades con fechas, lugares y precios.',
     intro:
       'Planifica tu fin de semana en Loja con una selección de conciertos, actividades culturales, ferias y experiencias locales. Revisa cada ficha para confirmar fecha, horario, lugar y precio.',
     period: 'weekend',
@@ -308,6 +308,13 @@ export function buildEventLandingMetadata(config: EventLandingConfig) {
       title: config.title,
       description: config.description,
       images: [`${SITE_URL}/viveloja.png`],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      'max-snippet': -1,
+      'max-image-preview': 'large' as const,
+      'max-video-preview': -1,
     },
   }
 }

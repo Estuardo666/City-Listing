@@ -33,11 +33,11 @@ import { buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Vive Loja - Descubre Eventos, Locales y Noticias de tu Ciudad',
-  description: 'Explora los mejores eventos, restaurantes, bares, locales y noticias de Loja, Ecuador. Tu guía completa de entretenimiento y diversión local.',
+  title: 'Vive Loja | Qué hacer, eventos y locales en Loja',
+  description: 'Descubre qué hacer en Loja, Ecuador: agenda de eventos, conciertos, cultura, restaurantes, bares y lugares recomendados.',
   openGraph: {
-    title: 'Vive Loja - Descubre Eventos, Locales y Noticias de tu Ciudad',
-    description: 'Explora los mejores eventos, restaurantes, bares, locales y noticias de Loja, Ecuador.',
+    title: 'Vive Loja | Qué hacer, eventos y locales en Loja',
+    description: 'Agenda de eventos, conciertos, cultura, restaurantes, bares y lugares recomendados en Loja, Ecuador.',
     url: 'https://viveloja.com',
     siteName: 'Vive Loja',
     images: [
@@ -53,8 +53,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Vive Loja - Descubre Eventos, Locales y Noticias',
-    description: 'Explora los mejores eventos, restaurantes, bares y noticias de Loja, Ecuador.',
+    title: 'Vive Loja | Qué hacer, eventos y locales en Loja',
+    description: 'Agenda de eventos, conciertos, cultura, restaurantes, bares y lugares recomendados en Loja, Ecuador.',
     images: ['https://viveloja.com/viveloja.png'],
   },
   alternates: { canonical: 'https://viveloja.com/' },

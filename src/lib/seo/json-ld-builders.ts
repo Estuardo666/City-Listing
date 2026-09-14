@@ -284,9 +284,12 @@ export function buildEventLandingJsonLd(params: {
   events: Array<{
     title: string
     slug: string
+    description?: string | null
     startDate: Date
+    endDate?: Date | null
     image: string | null
     location: string
+    address?: string | null
   }>
 }) {
   return {
@@ -295,9 +298,17 @@ export function buildEventLandingJsonLd(params: {
     name: params.name,
     description: params.description,
     url: `${SITE_URL}/${params.path}`,
+    inLanguage: 'es-EC',
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    about: {
+      '@type': 'City',
+      name: 'Loja',
+      containedInPlace: { '@type': 'Country', name: 'Ecuador' },
+    },
     mainEntity: {
       '@type': 'ItemList',
       numberOfItems: params.events.length,
+      itemListOrder: 'https://schema.org/ItemListOrderAscending',
       itemListElement: params.events.slice(0, 20).map((event, index) => ({
         '@type': 'ListItem',
         position: index + 1,
@@ -305,10 +316,13 @@ export function buildEventLandingJsonLd(params: {
           '@type': 'Event',
           name: event.title,
           url: `${SITE_URL}/eventos/${event.slug}`,
+          ...(event.description ? { description: event.description } : {}),
           startDate: event.startDate.toISOString(),
+          ...(event.endDate ? { endDate: event.endDate.toISOString() } : {}),
           location: {
             '@type': 'Place',
             name: event.location,
+            ...(event.address ? { address: buildPostalAddress(event.address) } : {}),
           },
           ...(event.image ? { image: toAbsoluteUrl(event.image) } : {}),
         },
@@ -327,6 +341,12 @@ export function buildWebsiteJsonLd() {
         name: 'Vive Loja',
         url: SITE_URL,
         logo: `${SITE_URL}/viveloja.png`,
+        description: 'Agenda local de eventos, lugares y actividades de Loja, Ecuador.',
+        areaServed: {
+          '@type': 'City',
+          name: 'Loja',
+          containedInPlace: { '@type': 'Country', name: 'Ecuador' },
+        },
       },
       {
         '@type': 'WebSite',
@@ -334,6 +354,7 @@ export function buildWebsiteJsonLd() {
         name: 'Vive Loja',
         url: SITE_URL,
         inLanguage: 'es-EC',
+        description: 'Agenda local de eventos, lugares y actividades de Loja, Ecuador.',
         publisher: { '@id': `${SITE_URL}/#organization` },
       },
     ],

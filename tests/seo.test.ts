@@ -99,6 +99,10 @@ test('event landings and editorial articles keep their SEO source coverage', () 
   assert.ok(RANKED_VENUE_ARTICLE_CONFIGS.every((article) => article.searchTerms && article.searchTerms.length > 0))
   assert.equal(RANKED_VENUE_ARTICLE_PATHS.length, 9)
   assert.equal(RANKED_VENUE_ARTICLE_CONFIGS.find((article) => article.slug === 'mejores-locales-deportivos-loja')?.indexable, false)
+  assert.ok(EVENT_LANDING_CONFIGS.concerts.title.includes('Conciertos en Loja'))
+  assert.ok(EVENT_LANDING_CONFIGS.arts.title.includes('Artes Vivas en Loja'))
+  assert.ok(EVENT_LANDING_CONFIGS.fiavl.title.includes('FIAVL en Loja'))
+  assert.ok(Object.values(EVENT_LANDING_CONFIGS).every((article) => article.description.length <= 160))
   assert.deepEqual(
     RANKED_VENUE_ARTICLE_CONFIGS
       .filter((article) => article.indexable !== false)

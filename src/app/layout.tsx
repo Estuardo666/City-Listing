@@ -19,15 +19,15 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://viveloja.com'),
-  title: 'Vive Loja - Eventos, Locales y Noticias',
+  title: 'Vive Loja | Qué hacer, eventos y locales en Loja',
   description:
-    'Descubre todo lo que pasa en Loja, Ecuador. Eventos, restaurantes, bares, noticias y más. Tu guía completa de entretenimiento y diversión local.',
+    'Descubre qué hacer en Loja, Ecuador: agenda de eventos, conciertos, cultura, restaurantes, bares y lugares recomendados.',
   verification: {
     google: 'qHtaXeEOJoJ1zVE1qL3381df3ufnZOBf4zVl4SgxZ2Y',
   },
   openGraph: {
-    title: 'Vive Loja - Eventos, Locales y Noticias',
-    description: 'Descubre todo lo que pasa en Loja, Ecuador. Eventos, restaurantes, bares, noticias y más.',
+    title: 'Vive Loja | Qué hacer, eventos y locales en Loja',
+    description: 'Agenda de eventos, conciertos, cultura, restaurantes, bares y lugares recomendados en Loja, Ecuador.',
     url: 'https://viveloja.com',
     siteName: 'Vive Loja',
     images: [
@@ -43,8 +43,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Vive Loja - Eventos, Locales y Noticias',
-    description: 'Descubre todo lo que pasa en Loja, Ecuador. Eventos, restaurantes, bares, noticias y más.',
+    title: 'Vive Loja | Qué hacer, eventos y locales en Loja',
+    description: 'Agenda de eventos, conciertos, cultura, restaurantes, bares y lugares recomendados en Loja, Ecuador.',
     images: ['https://viveloja.com/viveloja.png'],
   },
 }

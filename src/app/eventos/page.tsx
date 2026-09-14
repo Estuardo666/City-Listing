@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { CalendarDays, Star, Sparkles, Tag, Ticket, LayoutGrid } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { Agenda } from '@/components/features/events/agenda'
@@ -12,13 +13,17 @@ import type { EventListItem } from '@/types/event'
 import { JsonLd } from '@/components/json-ld'
 import { buildBreadcrumbListJsonLd, buildEventLandingJsonLd } from '@/lib/seo/json-ld-builders'
 
-export const metadata = {
-  title: 'Eventos en Loja',
-  description:
-    'Agenda completa de eventos en Loja, Ecuador: conciertos, cultura, deportes, vida nocturna y actividades gratuitas. Encuentra ubicaciones en el mapa y filtra por categoría.',
+export const revalidate = 900
+
+const EVENTS_SEO_DESCRIPTION =
+  'Consulta qué hacer en Loja: agenda actualizada de conciertos, eventos culturales, ferias, Artes Vivas y otros planes con fechas, lugares y precios.'
+
+export const metadata: Metadata = {
+  title: 'Eventos en Loja: agenda de conciertos y actividades | Vive Loja',
+  description: EVENTS_SEO_DESCRIPTION,
   openGraph: {
-    title: 'Eventos en Loja | Vive Loja',
-    description: 'Conciertos, cultura, deportes y actividades verificadas en Loja, Ecuador. Ubicaciones en mapa.',
+    title: 'Eventos en Loja: agenda de conciertos y actividades | Vive Loja',
+    description: EVENTS_SEO_DESCRIPTION,
     url: 'https://viveloja.com/eventos',
     siteName: 'Vive Loja',
     images: [{ url: 'https://viveloja.com/viveloja.png', width: 1200, height: 630, alt: 'Eventos en Loja - Vive Loja' }],
@@ -27,9 +32,16 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Eventos en Loja',
-    description: 'Conciertos, cultura, deportes y actividades verificadas en Loja, Ecuador.',
+    title: 'Eventos en Loja: agenda de conciertos y actividades',
+    description: EVENTS_SEO_DESCRIPTION,
     images: ['https://viveloja.com/viveloja.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    'max-snippet': -1,
+    'max-image-preview': 'large',
+    'max-video-preview': -1,
   },
   alternates: { canonical: 'https://viveloja.com/eventos' },
 }
@@ -130,7 +142,7 @@ export default async function EventosPage() {
       <JsonLd
         data={buildEventLandingJsonLd({
           name: 'Eventos en Loja',
-          description: 'Agenda completa de eventos en Loja, Ecuador.',
+          description: EVENTS_SEO_DESCRIPTION,
           path: 'eventos',
           events: upcomingEventsForSchema,
         })}
@@ -141,29 +153,15 @@ export default async function EventosPage() {
           { name: 'Eventos en Loja' },
         ])}
       />
-      {/* Mapa: primero, ocupa el viewport util */}
-      <div className="h-[60vh] w-full overflow-hidden sm:h-[70vh]">
-        <ExploreClient
-          initialVenues={[]}
-          initialEvents={serializedEvents}
-          categories={categories}
-          mapboxToken={mapboxToken}
-          mapStyle={mapStyle}
-          mode="events"
-        />
-      </div>
-
-      {/* Contenido debajo del mapa */}
-      <div className="section-shell space-y-14 py-10 sm:space-y-16 sm:py-12">
-
-        {/* Header */}
-        <div className="space-y-3">
+      <main>
+        {/* Respuesta principal antes del mapa para que personas y buscadores entiendan la página de inmediato. */}
+        <section className="section-shell space-y-3 py-10 sm:py-12">
           <span className="eyebrow text-primary">Agenda verificada</span>
           <h1 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
             Eventos en Loja
           </h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Conciertos, cultura, deportes y actividades recomendadas por la comunidad. Filtra por categoria y encuentra ubicaciones en el mapa.
+          <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            ¿Buscas qué hacer en Loja? Consulta una agenda actualizada de conciertos, eventos culturales, ferias, Artes Vivas, deportes y otros planes, con fechas, lugares, precios y enlaces cuando están disponibles.
           </p>
           <nav aria-label="Agendas temáticas de Loja" className="flex flex-wrap gap-2 pt-2">
             {[
@@ -182,7 +180,22 @@ export default async function EventosPage() {
               </Link>
             ))}
           </nav>
+        </section>
+
+        {/* Mapa: conserva la exploración visual después de la respuesta SEO principal. */}
+        <div className="h-[60vh] w-full overflow-hidden sm:h-[70vh]">
+          <ExploreClient
+            initialVenues={[]}
+            initialEvents={serializedEvents}
+            categories={categories}
+            mapboxToken={mapboxToken}
+            mapStyle={mapStyle}
+            mode="events"
+          />
         </div>
+
+        {/* Agenda y listados */}
+        <div className="section-shell space-y-14 py-10 sm:space-y-16 sm:py-12">
 
         {/* Agenda por fecha */}
         <Agenda />
@@ -233,6 +246,7 @@ export default async function EventosPage() {
         {/* CTA */}
         <ListingCta type="events" />
       </div>
+      </main>
     </div>
   )
 }

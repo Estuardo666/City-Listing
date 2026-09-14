@@ -95,10 +95,10 @@ export function getCategorySeoData(category: {
   introText: string | null
   description: string | null
 }) {
-  const title = category.seoTitle ?? `${category.name} en Loja | ViveLoja`
+  const title = category.seoTitle ?? `${category.name} en Loja | Vive Loja`
   const description =
     category.seoDescription ??
-    `Descubre los mejores ${category.name.toLowerCase()} en Loja. Explora horarios, resenas, promociones, ubicacion y mas en ViveLoja.`
+    `Encuentra ${category.name.toLowerCase()} en Loja: horarios, reseñas, ubicaciones, promociones y datos útiles de negocios locales.`
   const introText =
     category.introText ??
     category.description ??

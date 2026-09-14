@@ -59,6 +59,12 @@ Páginas principales observadas: `/eventos` (10 clics, 657 impresiones), `/local
 
 Decisión de medición: comparar las nuevas landings contra esta línea base por separado. El objetivo inicial es aumentar impresiones y clics del cluster de eventos sin atribuir el tráfico de salud o negocios a los artículos culturales.
 
+## Línea base de funciones de IA
+
+En la lectura del 14 de septiembre de 2026, Search Console muestra para los últimos 28 días 30 impresiones en funciones de IA generativa y cinco páginas con apariciones. Las URLs visibles son fichas de negocios y la portada; `/eventos` todavía no aparece. En la búsqueda pública `eventos loja`, la Visión general creada por IA cita fuentes institucionales, una página cultural de Facebook y Agenda Cultural Loja, pero no a Vive Loja.
+
+Para aumentar la posibilidad de ser citado, cada landing debe responder la intención en texto HTML visible, presentar eventos actuales y verificables, enlazar la fuente primaria cuando exista y mantener coherencia entre H1, title, description, enlaces internos y JSON-LD. Esto mejora la comprensión de la página, pero no garantiza una aparición: Google decide las fuentes de cada respuesta y puede cambiar el conjunto de resultados.
+
 ## Estado implementado
 
 ### Días 1–14: base técnica
@@ -83,6 +89,15 @@ Implementación: `src/app/layout.tsx`, `src/app/sitemap.ts`, `src/lib/seo/json-l
 - [x] Las páginas de rankings no publican posiciones falsas cuando no existe una valoración verificable.
 
 Implementación: `src/lib/seo/event-landings.ts`, `src/components/features/events/seo-event-landing.tsx`, `src/lib/seo/editorial-content.ts`, `src/lib/seo/ranked-venue-articles.ts` y `src/components/features/blog/ranked-venue-article.tsx`.
+
+### Ajuste de títulos y snippets — 14 de septiembre de 2026
+
+- [x] `/eventos` ahora usa un title orientado a `eventos en Loja`, agenda, conciertos y qué hacer.
+- [x] La descripción incorpora la respuesta útil y los campos que las personas necesitan para decidir: fecha, lugar y precio.
+- [x] El H1 y el resumen aparecen antes del mapa para que el contenido principal sea visible desde el primer bloque rastreable.
+- [x] `/eventos` se revalida cada 15 minutos; las landings temáticas conservan su revalidación de 15 minutos.
+- [x] Se alinearon titles y descriptions de conciertos, eventos culturales, Artes Vivas, FIAVL, hoy y fin de semana.
+- [x] Se enriqueció el JSON-LD de las colecciones con la ciudad, idioma, dirección y descripción del evento cuando están disponibles.
 
 ## Ejecución de los días 31–90
 
