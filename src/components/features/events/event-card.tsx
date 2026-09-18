@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { CalendarDays, MapPin, Repeat, Sparkles, Star } from 'lucide-react'
 import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
 import { formatDateTime } from '@/lib/utils'
@@ -22,6 +23,7 @@ function isValidHttpUrl(value: string): boolean {
 }
 
 export function EventCard({ event }: EventCardProps) {
+  const router = useRouter()
   const hasValidImage = Boolean(event.image && isValidHttpUrl(event.image))
   const [imageError, setImageError] = useState(false)
   const sponsored = !!event.sponsoredUntil && new Date(event.sponsoredUntil) > new Date()
@@ -29,6 +31,10 @@ export function EventCard({ event }: EventCardProps) {
   return (
     <Link
       href={`/eventos/${event.slug}`}
+      onPointerEnter={() => router.prefetch(`/eventos/${event.slug}`)}
+      onFocus={() => router.prefetch(`/eventos/${event.slug}`)}
+      onTouchStart={() => router.prefetch(`/eventos/${event.slug}`)}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/25 active:scale-[0.99]"
     >
       {hasValidImage && !imageError && (

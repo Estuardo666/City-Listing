@@ -56,6 +56,8 @@ type Category = {
 type ExploreClientProps = {
   initialVenues: ExploreVenue[]
   initialEvents: ExploreEvent[]
+  initialMapVenues?: ExploreVenue[]
+  initialMapEvents?: ExploreEvent[]
   categories: Category[]
   mapboxToken: string
   mapStyle: string
@@ -141,6 +143,8 @@ function countActiveFilters(filters: ExploreFilters): number {
 export function ExploreClient({
   initialVenues,
   initialEvents,
+  initialMapVenues,
+  initialMapEvents,
   categories,
   mapboxToken,
   mapStyle,
@@ -218,8 +222,15 @@ export function ExploreClient({
     return result
   }, [allItems, mapBounds, userLocation, proximityRadius, haversine])
 
-  // Markers always from all items (so off-screen markers still show on map)
-  const markers = useMemo(() => buildMarkers(allItems), [allItems])
+  const initialMapItems = useMemo<ExploreItem[]>(() => [
+    ...(initialMapVenues ?? initialVenues).map((venue) => ({ ...venue, _type: 'venue' as const })),
+    ...(initialMapEvents ?? initialEvents).map((event) => ({ ...event, _type: 'event' as const })),
+  ], [initialMapVenues, initialMapEvents, initialVenues, initialEvents])
+
+  // The unfiltered map has its own complete geographic dataset. The cards stay
+  // paginated, while filtered searches use exactly the returned result set.
+  const mapItems = activeFilterCount === 0 ? initialMapItems : allItems
+  const markers = useMemo(() => buildMarkers(mapItems), [mapItems])
 
   const handleBoundsChange = useCallback((bounds: MapBounds | null) => {
     setMapBounds(bounds)
@@ -817,10 +828,11 @@ export function ExploreClient({
               {shouldRenderMap ? (
                 <ExploreMapPanel
                   markers={markers}
-                  items={allItems}
+                  items={mapItems}
                   activeId={activeId}
                   onMarkerClick={handleMarkerClick}
                   onBoundsChange={handleBoundsChange}
+                  markerRenderMode="canvas"
                   mapboxToken={mapboxToken}
                   mapStyle={mapStyle}
                   userLocation={userLocation}

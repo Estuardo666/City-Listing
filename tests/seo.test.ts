@@ -39,6 +39,31 @@ test('event JSON-LD omits an offer when the price is unknown', () => {
   assert.equal('offers' in event, false)
 })
 
+test('event JSON-LD accepts dates serialized by the Next.js data cache', () => {
+  const event = buildEventJsonLd({
+    status: 'APPROVED',
+    title: 'Evento cacheado',
+    slug: 'evento-cacheado',
+    description: 'Evento de prueba cacheado.',
+    content: null,
+    image: null,
+    startDate: '2026-09-20T20:00:00.000Z',
+    endDate: '2026-09-20T22:00:00.000Z',
+    location: 'Loja',
+    address: null,
+    lat: null,
+    lng: null,
+    price: null,
+    venue: null,
+    user: { name: 'Organizador' },
+    eventCategories: [],
+    media: [],
+  })
+
+  assert.equal(event.startDate, '2026-09-20T20:00:00.000Z')
+  assert.equal(event.endDate, '2026-09-20T22:00:00.000Z')
+})
+
 test('cancelled events expose the cancelled schema status', () => {
   const event = buildEventJsonLd({
     status: 'CANCELLED',

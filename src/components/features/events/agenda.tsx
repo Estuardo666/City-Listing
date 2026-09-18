@@ -76,10 +76,12 @@ function stripDot(value: string) {
   return value.replace(/\.$/, '')
 }
 
-function AgendaCard({ event }: { event: AgendaEvent }) {
+export function AgendaCard({ event }: { event: AgendaEvent }) {
   const [imageError, setImageError] = useState(false)
   const usable = event.image && isValidHttpUrl(event.image) && !imageError
   const free = event.price === 0
+  const dateLabel = `${shortDateFormat.format(new Date(event.startDate))} · ${timeFormat.format(new Date(event.startDate))}`
+  const priceClass = free ? 'bg-emerald text-emerald-foreground' : 'bg-white/90 text-neutral-900'
 
   return (
     <Link
@@ -97,13 +99,18 @@ function AgendaCard({ event }: { event: AgendaEvent }) {
             onError={() => setImageError(true)}
           />
           <span className="absolute left-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-semibold capitalize text-white backdrop-blur-sm">
-            {shortDateFormat.format(new Date(event.startDate))} · {timeFormat.format(new Date(event.startDate))}
+            {dateLabel}
           </span>
-          <span
-            className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${
-              free ? 'bg-emerald text-emerald-foreground' : 'bg-white/90 text-neutral-900'
-            }`}
-          >
+          <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold ${priceClass}`}>
+            {priceLabel(event.price)}
+          </span>
+        </div>
+      )}
+
+      {!usable && (
+        <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/40 px-4 py-3 text-xs font-semibold">
+          <span className="text-muted-foreground">{dateLabel}</span>
+          <span className={`rounded-full px-2.5 py-1 ${free ? 'bg-emerald text-emerald-foreground' : 'bg-background text-foreground'}`}>
             {priceLabel(event.price)}
           </span>
         </div>

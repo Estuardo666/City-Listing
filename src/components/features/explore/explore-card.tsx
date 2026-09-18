@@ -5,6 +5,7 @@ import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-phot
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CalendarDays, MapPin, Phone, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,7 @@ type ExploreCardProps = {
 }
 
 export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps) {
+  const router = useRouter()
   const isVenue = item._type === 'venue'
   const href = isVenue ? `/locales/${item.slug}` : `/eventos/${item.slug}`
   const name = isVenue ? item.name : item.title
@@ -45,9 +47,13 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
       layout
       onHoverStart={() => onHover(item.id)}
       onHoverEnd={() => onHover(null)}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '136px' }}
     >
       <Link
         href={href}
+        onPointerEnter={() => router.prefetch(href)}
+        onFocus={() => router.prefetch(href)}
+        onTouchStart={() => router.prefetch(href)}
         className={cn(
           'group relative flex gap-3.5 overflow-hidden rounded-3xl border bg-card p-3.5 transition-all duration-200',
           isActive
@@ -66,6 +72,8 @@ export function ExploreCard({ item, isActive, onHover, index }: ExploreCardProps
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="112px"
+              loading={index < 4 ? 'eager' : 'lazy'}
+              fetchPriority={index < 2 ? 'high' : 'auto'}
               onError={() => setImageError(true)}
             />
           ) : (

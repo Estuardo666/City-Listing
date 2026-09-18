@@ -1,6 +1,6 @@
 {
   "name": "vive-loja",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -10,7 +10,7 @@
     "build:webpack": "prisma generate && next build --webpack",
     "start": "next start",
     "test:mobile": "node --require ./tests/register-server-only.cjs --import tsx --test tests/mobile-api.test.ts tests/discovery-integration.test.ts",
-    "test:config": "node --require ./tests/register-server-only.cjs --import tsx --test tests/resend-config.test.ts tests/resend-delivery.test.ts tests/env-contract.test.ts tests/signup-role.test.ts tests/deep-links.test.ts tests/route-itinerary.test.ts tests/today.test.ts tests/open-now.test.ts tests/mobile-open-now.test.ts tests/user-geolocation.test.ts tests/explore-date.test.ts tests/seo.test.ts",
+    "test:config": "node --require ./tests/register-server-only.cjs --import tsx --test tests/resend-config.test.ts tests/resend-delivery.test.ts tests/env-contract.test.ts tests/signup-role.test.ts tests/deep-links.test.ts tests/route-itinerary.test.ts tests/today.test.ts tests/open-now.test.ts tests/mobile-open-now.test.ts tests/user-geolocation.test.ts tests/explore-date.test.ts tests/seo.test.ts tests/agenda-card.test.tsx",
     "test:billing": "node --require ./tests/register-server-only.cjs --import tsx --test tests/billing-projection.test.ts",
     "test:ticketing": "node --require ./tests/register-server-only.cjs --import tsx --test tests/ticketing.test.ts",
     "test:e2e": "playwright test",
@@ -23,6 +23,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "events:import:scraped": "tsx scripts/import-scraped-loja-events-2026.ts",
     "content:seed:seo": "tsx scripts/seed-seo-editorial.ts",
+    "content:seed:coffee": "tsx scripts/seed-ruta-cafe.ts",
     "db:seed:home": "tsx prisma/seed-home-sections.ts",
     "sync:google": "tsx scripts/sync-google-hours.ts",
     "backfill:google": "tsx scripts/backfill-google-place-ids.ts",

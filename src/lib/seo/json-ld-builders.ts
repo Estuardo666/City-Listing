@@ -45,8 +45,8 @@ type EventForJsonLd = {
   description: string
   content: string | null
   image: string | null
-  startDate: Date
-  endDate: Date | null
+  startDate: Date | string
+  endDate: Date | string | null
   location: string
   address: string | null
   lat: number | null
@@ -70,9 +70,9 @@ type PostForJsonLd = {
   excerpt: string | null
   content: string
   image: string | null
-  publishedAt: Date | null
-  createdAt: Date
-  updatedAt: Date
+  publishedAt: Date | string | null
+  createdAt: Date | string
+  updatedAt: Date | string
   user: { name: string | null; image: string | null }
   category: { name: string; slug: string } | null
 }
@@ -83,9 +83,9 @@ function toAbsoluteUrl(url: string | null): string | undefined {
   return `${SITE_URL}${url.startsWith('/') ? '' : '/'}${url}`
 }
 
-function toIsoDate(date: Date | null | undefined): string | undefined {
+function toIsoDate(date: Date | string | null | undefined): string | undefined {
   if (!date) return undefined
-  return date.toISOString()
+  return date instanceof Date ? date.toISOString() : new Date(date).toISOString()
 }
 
 function buildPostalAddress(address: string | null) {

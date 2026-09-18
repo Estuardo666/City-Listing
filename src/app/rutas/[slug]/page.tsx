@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -13,6 +14,31 @@ import type { RouteWithStops } from '@/types/route'
 
 type RouteDetailPageProps = {
   params: Promise<{ slug: string }>
+}
+
+export async function generateMetadata({ params }: RouteDetailPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const route = await prisma.route.findFirst({
+    where: { slug, status: 'APPROVED' },
+    select: { title: true, description: true, image: true },
+  })
+
+  if (!route) return { title: 'Ruta no encontrada — Vive Loja' }
+
+  return {
+    title: `${route.title} — Vive Loja`,
+    description: route.description,
+    openGraph: {
+      title: route.title,
+      description: route.description,
+      url: `https://viveloja.com/rutas/${slug}`,
+      siteName: 'Vive Loja',
+      locale: 'es_EC',
+      type: 'website',
+      images: route.image ? [{ url: route.image, alt: route.title }] : [],
+    },
+    alternates: { canonical: `https://viveloja.com/rutas/${slug}` },
+  }
 }
 
 export default async function RouteDetailPage({ params }: RouteDetailPageProps) {
@@ -64,6 +90,8 @@ export default async function RouteDetailPage({ params }: RouteDetailPageProps) 
     { name: 'Rutas', url: '/rutas' },
     { name: route.title },
   ])
+  const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
+  const mapStyle = process.env.MAPBOX_STYLE ?? process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? ''
 
   return (
     <div className="pb-20 pt-10 sm:pt-14">
@@ -81,7 +109,7 @@ export default async function RouteDetailPage({ params }: RouteDetailPageProps) 
             <FavoriteButton routeId={route.id} initialIsFavorite={isFavorite} />
           )}
         </div>
-        <RouteDetail route={route} />
+        <RouteDetail route={route} mapboxToken={mapboxToken} mapStyle={mapStyle} />
       </section>
     </div>
   )

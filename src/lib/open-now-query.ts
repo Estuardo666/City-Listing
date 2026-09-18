@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { lojaDay, lojaNowParts, openStatus } from '@/lib/loja-day'
+import { formatHHMM, lojaDay, lojaNowParts, openStatus } from '@/lib/loja-day'
 
 export type SpecialHoursEntry = {
   today?: { openTime: string | null; closeTime: string | null; isClosed: boolean }
@@ -37,12 +37,17 @@ export function buildOpenNowFilter(
   now = new Date(),
 ): Prisma.VenueWhereInput {
   const { weekday, prevWeekday, minute } = lojaNowParts(now)
+  const currentTime = formatHHMM(minute)
   const regular: Prisma.VenueWhereInput = {
     businessHours: {
       some: {
         OR: [
           { dayOfWeek: weekday, isClosed: false, crossesMidnight: false, openMinute: { lte: minute }, closeMinute: { gt: minute } },
+          // Keep CI and older schemas compatible when Prisma created the
+          // nullable generated columns without applying their SQL expressions.
+          { dayOfWeek: weekday, isClosed: false, openTime: { lte: currentTime }, closeTime: { gt: currentTime } },
           { dayOfWeek: weekday, isClosed: false, isAllDay: true },
+          { dayOfWeek: weekday, isClosed: false, openTime: '00:00', closeTime: '00:00' },
           { dayOfWeek: weekday, isClosed: false, crossesMidnight: true, openMinute: { lte: minute } },
           { dayOfWeek: prevWeekday, isClosed: false, crossesMidnight: true, closeMinute: { gt: minute } },
         ],
