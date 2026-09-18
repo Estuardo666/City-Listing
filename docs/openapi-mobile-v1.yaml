@@ -3,18 +3,30 @@ info:
   title: Vive Loja Mobile API
   version: 1.0.0
   description: Versioned contract consumed by the Vive Loja iOS client.
+  license:
+    name: Proprietary
+    identifier: Proprietary
 servers:
   - url: https://viveloja.com/api/mobile/v1
 tags:
   - name: Health
+    description: Availability and service health.
   - name: Auth
+    description: Mobile account authentication and sessions.
   - name: Home
+    description: Server-driven home discovery sections.
   - name: Explore
+    description: Search and geographic discovery.
   - name: Content
+    description: Public events, venues, agenda and editorial content.
   - name: Transmissions
+    description: Live transmissions and watch parties.
   - name: Analytics
+    description: Privacy-conscious interaction measurements.
   - name: User
+    description: Authenticated user data and actions.
   - name: Billing
+    description: Plans, add-ons and business account operations.
 security: []
 paths:
   /agenda:
@@ -106,6 +118,7 @@ paths:
                       collections: { type: array, items: { $ref: '#/components/schemas/TodayCard' } }
         "500":
           description: Temporary discovery service failure
+        "400": { description: Invalid discovery request }
   /interactions:
     post:
       tags: [Analytics]
@@ -144,6 +157,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessEnvelope"
+        "503": { description: API temporarily unavailable }
+        "400": { description: Invalid health request }
   /auth/register:
     post:
       tags: [Auth]
@@ -254,6 +269,8 @@ paths:
                     properties:
                       data:
                         $ref: "#/components/schemas/HomePayload"
+        "400": { description: Invalid home request }
+        "500": { description: Home unavailable }
   /explore:
     get:
       tags: [Explore]
@@ -275,6 +292,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessEnvelope"
+        "400": { description: Invalid explore filters }
+        "500": { description: Explore unavailable }
   /venues/{slug}:
     get:
       tags: [Content]
@@ -340,6 +359,8 @@ paths:
                   - type: object
                     properties:
                       data: { $ref: "#/components/schemas/ContentPayload" }
+        "400": { description: Invalid content filters }
+        "500": { description: Content unavailable }
   /watch-events:
     get:
       tags: [Transmissions]
@@ -362,6 +383,8 @@ paths:
                       data:
                         type: array
                         items: { $ref: "#/components/schemas/MobileWatchEvent" }
+        "400": { description: Invalid transmission limit }
+        "500": { description: Transmissions unavailable }
   /watch-events/{slug}:
     get:
       tags: [Transmissions]
@@ -1410,17 +1433,21 @@ paths:
       summary: Published plans and one-off products for the beta checkout
       responses:
         '200': { description: Catalog with reference prices and typed capabilities }
+        '500': { description: Billing catalog unavailable }
+        '400': { description: Invalid catalog request }
   /me/business-account:
     get:
       tags: [Billing]
+      summary: Load the caller's business account
       operationId: getBusinessAccount
       security: [{ bearerAuth: [] }]
       responses:
-        '200': { description: Account, effective plan, usage, team and order history }
+        '200': { description: "Account, effective plan, usage, team and order history" }
         '401': { description: Authentication required }
   /me/business-account/members:
     post:
       tags: [Billing]
+      summary: Add or update a business account member
       operationId: addOrUpdateBusinessMember
       security: [{ bearerAuth: [] }]
       requestBody:
@@ -1440,6 +1467,7 @@ paths:
         '409': { description: Member capacity reached }
     delete:
       tags: [Billing]
+      summary: Remove a business account member
       operationId: removeBusinessMember
       security: [{ bearerAuth: [] }]
       requestBody:
@@ -1476,7 +1504,7 @@ paths:
                 device: { type: [string, 'null'] }
       responses:
         '200': { description: Completed simulated order with chargedAmount 0 }
-        '409': { description: Enterprise contact flow, disabled beta or checkout failure }
+        '409': { description: "Enterprise contact flow, disabled beta or checkout failure" }
   /me/billing/addons:
     post:
       tags: [Billing]
@@ -1498,10 +1526,11 @@ paths:
                 device: { type: [string, 'null'] }
       responses:
         '200': { description: Completed simulated addon order with chargedAmount 0 }
-        '409': { description: Addon cooldown, disabled beta or checkout failure }
+        '409': { description: "Addon cooldown, disabled beta or checkout failure" }
   /me/billing/orders/{id}:
     get:
       tags: [Billing]
+      summary: Load a business account order
       operationId: getBillingOrder
       security: [{ bearerAuth: [] }]
       parameters:
@@ -1569,21 +1598,20 @@ components:
         id: { type: string }
         slug: { type: string }
         title: { type: string }
-        subtitle: { type: string, nullable: true }
-        imageUrl: { type: string, nullable: true }
+        subtitle: { type: [string, 'null'] }
+        imageUrl: { type: [string, 'null'] }
         badge:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: Wording derived server-side (Nuevo, Con promocion, Ultimos dias...).
-        priceLabel: { type: string, nullable: true }
-        rating: { type: number, nullable: true }
-        reviewCount: { type: integer, nullable: true }
-        venueName: { type: string, nullable: true }
-        dateLabel: { type: string, nullable: true }
-        lat: { type: number, nullable: true }
-        lng: { type: number, nullable: true }
-        color: { type: string, nullable: true }
-        icon: { type: string, nullable: true }
+        priceLabel: { type: [string, 'null'] }
+        rating: { type: [number, 'null'] }
+        reviewCount: { type: [integer, 'null'] }
+        venueName: { type: [string, 'null'] }
+        dateLabel: { type: [string, 'null'] }
+        lat: { type: [number, 'null'] }
+        lng: { type: [number, 'null'] }
+        color: { type: [string, 'null'] }
+        icon: { type: [string, 'null'] }
         deeplink: { type: string }
     HomeSection:
       type: object
@@ -1598,13 +1626,13 @@ components:
           type: string
           enum: [hero, todayInLoja, categoryChips, venueList, eventList, ranked, collection, promotions, posts, routes, manual]
         title: { type: string }
-        subtitle: { type: string, nullable: true }
-        actionLabel: { type: string, nullable: true }
+        subtitle: { type: [string, 'null'] }
+        actionLabel: { type: [string, 'null'] }
         layout:
           type: string
           enum: [hero, chips, carousel, ranked, grid, list]
-        deeplink: { type: string, nullable: true }
-        body: { type: string, nullable: true }
+        deeplink: { type: [string, 'null'] }
+        body: { type: [string, 'null'] }
         items:
           type: array
           items: { $ref: "#/components/schemas/HomeItem" }
@@ -2314,8 +2342,7 @@ components:
               notes: { type: string, maxLength: 500 }
               duration: { type: string, maxLength: 80 }
     TokenEnvelope:
-      allOf:
-        - $ref: "#/components/schemas/SuccessEnvelope"
+      $ref: "#/components/schemas/SuccessEnvelope"
     Error:
       type: object
       required: [error]
