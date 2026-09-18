@@ -1,0 +1,16 @@
+.gcloudignore
+.git
+.git/**
+.chunkhound
+.chunkhound/**
+.next
+.next/**
+node_modules
+node_modules/**
+.env
+.env.*
+!.env.example
+coverage
+playwright-report
+test-results
+*.log
