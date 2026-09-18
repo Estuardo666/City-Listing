@@ -13,6 +13,12 @@ const redisRestToken =
   process.env.UPSTASH_REDIS_REST_TOKEN ||
   process.env.uptash_redish_KV_REST_API_TOKEN
 
+const REDIS_OPERATION_TIMEOUT_MS = 350
+const REDIS_COOLDOWN_MS = 60 * 1000
+const LOCAL_CACHE_MAX_ENTRIES = 256
+const localCache = new Map<string, { value: unknown; expiresAt: number }>()
+let redisUnavailableUntil = 0
+
 // Configuración de Redis con Upstash
 // Make it safe for build time when env vars might be missing
 export const redis = new Redis({
@@ -38,6 +44,58 @@ export const CACHE_TTL = {
 // cross-instance cache; this map only coalesces concurrent local misses.
 const inFlight = new Map<string, Promise<unknown>>()
 
+function localCacheRead<T>(key: string): { hit: boolean; value?: T } {
+  const entry = localCache.get(key)
+  if (!entry) return { hit: false }
+  if (entry.expiresAt <= Date.now()) {
+    localCache.delete(key)
+    return { hit: false }
+  }
+  return { hit: true, value: entry.value as T }
+}
+
+function localCacheWrite<T>(key: string, value: T, ttl: number) {
+  if (localCache.size >= LOCAL_CACHE_MAX_ENTRIES && !localCache.has(key)) {
+    const oldestKey = localCache.keys().next().value
+    if (oldestKey) localCache.delete(oldestKey)
+  }
+  localCache.set(key, { value, expiresAt: Date.now() + ttl * 1000 })
+}
+
+function localCacheDelete(key: string) {
+  localCache.delete(key)
+}
+
+function patternMatches(key: string, pattern: string) {
+  const expression = `^${pattern.split('*').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}$`
+  return new RegExp(expression).test(key)
+}
+
+function localCacheDeletePattern(pattern: string) {
+  for (const key of localCache.keys()) {
+    if (patternMatches(key, pattern)) localCache.delete(key)
+  }
+}
+
+function markRedisUnavailable(error: unknown) {
+  redisUnavailableUntil = Date.now() + REDIS_COOLDOWN_MS
+  console.error('❌ Redis cache temporarily disabled:', error)
+}
+
+async function withRedisTimeout<T>(operation: Promise<T>): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(`Redis timeout after ${REDIS_OPERATION_TIMEOUT_MS}ms`)), REDIS_OPERATION_TIMEOUT_MS)
+      }),
+    ])
+  } finally {
+    if (timeout) clearTimeout(timeout)
+  }
+}
+
 // Función para generar clave de cache
 export function getCacheKey(prefix: string, ...params: string[]): string {
   return `${prefix}:${params.join(':')}`
@@ -49,34 +107,42 @@ export async function withCache<T>(
   fetcher: () => Promise<T>,
   ttl: number = CACHE_TTL.SEARCH
 ): Promise<T> {
-  // Si no hay URL de Redis configurada (ej. en build), bypass del cache.
-  if (!redisRestUrl || !redisRestToken) return fetcher()
-
   const running = inFlight.get(key)
   if (running) return running as Promise<T>
 
   const promise = (async () => {
-    let cached: T | null = null
-    try {
-      cached = await redis.get<T>(key)
-    } catch (error) {
-      console.error(`❌ Cache read error for ${key}:`, error)
+    const local = localCacheRead<T>(key)
+    if (local.hit) {
+      console.log(`🎯 Local cache HIT: ${key}`)
+      return local.value as T
     }
 
-    if (cached !== null) {
-      console.log(`🎯 Cache HIT: ${key}`)
-      return cached
+    const redisEnabled = Boolean(redisRestUrl && redisRestToken) && redisUnavailableUntil <= Date.now()
+    if (redisEnabled) {
+      try {
+        const cached = await withRedisTimeout(redis.get<T>(key))
+        if (cached !== null) {
+          localCacheWrite(key, cached, ttl)
+          console.log(`🎯 Cache HIT: ${key}`)
+          return cached
+        }
+      } catch (error) {
+        markRedisUnavailable(error)
+      }
     }
 
     console.log(`💾 Cache MISS: ${key}`)
     const data = await fetcher()
+    localCacheWrite(key, data, ttl)
 
-    try {
-      await redis.setex(key, ttl, data)
-      console.log(`✅ Cache SET: ${key} (${ttl}s)`)
-    } catch (error) {
-      // A cache outage must not turn a successful origin response into a 500.
-      console.error(`❌ Cache write error for ${key}:`, error)
+    if (redisEnabled && redisUnavailableUntil <= Date.now()) {
+      try {
+        await withRedisTimeout(redis.setex(key, ttl, data))
+        console.log(`✅ Cache SET: ${key} (${ttl}s)`)
+      } catch (error) {
+        // A cache outage must not turn a successful origin response into a 500.
+        markRedisUnavailable(error)
+      }
     }
 
     return data
@@ -92,17 +158,29 @@ export async function withCache<T>(
 
 // Función para invalidar cache
 export async function invalidateCache(pattern: string): Promise<void> {
+  localCacheDeletePattern(pattern)
   try {
     // Si no hay URL de Redis configurada, no hacer nada
-    if (!redisRestUrl || !redisRestToken) return
+    if (!redisRestUrl || !redisRestToken || redisUnavailableUntil > Date.now()) return
 
-    const keys = await redis.keys(pattern)
+    const keys = await withRedisTimeout(redis.keys(pattern))
     if (keys.length > 0) {
-      await redis.del(...keys)
+      await withRedisTimeout(redis.del(...keys))
       console.log(`🗑️ Cache invalidated: ${keys.length} keys matching ${pattern}`)
     }
   } catch (error) {
-    console.error(`❌ Error invalidating cache ${pattern}:`, error)
+    markRedisUnavailable(`Error invalidating cache ${pattern}: ${String(error)}`)
+  }
+}
+
+/** Best-effort single-key invalidation for callers that previously used redis.del directly. */
+export async function deleteCacheKey(key: string): Promise<void> {
+  localCacheDelete(key)
+  if (!redisRestUrl || !redisRestToken || redisUnavailableUntil > Date.now()) return
+  try {
+    await withRedisTimeout(redis.del(key))
+  } catch (error) {
+    markRedisUnavailable(`Error deleting cache key ${key}: ${String(error)}`)
   }
 }
 

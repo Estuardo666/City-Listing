@@ -1,4 +1,4 @@
-import { redis, invalidateCache, cacheKeys } from './cache'
+import { deleteCacheKey, invalidateCache, cacheKeys } from './cache'
 
 // Función para invalidar cache cuando se modifican eventos
 export async function invalidateEventCache(eventId?: string) {
@@ -9,7 +9,7 @@ export async function invalidateEventCache(eventId?: string) {
     await invalidateCache('mobile:home:v2')
     
     // Invalidar eventos populares
-    await redis.del(cacheKeys.popularEvents())
+    await deleteCacheKey(cacheKeys.popularEvents())
     
     // Si se proporciona un eventId específico, podríamos invalidar cachés específicas
     if (eventId) {
@@ -31,7 +31,7 @@ export async function invalidateVenueCache(venueId?: string) {
     await invalidateCache('mobile:home:v2')
     
     // Invalidar locales populares
-    await redis.del(cacheKeys.popularVenues())
+    await deleteCacheKey(cacheKeys.popularVenues())
     
     if (venueId) {
       console.log(`🗑️ Invalidated cache for venue ${venueId}`)
@@ -51,7 +51,7 @@ export async function invalidateCategoryCache() {
     await invalidateCache('events:category:*')
     await invalidateCache('venues:category:*')
     await invalidateCache('mobile:home:v2')
-    await redis.del(cacheKeys.categories())
+    await deleteCacheKey(cacheKeys.categories())
     
     console.log('✅ Category cache invalidated successfully')
   } catch (error) {
