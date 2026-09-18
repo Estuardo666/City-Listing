@@ -73,7 +73,7 @@ jobs:
           npm run test:ticketing
 
       - name: Create CI schema
-        run: npx prisma db push --skip-generate --accept-data-loss
+        run: npx prisma migrate deploy
 
       - name: Seed CI data
         run: npm run db:seed
