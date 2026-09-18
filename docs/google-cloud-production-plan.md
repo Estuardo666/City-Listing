@@ -1,6 +1,6 @@
 # Plan de producción en Google Cloud — City Listing
 
-Fecha: 2026-09-14  
+Fecha: 2026-09-14
 Objetivo: usar Cloud Run como producción de `viveloja.com`, conservar Vercel como respaldo temporal y no borrar ni modificar Neon.
 
 ## Estado verificado

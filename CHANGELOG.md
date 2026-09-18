@@ -20,4 +20,3 @@ Todos los cambios relevantes de Vive Loja se documentan en este archivo.
 
 - Error de React en páginas de eventos causado por fechas serializadas desde caché.
 - Pérdida de fecha, hora y precio en tarjetas de agenda sin imagen válida.
-
