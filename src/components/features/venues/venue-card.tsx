@@ -4,6 +4,7 @@ import { GoogleVenuePhoto } from '@/components/features/venues/google-venue-phot
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Globe, ImageIcon, MapPin, Phone, ShieldCheck, Sparkles, Star } from 'lucide-react'
 import { CategoryGradientBg } from '@/components/ui/category-gradient-bg'
 import { resolveIconEmoji } from '@/components/features/explore/explore-map-panel'
@@ -18,6 +19,7 @@ type VenueCardProps = {
 }
 
 export function VenueCard({ venue, badges }: VenueCardProps) {
+  const router = useRouter()
   const [imageError, setImageError] = useState(false)
   const hasValidImage = Boolean(venue.image && venue.image.startsWith('http'))
   const sponsored = !!venue.sponsoredUntil && new Date(venue.sponsoredUntil) > new Date()
@@ -25,6 +27,10 @@ export function VenueCard({ venue, badges }: VenueCardProps) {
   return (
     <Link
       href={`/locales/${venue.slug}`}
+      onPointerEnter={() => router.prefetch(`/locales/${venue.slug}`)}
+      onFocus={() => router.prefetch(`/locales/${venue.slug}`)}
+      onTouchStart={() => router.prefetch(`/locales/${venue.slug}`)}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-emerald/30 active:scale-[0.99]"
     >
       {/* Image */}

@@ -30,6 +30,8 @@ export const metadata = {
   alternates: { canonical: 'https://viveloja.com/locales' },
 }
 
+export const revalidate = 900
+
 const FEATURED_TAKE = 6
 const PROMO_TAKE = 6
 const TOP_RATED_TAKE = 6

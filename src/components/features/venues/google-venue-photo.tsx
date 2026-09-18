@@ -32,17 +32,22 @@ export function GoogleVenuePhoto({ slug, name, large = false }: { slug: string; 
         observer.disconnect()
         void load()
       }
+    }, {
+      // Resolve the signed Google URL well before the card reaches the screen.
+      // This leaves enough time for both the API lookup and the image download
+      // during a normal mobile scroll without loading the whole directory.
+      rootMargin: large ? '400px 0px' : '1200px 0px',
     })
     if (container.current) observer.observe(container.current)
     return () => { observer.disconnect(); active = false }
-  }, [slug, size])
+  }, [slug, size, large])
 
   return (
     <div ref={container} className="pointer-events-none absolute inset-0" onClick={(event) => event.stopPropagation()}>
       {photo && <>
         {/* Google serves the image directly; do not route it through /_next/image. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo.photoUri} alt={name} className={`h-full w-full object-cover ${ready ? '' : 'invisible'}`}
+        <img src={photo.photoUri} alt={name} loading="eager" decoding="async" fetchPriority={large ? 'high' : 'low'} className={`h-full w-full object-cover ${ready ? '' : 'invisible'}`}
           onLoad={() => setReady(true)}
           onError={() => { invalidateGooglePhoto(slug, size); setPhoto(null); setReady(false) }} />
         {ready && <button type="button" translate="no"

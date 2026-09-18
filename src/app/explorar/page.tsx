@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { ExploreClient } from '@/components/features/explore/explore-client'
 import type { ExploreVenue, ExploreEvent } from '@/types/explore'
 import { displayableImageUrl } from '@/lib/media/image-url'
+import { getExploreMapData } from '@/lib/queries/explore-map-data'
 
 export const revalidate = 300
 
@@ -32,7 +33,7 @@ export const metadata = {
 const INITIAL_EXPLORE_LIMIT = 24
 
 export default async function ExplorarPage() {
-  const [venueList, eventList, categories] = await Promise.all([
+  const [venueList, eventList, categories, mapData] = await Promise.all([
     getVenues({ status: 'APPROVED' }, INITIAL_EXPLORE_LIMIT),
     getEvents({ status: 'APPROVED' }, INITIAL_EXPLORE_LIMIT),
     prisma.category.findMany({
@@ -48,6 +49,7 @@ export default async function ExplorarPage() {
         },
       },
     }),
+    getExploreMapData(),
   ])
 
   const mapboxToken =
@@ -106,6 +108,8 @@ export default async function ExplorarPage() {
         <ExploreClient
           initialVenues={serializedVenues}
           initialEvents={serializedEvents}
+          initialMapVenues={mapData.venues}
+          initialMapEvents={mapData.events}
           categories={categories}
           mapboxToken={mapboxToken}
           mapStyle={mapStyle}

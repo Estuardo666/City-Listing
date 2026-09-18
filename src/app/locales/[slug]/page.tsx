@@ -15,8 +15,17 @@ import { incrementVenueViewAction } from '@/actions/views'
 import { JsonLd } from '@/components/json-ld'
 import { buildLocalBusinessJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-builders'
 import { VenueWatchEvents } from '@/components/features/watch-events/venue-watch-events'
+import { unstable_cache } from 'next/cache'
 
 export const revalidate = 3600
+
+// Metadata and the page body both need the same large public record. Without a
+// data-cache boundary React 18 executes that database query twice per request.
+const getCachedPublicVenue = unstable_cache(
+  async (slug: string) => getVenueBySlug(slug),
+  ['public-venue-detail'],
+  { revalidate: 300 }
+)
 
 type VenueDetailPageProps = {
   params: Promise<{
@@ -26,7 +35,7 @@ type VenueDetailPageProps = {
 
 export async function generateMetadata({ params }: VenueDetailPageProps): Promise<Metadata> {
   const { slug } = await params
-  const venue = await getVenueBySlug(slug)
+  const venue = await getCachedPublicVenue(slug)
 
   if (!venue) {
     return { title: 'Local no encontrado' }
@@ -70,7 +79,7 @@ export async function generateMetadata({ params }: VenueDetailPageProps): Promis
 export default async function VenueDetailPage({ params }: VenueDetailPageProps) {
   const { slug } = await params
   const [venue, session] = await Promise.all([
-    getVenueBySlug(slug),
+    getCachedPublicVenue(slug),
     getServerSession(authOptions),
   ])
 

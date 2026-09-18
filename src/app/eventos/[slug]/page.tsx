@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { unstable_cache } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -18,6 +19,12 @@ import { buildEventJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo/json-ld-b
 
 export const revalidate = 3600
 
+const getCachedPublicEvent = unstable_cache(
+  async (slug: string) => getEventBySlug(slug),
+  ['public-event-detail'],
+  { revalidate: 300 }
+)
+
 type EventDetailPageProps = {
   params: Promise<{
     slug: string
@@ -26,7 +33,7 @@ type EventDetailPageProps = {
 
 export async function generateMetadata({ params }: EventDetailPageProps): Promise<Metadata> {
   const { slug } = await params
-  const event = await getEventBySlug(slug)
+  const event = await getCachedPublicEvent(slug)
 
   if (!event) {
     return { title: 'Evento no encontrado' }
@@ -62,7 +69,7 @@ export async function generateMetadata({ params }: EventDetailPageProps): Promis
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { slug } = await params
   const [event, session] = await Promise.all([
-    getEventBySlug(slug),
+    getCachedPublicEvent(slug),
     getServerSession(authOptions),
   ])
 
