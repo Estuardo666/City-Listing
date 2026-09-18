@@ -33,6 +33,10 @@ npm run db:push
 
 # Seed de datos iniciales
 npm run db:seed
+
+# (Opcional) Cargar la Ruta del Café y sus artículos editoriales
+# Ejecutar solo después de verificar la base de datos indicada por DATABASE_URL.
+npm run content:seed:coffee
 ```
 
 ### Producción (PostgreSQL)
@@ -63,7 +67,12 @@ npm start
 ## 4. URLs
 
 - App: http://localhost:3000
+- Explorar: http://localhost:3000/explorar
+- Rutas publicadas: http://localhost:3000/rutas
+- Crear una ruta: http://localhost:3000/rutas/crear
 - Prisma Studio: npm run db:studio
+
+Para producción, el destino principal es Google Cloud Run. Consulta el [plan de producción en Google Cloud](docs/google-cloud-production-plan.md) antes de desplegar.
 
 ## 5. Próximos pasos MVP
 
