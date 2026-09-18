@@ -5,6 +5,8 @@ export async function invalidateEventCache(eventId?: string) {
   try {
     // Invalidar búsquedas globales (patrón general)
     await invalidateCache('search:*')
+    await invalidateCache('mobile:event:*')
+    await invalidateCache('mobile:home:v2')
     
     // Invalidar eventos populares
     await redis.del(cacheKeys.popularEvents())
@@ -25,6 +27,8 @@ export async function invalidateVenueCache(venueId?: string) {
   try {
     // Invalidar búsquedas globales
     await invalidateCache('search:*')
+    await invalidateCache('mobile:venue:*')
+    await invalidateCache('mobile:home:v2')
     
     // Invalidar locales populares
     await redis.del(cacheKeys.popularVenues())
@@ -46,6 +50,7 @@ export async function invalidateCategoryCache() {
     await invalidateCache('search:*')
     await invalidateCache('events:category:*')
     await invalidateCache('venues:category:*')
+    await invalidateCache('mobile:home:v2')
     await redis.del(cacheKeys.categories())
     
     console.log('✅ Category cache invalidated successfully')
@@ -59,6 +64,7 @@ export async function invalidatePostCache(postId?: string) {
   try {
     // Invalidar búsquedas globales
     await invalidateCache('search:*')
+    await invalidateCache('mobile:home:v2')
     
     if (postId) {
       console.log(`🗑️ Invalidated cache for post ${postId}`)

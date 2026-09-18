@@ -5,12 +5,23 @@ import { mobileSuccess } from '@/lib/mobile-response'
 import { prisma } from '@/lib/prisma'
 import { getPopularNow } from '@/lib/views'
 import { getResolvedHomeSections } from '@/lib/queries/home-sections'
+import { CACHE_TTL, withCache } from '@/lib/cache'
 
 function mapVenues(venues: Awaited<ReturnType<typeof getVenues>>) {
-  return venues.map(({ venueCategories, ...venue }) => ({
-    ...venue,
+  return venues.map(({ venueCategories, ...venue }) => {
+    // Google-derived fields are intentionally excluded from the persistent
+    // mobile cache. They remain available to the web/detail flows with the
+    // attribution and freshness rules required by Google Places.
+    const ownVenue = { ...venue } as Record<string, unknown>
+    delete ownVenue.googleRating
+    delete ownVenue.googleReviewCount
+    delete ownVenue.googlePlaceId
+
+    return {
+      ...ownVenue,
     categories: venueCategories.map(({ category }) => category),
-  }))
+    }
+  })
 }
 
 function mapEvents(events: Awaited<ReturnType<typeof getEvents>>) {
@@ -20,7 +31,7 @@ function mapEvents(events: Awaited<ReturnType<typeof getEvents>>) {
   }))
 }
 
-export async function GET() {
+async function buildHomePayload() {
   const now = new Date()
   // The screen is server-driven now: `sections` is the ordered composition the
   // admin configures. The legacy named keys below stay for builds already
@@ -79,7 +90,7 @@ export async function GET() {
 
   const sections = await sectionsPromise
 
-  const response = mobileSuccess({
+  return {
     sections,
     // `venues` and `events` remain the original featured aliases consumed by
     // older clients. The named sections make parity explicit for new clients.
@@ -99,7 +110,12 @@ export async function GET() {
       nextVenueSkip: allVenues.length,
       nextEventSkip: allEvents.length,
     },
-  })
+  }
+}
+
+export async function GET() {
+  const payload = await withCache('mobile:home:v2', buildHomePayload, CACHE_TTL.MOBILE_PUBLIC)
+  const response = mobileSuccess(payload)
   // Public, anonymous home payload. Keep device browsers revalidating while
   // letting Vercel's edge absorb repeated app launches between data refreshes.
   response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate')

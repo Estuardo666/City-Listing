@@ -11,12 +11,12 @@ permissions:
 
 concurrency:
   group: backend-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     services:
       postgres:
         image: postgres:16-alpine
@@ -51,6 +51,10 @@ jobs:
       KV_REST_API_URL: https://example.upstash.io
       KV_REST_API_TOKEN: ci-placeholder
       CSP_ENFORCE: "false"
+      # The production `build` script runs migrate-deploy before Next.js.
+      # Preview mode keeps this CI build isolated from the ephemeral schema;
+      # migrations are exercised explicitly below with db push.
+      VERCEL_ENV: preview
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,7 +62,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.x
           cache: npm
 
       - name: Install dependencies
@@ -81,8 +85,19 @@ jobs:
       - name: Mobile API integration tests
         run: npm run test:mobile
 
-      - name: Optional integration configuration tests
+      - name: Configuration and contract tests
         run: npm run test:config
+
+      - name: Billing tests
+        run: npm run test:billing
+
+      - name: Additional API and Google integration tests
+        run: >-
+          node --require ./tests/register-server-only.cjs --import tsx --test
+          tests/event-image.test.ts
+          tests/google-import-error.test.ts
+          tests/google-import-search.test.ts
+          tests/google-photo.test.ts
 
       - name: Lint
         run: npm run lint
@@ -96,5 +111,21 @@ jobs:
       - name: Validate mobile OpenAPI contract
         run: npx --yes @redocly/cli lint docs/openapi-mobile-v1.yaml --format=summary
 
-      - name: Production build
-        run: npm run build:webpack
+      - name: Next.js production build
+        run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore

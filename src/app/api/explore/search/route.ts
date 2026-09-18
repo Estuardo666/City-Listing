@@ -158,8 +158,12 @@ export async function GET(request: NextRequest) {
         const categorySlugs = category ? await resolveCategorySlugs(category.split(',').filter(Boolean)) : []
 
         // ── Venue query ──
-        // Se consultan siempre: el badge openState tambien debe respetar feriados.
-        const specialsByVenue = await getSpecialHoursByVenue()
+        // Special hours are only needed when venues are filtered by "open now".
+        // Loading them for every text/event search was an unnecessary database
+        // round-trip on the first screen load.
+        const specialsByVenue = openNow && type !== 'events'
+          ? await getSpecialHoursByVenue()
+          : new Map()
         const openNowFilter = openNow ? buildOpenNowFilter(specialsByVenue) : null
 
         const venueQuery = type === 'events' ? Promise.resolve({ items: [] as any[], consumed: 0, hasMore: false }) : (async () => {

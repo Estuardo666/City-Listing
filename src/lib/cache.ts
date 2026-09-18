@@ -18,7 +18,13 @@ export const CACHE_TTL = {
   POSTS: 1 * 60 * 60, // 1 hour - posts
   EXPLORE: 5 * 60, // 5 minutes - explore results
   OPEN_NOW: 60, // 1 minute - "abierto ahora" cambia con el reloj
+  MOBILE_PUBLIC: 60, // 1 minute - public mobile DTOs stay fresh without a DB hit per request
 } as const
+
+// Prevent a burst of identical cold requests from running the same expensive
+// Prisma query several times in one server instance. Redis remains the
+// cross-instance cache; this map only coalesces concurrent local misses.
+const inFlight = new Map<string, Promise<unknown>>()
 
 // Función para generar clave de cache
 export function getCacheKey(prefix: string, ...params: string[]): string {
@@ -31,32 +37,44 @@ export async function withCache<T>(
   fetcher: () => Promise<T>,
   ttl: number = CACHE_TTL.SEARCH
 ): Promise<T> {
-  try {
-    // Si no hay URL de Redis configurada (ej. en build), bypass del cache
-    if (!process.env.KV_REST_API_URL) {
-      return fetcher()
+  // Si no hay URL de Redis configurada (ej. en build), bypass del cache.
+  if (!process.env.KV_REST_API_URL) return fetcher()
+
+  const running = inFlight.get(key)
+  if (running) return running as Promise<T>
+
+  const promise = (async () => {
+    let cached: T | null = null
+    try {
+      cached = await redis.get<T>(key)
+    } catch (error) {
+      console.error(`❌ Cache read error for ${key}:`, error)
     }
 
-    // 1. Intentar obtener del cache
-    const cached = await redis.get<T>(key)
     if (cached !== null) {
       console.log(`🎯 Cache HIT: ${key}`)
       return cached
     }
 
-    // 2. Si no está, obtener de la fuente original
     console.log(`💾 Cache MISS: ${key}`)
     const data = await fetcher()
 
-    // 3. Guardar en cache
-    await redis.setex(key, ttl, data)
-    console.log(`✅ Cache SET: ${key} (${ttl}s)`)
+    try {
+      await redis.setex(key, ttl, data)
+      console.log(`✅ Cache SET: ${key} (${ttl}s)`)
+    } catch (error) {
+      // A cache outage must not turn a successful origin response into a 500.
+      console.error(`❌ Cache write error for ${key}:`, error)
+    }
 
     return data
-  } catch (error) {
-    console.error(`❌ Cache error for ${key}:`, error)
-    // Si Redis falla, ejecutar el fetcher directamente
-    return fetcher()
+  })()
+
+  inFlight.set(key, promise)
+  try {
+    return await promise
+  } finally {
+    inFlight.delete(key)
   }
 }
 

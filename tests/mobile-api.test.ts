@@ -127,6 +127,12 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.ok(Array.isArray(homeBody.data.relatedEvents))
   assert.ok(Array.isArray(homeBody.data.posts))
   assert.ok(Array.isArray(homeBody.data.promotions))
+  const firstHomeVenue = homeBody.data.latestVenues[0] as Record<string, unknown> | undefined
+  if (firstHomeVenue) {
+    assert.equal('googleRating' in firstHomeVenue, false)
+    assert.equal('googleReviewCount' in firstHomeVenue, false)
+    assert.equal('googlePlaceId' in firstHomeVenue, false)
+  }
 
   const pagedContent = await contentRoute.GET(new Request('http://localhost/api/mobile/v1/content?limit=1&postSkip=0'))
   assert.equal(pagedContent.status, 200)

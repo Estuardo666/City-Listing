@@ -5,6 +5,7 @@ import { openStatus, operatingHoursToRows, lojaNowParts, lojaDay } from '@/lib/l
 import { prisma } from '@/lib/prisma'
 import { isGoogleDataStale, googlePlaceUrl } from '@/lib/google/freshness'
 import { getBadgeInfo, getGoogleBadges } from '@/lib/badges'
+import { CACHE_TTL, withCache } from '@/lib/cache'
 
 type MobileMenuCategory = {
   id: string
@@ -47,43 +48,136 @@ async function venueOpenState(venue: { id: string; businessHours: Array<{ dayOfW
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const venue = await getVenueBySlug(slug)
-  if (!venue) return mobileError('NOT_FOUND', 'Local no encontrado.', 404)
+  const [venue, principal, venueMeta] = await Promise.all([
+    // Only the public, first-party DTO is persisted. Google fields and
+    // request-specific ownership flags are deliberately kept out of Redis.
+    withCache(`mobile:venue:${slug}:v2`, async () => {
+      const source = await getVenueBySlug(slug)
+      if (!source) return null
 
-  // The endpoint stays public; a bearer token only adds the owner-only fields,
-  // which is what unlocks the claim CTA and the reply affordance in the app.
-  const principal = await getMobilePrincipal(request)
+      const menuCategories = (source as typeof source & { menuCategories?: MobileMenuCategory[] }).menuCategories ?? []
+      return {
+        id: source.id,
+        name: source.name,
+        slug: source.slug,
+        description: source.description,
+        image: source.image,
+        location: source.location,
+        address: source.address,
+        lat: source.lat,
+        lng: source.lng,
+        featured: source.featured,
+        sponsoredUntil: source.sponsoredUntil,
+        phone: source.phone,
+        website: source.website,
+        priceRange: source.priceRange,
+        avgRating: source.avgRating,
+        reviewCount: source.reviewCount,
+        verified: source.verified,
+        claimed: source.claimed,
+        effectivePlan: source.effectivePlan,
+        capabilities: source.capabilities,
+        entitlementsVersion: source.entitlementsVersion,
+        categories: source.venueCategories.map(({ category }) => category),
+        media: source.media.map(({ id, url, alt, type, order }) => ({ id, url, alt, type, order })),
+        services: source.services.map(({ id, name, description }) => ({ id, name, description })),
+        operatingHours: source.operatingHours,
+        businessHours: source.businessHours,
+        // This is first-party operational data. A one-minute TTL keeps it
+        // accurate while avoiding a SpecialHours query on every detail hit.
+        openState: await venueOpenState(source),
+        menu: menuCategories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          order: category.order,
+          items: category.items.map(({ id, name, description, price, image, order, isAvailable, isFeatured }) => ({
+            id,
+            name,
+            description,
+            price,
+            image,
+            order,
+            isAvailable,
+            isFeatured,
+          })),
+        })),
+        products: source.products.map(({ id, name, description, price, image, isAvailable, isFeatured, order }) => ({
+          id,
+          name,
+          description,
+          price,
+          image,
+          isAvailable,
+          isFeatured,
+          order,
+        })),
+        events: source.events,
+        promotions: source.promotions.map(({ id, title, description, image, discount, validFrom, validUntil, terms, featured }) => ({
+          id,
+          title,
+          description,
+          image,
+          discount,
+          validFrom,
+          validUntil,
+          terms,
+          featured,
+        })),
+        reviews: source.reviews.map((review) => ({
+          id: review.id,
+          rating: review.rating,
+          title: review.title,
+          content: review.content,
+          createdAt: review.createdAt,
+          ownerReply: review.ownerReply,
+          ownerReplyAt: review.ownerReplyAt,
+          user: { id: review.user.id, name: review.user.name, image: review.user.image },
+          photos: (((review as typeof review & { photos?: { id: string; url: string; order: number }[] }).photos) ?? []).map(({ id, url, order }) => ({ id, url, order })),
+        })),
+        questions: ((source as any).questions ?? []).map((question: any) => ({
+          id: question.id,
+          content: question.content,
+          answer: question.answer,
+          answerBy: question.answerBy,
+          answeredAt: question.answeredAt,
+          status: question.status,
+          createdAt: question.createdAt,
+          user: { id: question.user.id, name: question.user.name, image: question.user.image },
+        })),
+      }
+    }, CACHE_TTL.MOBILE_PUBLIC),
+    // The endpoint stays public; a bearer token only adds the owner-only
+    // fields, which is what unlocks the claim CTA and the reply affordance.
+    getMobilePrincipal(request),
+    // Google-derived values are read fresh from our DB and never put in the
+    // persistent public DTO cache. This preserves attribution/freshness rules.
+    prisma.venue.findFirst({
+      where: { slug, status: 'APPROVED', isActive: true },
+      select: {
+        userId: true,
+        googleLastSyncAt: true,
+        googleRating: true,
+        googleReviewCount: true,
+        googlePlaceId: true,
+      },
+    }),
+  ])
 
-  const menuCategories = (venue as typeof venue & { menuCategories?: MobileMenuCategory[] }).menuCategories ?? []
+  if (!venue || !venueMeta) return mobileError('NOT_FOUND', 'Local no encontrado.', 404)
 
   // Same rule as the web detail page: Google caps cached Places content at 30
   // days, so a stale row drops the rating, its count and the badges derived
   // from them rather than showing numbers Google no longer backs.
-  const googleExpired = isGoogleDataStale((venue as any).googleLastSyncAt)
-  const googleRating = googleExpired ? null : ((venue as any).googleRating ?? null)
-  const googleReviewCount = googleExpired ? 0 : ((venue as any).googleReviewCount ?? 0)
-  const googlePlaceId = (venue as any).googlePlaceId ?? null
+  const googleExpired = isGoogleDataStale(venueMeta.googleLastSyncAt)
+  const googleRating = googleExpired ? null : (venueMeta.googleRating ?? null)
+  const googleReviewCount = googleExpired ? 0 : (venueMeta.googleReviewCount ?? 0)
+  const googlePlaceId = venueMeta.googlePlaceId ?? null
   const googleBadges = getGoogleBadges({ googleRating, googleReviewCount }).map((type) => {
     const info = getBadgeInfo(type)
     return { type, label: info.label, icon: info.icon }
   })
   const data = {
-    id: venue.id,
-    name: venue.name,
-    slug: venue.slug,
-    description: venue.description,
-    image: venue.image,
-    location: venue.location,
-    address: venue.address,
-    lat: venue.lat,
-    lng: venue.lng,
-    featured: venue.featured,
-    sponsoredUntil: venue.sponsoredUntil,
-    phone: venue.phone,
-    website: venue.website,
-    priceRange: venue.priceRange,
-    avgRating: venue.avgRating,
-    reviewCount: venue.reviewCount,
+    ...venue,
     // Google's own rating, shown in preference to the ViveLoja average when the
     // place has one, exactly as the web detail page does. Attribution is
     // mandatory whenever it is displayed, hence googleMapsUrl.
@@ -91,78 +185,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     googleReviewCount,
     googleBadges,
     googleMapsUrl: googlePlaceId ? googlePlaceUrl(googlePlaceId) : null,
-    verified: venue.verified,
-    claimed: venue.claimed,
-    effectivePlan: venue.effectivePlan,
-    capabilities: venue.capabilities,
-    entitlementsVersion: venue.entitlementsVersion,
-    isOwnedByMe: principal ? venue.userId === principal.userId : false,
-    canReclaim: principal ? venue.userId !== principal.userId && !venue.claimed : false,
-    categories: venue.venueCategories.map(({ category }) => category),
-    media: venue.media.map(({ id, url, alt, type, order }) => ({ id, url, alt, type, order })),
-    services: venue.services.map(({ id, name, description }) => ({ id, name, description })),
-    operatingHours: venue.operatingHours,
-    businessHours: venue.businessHours,
-    // Estado abierto/cerrado con la hora de Loja, feriados incluidos: la app no recalcula.
-    openState: await venueOpenState(venue),
-    menu: menuCategories.map((category) => ({
-      id: category.id,
-      name: category.name,
-      order: category.order,
-      items: category.items.map(({ id, name, description, price, image, order, isAvailable, isFeatured }) => ({
-        id,
-        name,
-        description,
-        price,
-        image,
-        order,
-        isAvailable,
-        isFeatured,
-      })),
-    })),
-    products: venue.products.map(({ id, name, description, price, image, isAvailable, isFeatured, order }) => ({
-      id,
-      name,
-      description,
-      price,
-      image,
-      isAvailable,
-      isFeatured,
-      order,
-    })),
-    events: venue.events,
-    promotions: venue.promotions.map(({ id, title, description, image, discount, validFrom, validUntil, terms, featured }) => ({
-      id,
-      title,
-      description,
-      image,
-      discount,
-      validFrom,
-      validUntil,
-      terms,
-      featured,
-    })),
-    reviews: venue.reviews.map((review) => ({
-      id: review.id,
-      rating: review.rating,
-      title: review.title,
-      content: review.content,
-      createdAt: review.createdAt,
-      ownerReply: review.ownerReply,
-      ownerReplyAt: review.ownerReplyAt,
-      user: { id: review.user.id, name: review.user.name, image: review.user.image },
-      photos: (((review as typeof review & { photos?: { id: string; url: string; order: number }[] }).photos) ?? []).map(({ id, url, order }) => ({ id, url, order })),
-    })),
-    questions: ((venue as any).questions ?? []).map((question: any) => ({
-      id: question.id,
-      content: question.content,
-      answer: question.answer,
-      answerBy: question.answerBy,
-      answeredAt: question.answeredAt,
-      status: question.status,
-      createdAt: question.createdAt,
-      user: { id: question.user.id, name: question.user.name, image: question.user.image },
-    })),
+    isOwnedByMe: principal ? venueMeta.userId === principal.userId : false,
+    canReclaim: principal ? venueMeta.userId !== principal.userId && !venue.claimed : false,
   }
-  return mobileSuccess(data)
+  const response = mobileSuccess(data)
+  // The response contains fresh Google-derived metadata and optional
+  // user-specific ownership flags, so no intermediary may reuse it.
+  response.headers.set('Cache-Control', 'private, no-store')
+  return response
 }
