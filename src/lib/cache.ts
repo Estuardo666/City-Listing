@@ -1,11 +1,23 @@
 import 'server-only'
 import { Redis } from '@upstash/redis'
 
+// Prefer the canonical KV names, but keep compatibility with the legacy names
+// currently used by the Cloud Run service. The latter contain the historical
+// "uptash_redish" typo and must not make the cache silently bypassable.
+const redisRestUrl =
+  process.env.KV_REST_API_URL ||
+  process.env.UPSTASH_REDIS_REST_URL ||
+  process.env.uptash_redish_KV_REST_API_URL
+const redisRestToken =
+  process.env.KV_REST_API_TOKEN ||
+  process.env.UPSTASH_REDIS_REST_TOKEN ||
+  process.env.uptash_redish_KV_REST_API_TOKEN
+
 // Configuración de Redis con Upstash
 // Make it safe for build time when env vars might be missing
 export const redis = new Redis({
-  url: process.env.KV_REST_API_URL || 'https://dummy-url-for-build.upstash.io',
-  token: process.env.KV_REST_API_TOKEN || 'dummy-token-for-build',
+  url: redisRestUrl || 'https://dummy-url-for-build.upstash.io',
+  token: redisRestToken || 'dummy-token-for-build',
 })
 
 // Tiempos de cache en segundos
@@ -38,7 +50,7 @@ export async function withCache<T>(
   ttl: number = CACHE_TTL.SEARCH
 ): Promise<T> {
   // Si no hay URL de Redis configurada (ej. en build), bypass del cache.
-  if (!process.env.KV_REST_API_URL) return fetcher()
+  if (!redisRestUrl || !redisRestToken) return fetcher()
 
   const running = inFlight.get(key)
   if (running) return running as Promise<T>
@@ -82,7 +94,7 @@ export async function withCache<T>(
 export async function invalidateCache(pattern: string): Promise<void> {
   try {
     // Si no hay URL de Redis configurada, no hacer nada
-    if (!process.env.KV_REST_API_URL) return
+    if (!redisRestUrl || !redisRestToken) return
 
     const keys = await redis.keys(pattern)
     if (keys.length > 0) {
