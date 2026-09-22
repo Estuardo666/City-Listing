@@ -74,6 +74,7 @@ export const eventListFiltersSchema = z.object({
   q: z.string().trim().optional().default(''),
   category: z.string().trim().optional().default(''),
   featured: z.enum(['all', 'true']).optional().default('all'),
+  upcoming: z.coerce.boolean().optional().default(false),
   status: eventStatusSchema.optional().default('APPROVED'),
 })
 

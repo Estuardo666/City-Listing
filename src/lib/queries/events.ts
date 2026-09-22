@@ -20,6 +20,51 @@ import type {
   UpcomingEventNotification,
 } from '@/types/event'
 
+type PublicEventIdentity = {
+  title: string
+  slug?: string | null
+  startDate: Date
+  endDate?: Date | null
+  location?: string | null
+  address?: string | null
+}
+
+function normalizeEventText(value: string | null | undefined): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-EC')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export function isUpcomingOrOngoing(event: Pick<PublicEventIdentity, 'startDate' | 'endDate'>, now = new Date()): boolean {
+  return event.startDate >= now || (event.endDate != null && event.endDate >= now)
+}
+
+export function publicEventKey(event: Pick<PublicEventIdentity, 'title' | 'startDate' | 'location' | 'address'>): string {
+  return [
+    normalizeEventText(event.title),
+    event.startDate.toISOString(),
+    normalizeEventText(event.location),
+    normalizeEventText(event.address),
+  ].join('|')
+}
+
+export function dedupePublicEvents<T extends PublicEventIdentity>(events: T[]): T[] {
+  const seenKeys = new Set<string>()
+  const seenSlugs = new Set<string>()
+
+  return events.filter((event) => {
+    const key = publicEventKey(event)
+    const slug = normalizeEventText(event.slug)
+    if (seenKeys.has(key) || (slug && seenSlugs.has(slug))) return false
+    seenKeys.add(key)
+    if (slug) seenSlugs.add(slug)
+    return true
+  })
+}
+
 const eventListSelect = Prisma.validator<Prisma.EventSelect>()({
   id: true,
   title: true,
@@ -278,6 +323,15 @@ export async function getEvents(
 
   if (filters.featured === 'true') {
     where.featured = true
+  }
+
+  if (filters.upcoming) {
+    const now = new Date()
+    where.AND = [
+      {
+        OR: [{ startDate: { gte: now } }, { endDate: { gte: now } }],
+      },
+    ]
   }
 
   return prisma.event.findMany({

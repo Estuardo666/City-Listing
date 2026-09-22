@@ -8,6 +8,8 @@ import { EVENT_LANDING_CONFIGS } from '../src/lib/seo/event-landings'
 import { SEO_EDITORIAL_ARTICLES } from '../src/lib/seo/editorial-content'
 import { RANKED_VENUE_ARTICLE_CONFIGS, RANKED_VENUE_ARTICLE_PATHS } from '../src/lib/seo/ranked-venue-articles'
 import { displayableImageUrl } from '../src/lib/media/image-url'
+import { dedupePublicEvents, isUpcomingOrOngoing } from '../src/lib/queries/events'
+import { eventListFiltersSchema } from '../src/schemas/event.schema'
 
 test('public cards reject video files and retired Clearbit logos as images', () => {
   assert.equal(displayableImageUrl('https://cdn.example.com/event.mp4?token=abc'), null)
@@ -155,4 +157,23 @@ test('event landings and editorial articles keep their SEO source coverage', () 
   ])
   assert.equal(RANKED_VENUE_ARTICLE_CONFIGS.find((article) => article.slug === 'mejores-bares-loja')?.searchInNameOnly, true)
   assert.equal(RANKED_VENUE_ARTICLE_CONFIGS.find((article) => article.slug === 'mejores-pizzerias-loja')?.searchInNameOnly, true)
+})
+
+test('public event filters keep ongoing events and remove expired duplicates', () => {
+  const now = new Date('2026-09-22T12:00:00.000Z')
+  const ongoing = {
+    title: 'Festival de Loja',
+    slug: 'festival-de-loja',
+    startDate: new Date('2026-09-20T18:00:00.000Z'),
+    endDate: new Date('2026-09-23T02:00:00.000Z'),
+    location: 'Teatro Bolívar',
+    address: 'Loja, Ecuador',
+  }
+  const duplicate = { ...ongoing, slug: 'festival-de-loja-2', title: ' Festival de Loja ' }
+  const expired = { ...ongoing, slug: 'evento-vencido', title: 'Evento vencido', endDate: new Date('2026-09-21T02:00:00.000Z') }
+
+  assert.equal(isUpcomingOrOngoing(ongoing, now), true)
+  assert.equal(isUpcomingOrOngoing(expired, now), false)
+  assert.deepEqual(dedupePublicEvents([ongoing, duplicate]), [ongoing])
+  assert.deepEqual(eventListFiltersSchema.parse({ upcoming: true }).upcoming, true)
 })

@@ -4,14 +4,13 @@ import { prisma } from '@/lib/prisma'
 import { EVENT_LANDING_PATHS } from '@/lib/seo/event-landings'
 import { EDITORIAL_ARTICLE_PATHS } from '@/lib/seo/editorial-content'
 import { RANKED_VENUE_ARTICLE_PATHS } from '@/lib/seo/ranked-venue-articles'
+import { dedupePublicEvents } from '@/lib/queries/events'
 
 const SITE_URL = 'https://viveloja.com'
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Cloud Run source builds use the preview environment. Generate the sitemap
-  // at request time there so the build never needs the production database.
-  if (process.env.VERCEL_ENV === 'preview') return []
+export const dynamic = 'force-dynamic'
 
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
   const [venues, events, posts, categories] = await Promise.all([
     prisma.venue.findMany({
@@ -24,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         status: 'APPROVED',
         OR: [{ startDate: { gte: now } }, { endDate: { gte: now } }],
       },
-      select: { slug: true, updatedAt: true },
+      select: { slug: true, title: true, startDate: true, endDate: true, location: true, address: true, updatedAt: true },
       orderBy: { updatedAt: 'desc' },
     }),
     prisma.post.findMany({
@@ -87,7 +86,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     })),
-    ...events.map((event) => ({
+    ...dedupePublicEvents(events).map((event) => ({
       url: `${SITE_URL}/eventos/${event.slug}`,
       lastModified: event.updatedAt,
       changeFrequency: 'daily' as const,

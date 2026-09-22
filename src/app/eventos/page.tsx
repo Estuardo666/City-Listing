@@ -12,6 +12,7 @@ import type { ExploreEvent } from '@/types/explore'
 import type { EventListItem } from '@/types/event'
 import { JsonLd } from '@/components/json-ld'
 import { buildBreadcrumbListJsonLd, buildEventLandingJsonLd } from '@/lib/seo/json-ld-builders'
+import { dedupePublicEvents } from '@/lib/queries/events'
 
 export const revalidate = 900
 
@@ -54,9 +55,15 @@ const ALL_TAKE = 12
 export default async function EventosPage() {
   const now = new Date()
   const [allApproved, featuredEvents, freeEvents, topRatedEvents, categories] = await Promise.all([
-    getEvents({ status: 'APPROVED' }, 60),
+    getEvents({ status: 'APPROVED', upcoming: true }),
     prisma.event.findMany({
-      where: { status: 'APPROVED', OR: [{ featured: true }, { sponsoredUntil: { gt: now } }] },
+      where: {
+        status: 'APPROVED',
+        AND: [
+          { OR: [{ startDate: { gte: now } }, { endDate: { gte: now } }] },
+          { OR: [{ featured: true }, { sponsoredUntil: { gt: now } }] },
+        ],
+      },
       orderBy: [{ sponsoredUntil: 'desc' }, { featured: 'desc' }, { startDate: 'asc' }],
       take: FEATURED_TAKE,
       select: {
@@ -68,7 +75,11 @@ export default async function EventosPage() {
       },
     }),
     prisma.event.findMany({
-      where: { status: 'APPROVED', price: 0 },
+      where: {
+        status: 'APPROVED',
+        price: 0,
+        OR: [{ startDate: { gte: now } }, { endDate: { gte: now } }],
+      },
       orderBy: { startDate: 'asc' },
       take: FREE_TAKE,
       select: {
@@ -80,7 +91,11 @@ export default async function EventosPage() {
       },
     }),
     prisma.event.findMany({
-      where: { status: 'APPROVED', avgRating: { gte: 4 } },
+      where: {
+        status: 'APPROVED',
+        avgRating: { gte: 4 },
+        OR: [{ startDate: { gte: now } }, { endDate: { gte: now } }],
+      },
       orderBy: [{ avgRating: 'desc' }, { reviewCount: 'desc' }],
       take: TOP_RATED_TAKE,
       select: {
@@ -106,10 +121,9 @@ export default async function EventosPage() {
     }),
   ])
 
-  const allEvents = allApproved.slice(0, ALL_TAKE) as EventListItem[]
-  const upcomingEventsForSchema = allApproved
-    .filter((event) => event.startDate >= now || (event.endDate && event.endDate >= now))
-    .slice(0, 20)
+  const publicEvents = dedupePublicEvents(allApproved)
+  const allEvents = publicEvents.slice(0, ALL_TAKE) as EventListItem[]
+  const upcomingEventsForSchema = publicEvents.slice(0, 20)
 
   const mapboxToken =
     process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ''
@@ -118,7 +132,7 @@ export default async function EventosPage() {
     process.env.NEXT_PUBLIC_MAPBOX_STYLE ??
     'mapbox://styles/mapbox/streets-v12'
 
-  const serializedEvents = allApproved.map((e) => ({
+  const serializedEvents = publicEvents.map((e) => ({
     id: e.id,
     title: e.title,
     slug: e.slug,
