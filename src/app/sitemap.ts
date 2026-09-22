@@ -59,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ]
 
-  return [
+  const entries: MetadataRoute.Sitemap = [
     ...staticRoutes.map((route) => ({
       url: route.path ? `${SITE_URL}/${route.path}` : SITE_URL,
       lastModified,
@@ -99,4 +99,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     })),
   ]
+
+  return Array.from(new Map(entries.map((entry) => [entry.url, entry])).values())
 }
