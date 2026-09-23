@@ -117,6 +117,7 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
       relatedEvents: unknown[]
       posts: unknown[]
       promotions: unknown[]
+      sections: Array<{ items: Array<{ kind: string; description?: string | null }> }>
     }
   }
   assert.ok(Array.isArray(homeBody.data.venues))
@@ -127,6 +128,14 @@ test('mobile auth and favorites lifecycle is single-use and idempotent', async (
   assert.ok(Array.isArray(homeBody.data.relatedEvents))
   assert.ok(Array.isArray(homeBody.data.posts))
   assert.ok(Array.isArray(homeBody.data.promotions))
+  assert.ok(Array.isArray(homeBody.data.sections))
+  for (const section of homeBody.data.sections) {
+    for (const item of section.items) {
+      if (item.kind === 'venue' || item.kind === 'event') {
+        assert.ok('description' in item, 'Home cards must carry first-party detail text')
+      }
+    }
+  }
   const firstHomeVenue = homeBody.data.latestVenues[0] as Record<string, unknown> | undefined
   if (firstHomeVenue) {
     assert.equal('googleRating' in firstHomeVenue, false)
