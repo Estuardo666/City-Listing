@@ -114,7 +114,7 @@ async function buildHomePayload() {
 }
 
 export async function GET() {
-  const payload = await withCache('mobile:home:v3', buildHomePayload, CACHE_TTL.MOBILE_PUBLIC)
+  const payload = await withCache('mobile:home:v4', buildHomePayload, CACHE_TTL.MOBILE_PUBLIC)
   const response = mobileSuccess(payload)
   // Public, anonymous home payload. Keep device browsers revalidating while
   // letting Vercel's edge absorb repeated app launches between data refreshes.

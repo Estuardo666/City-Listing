@@ -37,6 +37,8 @@ export type HomeItemDTO = {
   title: string
   subtitle?: string | null
   description?: string | null
+  address?: string | null
+  startDate?: Date | null
   imageUrl?: string | null
   /** Derived server-side so the badge wording can change without an app release. */
   badge?: string | null
@@ -105,6 +107,7 @@ const venueCardSelect = Prisma.validator<Prisma.VenueSelect>()({
   name: true,
   slug: true,
   description: true,
+  address: true,
   image: true,
   location: true,
   lat: true,
@@ -127,6 +130,7 @@ const eventCardSelect = Prisma.validator<Prisma.EventSelect>()({
   title: true,
   slug: true,
   description: true,
+  address: true,
   image: true,
   location: true,
   lat: true,
@@ -152,6 +156,7 @@ function mapVenueCard(venue: VenueCard, now: Date): HomeItemDTO {
     title: venue.name,
     subtitle: venue.location,
     description: venue.description,
+    address: venue.address,
     imageUrl: displayableImageUrl(venue.image),
     badge: venue.promotions.length
       ? 'Con promoción'
@@ -179,6 +184,8 @@ function mapEventCard(event: EventCard, now: Date): HomeItemDTO {
     title: event.title,
     subtitle: event.location,
     description: event.description,
+    address: event.address,
+    startDate: event.startDate,
     imageUrl: displayableImageUrl(event.image),
     badge: soon ? '¡Últimos días!' : isNew ? '¡Nuevo!' : null,
     priceLabel: eventPriceLabel(event.price),
